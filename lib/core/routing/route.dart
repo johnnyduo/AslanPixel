@@ -7,6 +7,7 @@ import '../config/constant.dart';
 import '../enums/auth_status.dart';
 import '../../features/auth/view/sign_in_page.dart';
 import '../../features/home/view/main_tabs_page.dart';
+import '../../features/onboarding/view/onboarding_page.dart';
 
 class RootPage extends StatefulWidget {
   const RootPage({
@@ -54,34 +55,24 @@ class _RootPageState extends State<RootPage> {
     super.dispose();
   }
 
-  Widget _buildWaitingScreen() {
-    if (authStatus == AuthStatus.notloggedin) {
-      return const SignInPage();
-    } else if (authStatus == AuthStatus.loggedin) {
-      return const MainTabsPage();
-    } else {
-      // Show a loading indicator instead of blank white screen
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     switch (authStatus) {
       case AuthStatus.notdetermined:
-        return _buildWaitingScreen();
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
       case AuthStatus.notloggedin:
-        return _buildWaitingScreen();
+        return const SignInPage();
       case AuthStatus.loggedin:
-        if (accessToken != null) {
-          return MainTabsPage(tabIndex: widget.tabIndex ?? 0);
-        } else {
-          return _buildWaitingScreen();
+        if (!currentUser.onboardingComplete) {
+          return const OnboardingPage();
         }
+        return MainTabsPage(tabIndex: widget.tabIndex ?? 0);
       default:
-        return _buildWaitingScreen();
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
     }
   }
 }

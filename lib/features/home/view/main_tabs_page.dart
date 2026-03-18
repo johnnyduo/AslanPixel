@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:aslan_pixel/features/home/view/home_page.dart';
 import 'package:aslan_pixel/features/feed/view/feed_page.dart';
 import 'package:aslan_pixel/features/finance/view/finance_page.dart';
+import 'package:aslan_pixel/features/home/view/pixel_world_page.dart';
 import 'package:aslan_pixel/features/profile/view/profile_page.dart';
 
 /// Main Tabs page — Phase 5C: Profile tab is live.
@@ -37,7 +38,7 @@ class _MainTabsPageState extends State<MainTabsPage> {
 
   static final _pages = [
     const HomePage(),
-    const _PlaceholderTab(label: 'Pixel World'),
+    const PixelWorldPage(),
     const FinancePage(),
     const FeedPage(),
     const ProfilePage(),
@@ -60,16 +61,5 @@ class _MainTabsPageState extends State<MainTabsPage> {
         ),
       ),
     );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text(label));
   }
 }
