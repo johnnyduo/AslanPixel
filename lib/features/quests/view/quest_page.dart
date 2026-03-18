@@ -7,6 +7,7 @@ import 'package:aslan_pixel/features/home/bloc/room_event.dart';
 import 'package:aslan_pixel/features/quests/bloc/quest_bloc.dart';
 import 'package:aslan_pixel/features/quests/data/datasources/firestore_quest_datasource.dart';
 import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
+import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const _kNavy = Color(0xFF0A1628);
@@ -357,10 +358,12 @@ class _QuestCard extends StatelessWidget {
             // ── Rewards + claim ──────────────────────────────────────────
             Row(
               children: [
-                _RewardChip(
-                  icon: Icons.monetization_on_rounded,
-                  color: _kGold,
-                  label: '+$rewardCoins',
+                // Animated coin counter — animates from 0 → reward amount
+                AnimatedCoinCounter(
+                  toAmount: rewardCoins,
+                  fromAmount: 0,
+                  fontSize: 13,
+                  showIcon: true,
                 ),
                 const SizedBox(width: 8),
                 _RewardChip(

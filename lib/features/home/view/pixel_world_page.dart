@@ -15,7 +15,12 @@ import 'package:aslan_pixel/features/agents/data/models/agent_model.dart'
 import 'package:aslan_pixel/features/agents/view/agent_dialogue_bubble.dart';
 import 'package:aslan_pixel/features/agents/view/task_assignment_sheet.dart';
 import 'package:aslan_pixel/features/home/bloc/pixel_world_bloc.dart';
+import 'package:aslan_pixel/features/home/bloc/room_bloc.dart';
+import 'package:aslan_pixel/features/home/bloc/room_event.dart';
+import 'package:aslan_pixel/features/home/bloc/room_state.dart';
+import 'package:aslan_pixel/features/home/data/datasources/firestore_room_datasource.dart';
 import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
+import 'package:aslan_pixel/features/home/view/room_item_picker.dart';
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -88,6 +93,7 @@ class _PixelWorldPageState extends State<PixelWorldPage>
     with WidgetsBindingObserver {
   late final TaskBloc _taskBloc;
   late final AgentBloc _agentBloc;
+  late final RoomBloc _roomBloc;
 
   @override
   void initState() {
@@ -97,11 +103,13 @@ class _PixelWorldPageState extends State<PixelWorldPage>
     _agentBloc = AgentBloc(
       repository: FirestoreAgentDatasource(),
     );
+    _roomBloc = RoomBloc(repository: FirestoreRoomDatasource());
 
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (uid.isNotEmpty) {
       _taskBloc.add(TaskWatchStarted(uid));
       _agentBloc.add(AgentWatchStarted(uid));
+      _roomBloc.add(RoomLoadRequested(uid));
     }
   }
 
@@ -120,6 +128,7 @@ class _PixelWorldPageState extends State<PixelWorldPage>
     WidgetsBinding.instance.removeObserver(this);
     _taskBloc.close();
     _agentBloc.close();
+    _roomBloc.close();
     super.dispose();
   }
 
@@ -134,6 +143,7 @@ class _PixelWorldPageState extends State<PixelWorldPage>
         ),
         BlocProvider<TaskBloc>.value(value: _taskBloc),
         BlocProvider<AgentBloc>.value(value: _agentBloc),
+        BlocProvider<RoomBloc>.value(value: _roomBloc),
       ],
       child: const _PixelWorldView(),
     );
@@ -225,6 +235,14 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
             }
           },
         ),
+        // ---- RoomBloc listener — sync items into Flame game ----
+        BlocListener<RoomBloc, RoomState>(
+          listener: (context, state) {
+            if (state is RoomLoaded && _game != null) {
+              _game!.updateRoomItems(state.room.items);
+            }
+          },
+        ),
       ],
       child: Scaffold(
         backgroundColor: _colorNavy,
@@ -284,6 +302,13 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
                       agentType: _dialogueAgentType!,
                     ),
                   ),
+
+                // ---- Customize Room FAB ----
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 80,
+                  child: _CustomizeRoomFab(game: _game),
+                ),
               ],
             );
           },
@@ -516,6 +541,47 @@ class _AgentDetailSheet extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _CustomizeRoomFab
+// ---------------------------------------------------------------------------
+
+/// Small floating action button that opens the [RoomItemPicker] bottom sheet.
+///
+/// Visible only when the Flame game has been created.
+class _CustomizeRoomFab extends StatelessWidget {
+  const _CustomizeRoomFab({required this.game});
+
+  final PixelRoomGame? game;
+
+  @override
+  Widget build(BuildContext context) {
+    if (game == null) return const SizedBox.shrink();
+
+    return FloatingActionButton.small(
+      heroTag: 'customize_room_fab',
+      backgroundColor: _colorCyberPurple,
+      foregroundColor: Colors.white,
+      tooltip: 'ตกแต่งห้อง',
+      onPressed: () {
+        final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+        final roomBloc = context.read<RoomBloc>();
+        showModalBottomSheet<void>(
+          context: context,
+          backgroundColor: const Color(0xFF0A1628),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => RoomItemPicker(
+            uid: uid,
+            bloc: roomBloc,
+          ),
+        );
+      },
+      child: const Icon(Icons.dashboard_customize_outlined, size: 20),
     );
   }
 }

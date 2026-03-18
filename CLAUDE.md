@@ -64,6 +64,11 @@ lib/
 | Agent engine | `lib/features/agents/engine/idle_task_engine.dart` |
 | AI service | `lib/data/services/gemini_ai_service.dart` |
 | Economy writes | `lib/features/inventory/data/datasources/firestore_economy_datasource.dart` |
+| RoomItemComponent | `lib/features/home/game/room_item_component.dart` |
+| RankingBloc | `lib/features/home/bloc/ranking_bloc.dart` |
+| LocalNotificationService | `lib/core/utils/local_notification_service.dart` |
+| AnimatedCoinCounter | `lib/shared/widgets/animated_coin_counter.dart` |
+| SparklineChart | `lib/shared/widgets/sparkline_chart.dart` |
 
 ## Common Patterns
 
@@ -110,6 +115,16 @@ await _firestore.runTransaction((transaction) async {
 - Don't mock Firebase in integration tests — use Firebase Emulator
 - Don't add `accessToken` check in `RootPage` for onboarding check — use `onboardingComplete` field
 - Don't put business logic in widgets — put in BLoC or repository
+- Don't use Gemini for NPC sprite generation — output is not valid pixel art PNG
+- Don't use `.withOpacity()` — always use `.withValues(alpha:)` (Dart 3.x API)
+
+## Pixel World
+
+- **Room background**: Gemini-generated PNGs stored in `assets/sprites/room_backgrounds/`
+- **NPC sprites**: Generated via PixelLab API, 48×48 pixels, stored at `assets/sprites/npcs/{name}_{direction}.png`
+- **Walk animation**: 4-frame `SpriteAnimation` using frames `{name}_{dir}_walk{1-4}.png`
+- **Room items**: `RoomItemComponent` draws items with Canvas; positioned using `slotX`/`slotY` grid slots on the room floor
+- **Quest→Room unlock flow**: `QuestRewardClaimedSuccess` (with `unlockedItemId`) → fires `RoomItemUnlocked` event on `RoomBloc` → item appears in room
 
 ## Firebase Setup (one-time manual steps)
 1. `flutterfire configure` → generates `lib/firebase_options.dart` (gitignored)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aslan_pixel/shared/widgets/sparkline_chart.dart';
 
 /// A single market ticker row for the Home dashboard's Market Snapshot section.
 class MarketTickerTile extends StatelessWidget {
@@ -7,11 +8,16 @@ class MarketTickerTile extends StatelessWidget {
     required this.symbol,
     required this.changePercent,
     this.price,
+    this.priceHistory,
   });
 
   final String symbol;
   final double changePercent;
   final String? price;
+
+  /// Optional historical price series for the mini sparkline.
+  /// If null, a plausible series is generated from [changePercent].
+  final List<double>? priceHistory;
 
   static const Color _neonGreen = Color(0xFF00F5A0);
   static const Color _red = Color(0xFFFF4757);
@@ -26,6 +32,20 @@ class MarketTickerTile extends StatelessWidget {
   String get _changeText {
     final sign = changePercent >= 0 ? '+' : '';
     return '$sign${changePercent.toStringAsFixed(1)}%';
+  }
+
+  /// Generates a plausible mini price series (8 points) when no real history
+  /// is provided. The series trends in the direction of [changePercent].
+  List<double> _buildSparkData() {
+    if (priceHistory != null && priceHistory!.length >= 2) return priceHistory!;
+    // Build 8 pseudo-random points that drift in the direction of the change.
+    const base = 100.0;
+    final step = changePercent / 7; // distribute the total move over 7 steps
+    return List.generate(8, (i) {
+      // Small noise: ±0.4 around the trend line
+      final noise = (i % 3 == 0 ? 0.4 : i % 3 == 1 ? -0.3 : 0.15);
+      return base + step * i + noise;
+    });
   }
 
   @override
@@ -65,6 +85,16 @@ class MarketTickerTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
           ],
+          // Mini sparkline showing price trend
+          SparklineChart(
+            values: _buildSparkData(),
+            lineColor: _changeColor,
+            width: 80,
+            height: 32,
+            strokeWidth: 1.5,
+            showDot: false,
+          ),
+          const SizedBox(width: 10),
           // Change percent + icon
           Icon(_arrowIcon, color: _changeColor, size: 15),
           const SizedBox(width: 3),

@@ -7,7 +7,8 @@ import 'package:aslan_pixel/features/auth/data/datasources/firebase_auth_datasou
 import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
 import 'package:aslan_pixel/features/broker/view/broker_page.dart';
-import 'package:aslan_pixel/features/home/data/repositories/ranking_repository.dart';
+import 'package:aslan_pixel/features/home/bloc/ranking_bloc.dart';
+import 'package:aslan_pixel/features/home/data/datasources/firestore_ranking_datasource.dart';
 import 'package:aslan_pixel/features/home/view/leaderboard_page.dart';
 import 'package:aslan_pixel/features/home/view/main_tabs_page.dart';
 import 'package:aslan_pixel/features/inventory/view/inventory_page.dart';
@@ -115,9 +116,13 @@ class RouteGenerator {
           case SettingsPage.routeName:
             return gotoRightToLeftPage(const SettingsPage());
           case LeaderboardPage.routeName:
-            if (args is RankingRepository) {
+            if (args is String && args.isNotEmpty) {
               return gotoRightToLeftPage(
-                LeaderboardPage(rankingRepository: args),
+                BlocProvider<RankingBloc>(
+                  create: (_) => RankingBloc(FirestoreRankingDatasource())
+                    ..add(RankingWatchStarted(uid: args, period: 'weekly')),
+                  child: LeaderboardPage(uid: args),
+                ),
               );
             }
             return _errorRoute();

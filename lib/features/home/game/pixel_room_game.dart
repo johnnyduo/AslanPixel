@@ -8,8 +8,10 @@ import 'package:flutter/material.dart'
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/home/bloc/agent_status.dart';
+import 'package:aslan_pixel/features/home/data/models/room_item_model.dart';
 import 'package:aslan_pixel/features/home/game/npc_sprite_component.dart';
 import 'package:aslan_pixel/features/home/game/room_background_component.dart';
+import 'package:aslan_pixel/features/home/game/room_item_component.dart';
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -150,6 +152,9 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
 
   final Map<AgentType, PixelAgentComponent> _agentComponents = {};
 
+  /// Room item components currently rendered on the canvas.
+  final List<RoomItemComponent> _itemComponents = [];
+
   @override
   Color backgroundColor() => _colorNavy;
 
@@ -226,6 +231,32 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     _agentStatuses = Map.unmodifiable(statuses);
     for (final entry in statuses.entries) {
       _agentComponents[entry.key]?.agentStatus = entry.value;
+    }
+  }
+
+  /// Called from the Flutter widget tree when [RoomBloc] emits [RoomLoaded].
+  ///
+  /// Removes all previously rendered item components and re-adds every
+  /// unlocked item from [items] at its grid-slot position.
+  ///
+  /// Items are rendered in the floor area (below ≈ 42 % of canvas height),
+  /// which corresponds to slot-Y positions that map into the lower portion
+  /// of the 400 × 700 canvas (`slotY * 48` ≥ ~ 0.42 * 700 ≈ 294 px
+  /// for slotY ≥ 7).  Slots near the top half of the canvas are still valid
+  /// and render correctly; the constraint is only visual / design guidance.
+  void updateRoomItems(List<RoomItem> items) {
+    // Remove all existing item components.
+    for (final component in _itemComponents) {
+      component.removeFromParent();
+    }
+    _itemComponents.clear();
+
+    // Add a component for every unlocked item.
+    for (final item in items) {
+      if (!item.isUnlocked) continue;
+      final component = RoomItemComponent(item: item);
+      _itemComponents.add(component);
+      add(component);
     }
   }
 }

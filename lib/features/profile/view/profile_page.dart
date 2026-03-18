@@ -8,6 +8,7 @@ import 'package:aslan_pixel/features/profile/bloc/profile_bloc.dart';
 import 'package:aslan_pixel/features/profile/data/datasources/firestore_profile_datasource.dart';
 import 'package:aslan_pixel/features/profile/data/models/badge_model.dart';
 import 'package:aslan_pixel/features/profile/view/edit_profile_page.dart';
+import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
 
 // ── Colour constants ──────────────────────────────────────────────────────────
 const Color _navy = Color(0xFF0a1628);
@@ -199,20 +200,59 @@ class _ProfileContent extends StatelessWidget {
   Widget _buildStatRow() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatChip(label: 'Lv 1', icon: Icons.star_rounded, color: _gold),
-          const SizedBox(width: 12),
-          _StatChip(
-            label: '0 Quests',
-            icon: Icons.assignment_turned_in_outlined,
-            color: _neonGreen,
+          Row(
+            children: [
+              _StatChip(label: 'Lv 1', icon: Icons.star_rounded, color: _gold),
+              const SizedBox(width: 12),
+              _StatChip(
+                label: '0 Quests',
+                icon: Icons.assignment_turned_in_outlined,
+                color: _neonGreen,
+              ),
+              const SizedBox(width: 12),
+              _StatChip(
+                label: '0 Following',
+                icon: Icons.people_outline,
+                color: Color(0xFF00d9ff),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          _StatChip(
-            label: '0 Following',
-            icon: Icons.people_outline,
-            color: Color(0xFF00d9ff),
+          const SizedBox(height: 12),
+          // Coin balance with animated counter
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _gold.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_wallet_outlined,
+                    color: _gold, size: 18),
+                const SizedBox(width: 8),
+                const Text(
+                  'ยอดเหรียญ',
+                  style: TextStyle(
+                    color: _textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                // TODO: replace 0 with coins from EconomyBloc when wired
+                AnimatedCoinCounter(
+                  toAmount: 0,
+                  fromAmount: 0,
+                  fontSize: 15,
+                  showIcon: true,
+                ),
+              ],
+            ),
           ),
         ],
       ),
