@@ -328,11 +328,11 @@ class _SignInPageState extends State<SignInPage> {
       obscureText: obscureText,
       autofillHints: autofillHints,
       enabled: enabled,
-      style: TextStyle(color: colors.textPrimary, fontSize: 13.sp),
+      style: TextStyle(color: colors.textPrimary, fontSize: 15.sp),
       cursorColor: colors.primary,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: colors.textDisabled, fontSize: 12.sp),
+        hintStyle: TextStyle(color: colors.textDisabled, fontSize: 15.sp),
         filled: true,
         fillColor: colors.inputBackground,
         prefixIcon: Icon(icon, color: colors.textDisabled, size: 20),
@@ -381,8 +381,9 @@ class _SignInPageState extends State<SignInPage> {
           label,
           style: TextStyle(
             color: colors.textOnPrimary,
-            fontSize: 13.sp,
-            fontWeight: FontWeight.bold,
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
           ),
         ),
       ),
@@ -397,7 +398,7 @@ class _SignInPageState extends State<SignInPage> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'หรือ',
-            style: TextStyle(color: colors.textDisabled, fontSize: 11.sp),
+            style: TextStyle(color: colors.textDisabled, fontSize: 13.sp),
           ),
         ),
         Expanded(child: Divider(color: colors.divider, thickness: 1)),
@@ -430,7 +431,7 @@ class _SignInPageState extends State<SignInPage> {
             const SizedBox(width: 10),
             Text(
               label,
-              style: TextStyle(color: colors.textPrimary, fontSize: 12.sp),
+              style: TextStyle(color: colors.textPrimary, fontSize: 15.sp),
             ),
           ],
         ),
@@ -444,7 +445,7 @@ class _SignInPageState extends State<SignInPage> {
       children: [
         Text(
           'ยังไม่มีบัญชี? ',
-          style: TextStyle(color: colors.textSecondary, fontSize: 11.sp),
+          style: TextStyle(color: colors.textSecondary, fontSize: 14.sp),
         ),
         GestureDetector(
           onTap: () => Navigator.of(context).pushNamed(SignUpPage.routeName),
@@ -452,7 +453,7 @@ class _SignInPageState extends State<SignInPage> {
             'สมัครสมาชิก',
             style: TextStyle(
               color: colors.primary,
-              fontSize: 11.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
             ),
           ),

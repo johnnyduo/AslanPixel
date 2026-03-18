@@ -75,6 +75,13 @@ class RouteGenerator {
             return gotoRightToLeftPage(const QuestPage());
           case SettingsPage.routeName:
             return gotoRightToLeftPage(const SettingsPage());
+          // Routes below require arguments — return error route when args are
+          // missing so the app surfaces a meaningful fallback instead of an
+          // unhandled exception from a null-argument dereference.
+          case NotificationPage.routeName:
+          case LeaderboardPage.routeName:
+          case PixelArtEditorPage.routeName:
+            return _errorRoute();
           default:
             return _errorRoute();
         }

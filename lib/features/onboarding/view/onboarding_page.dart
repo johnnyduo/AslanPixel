@@ -212,11 +212,10 @@ class _AvatarStep extends StatelessWidget {
 
                 return GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
                   ),
                   itemCount: 8,
                   itemBuilder: (context, index) {
@@ -229,27 +228,55 @@ class _AvatarStep extends StatelessWidget {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color:
-                                isSelected ? colors.accent : Colors.transparent,
-                            width: 3,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          backgroundColor: isSelected
-                              ? colors.accent.withValues(alpha: 0.2)
+                          color: isSelected
+                              ? colors.primary.withValues(alpha: 0.15)
                               : colors.surface,
-                          child: Text(
-                            id,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? colors.accent
-                                  : colors.textSecondary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.border,
+                            width: isSelected ? 2.5 : 1,
                           ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color:
+                                        colors.primary.withValues(alpha: 0.25),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 52,
+                              height: 52,
+                              child: CustomPaint(
+                                painter: _PixelAvatarPainter(
+                                  avatarIndex: index,
+                                  primaryColor: isSelected
+                                      ? colors.primary
+                                      : colors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              id,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.textDisabled,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -262,6 +289,205 @@ class _AvatarStep extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Pixel Avatar Painter ──────────────────────────────────────────────────────
+//
+// 8 unique 9×12 pixel-art characters drawn with CustomPainter.
+// Each character has: head, eyes, body, arms, legs — distinct colors per avatar.
+
+class _PixelAvatarPainter extends CustomPainter {
+  const _PixelAvatarPainter({
+    required this.avatarIndex,
+    required this.primaryColor,
+  });
+
+  final int avatarIndex;
+  final Color primaryColor;
+
+  // 8 avatar designs: each is a list of (col, row, colorIndex) pixels
+  // colorIndex: 0=skin, 1=hair/hat, 2=body, 3=accent, 4=eyes/detail
+  static const List<List<List<int>>> _avatars = [
+    // A1 — Analyst: suit + glasses
+    [
+      [3,0,1],[4,0,1],[5,0,1],
+      [2,1,1],[3,1,0],[4,1,0],[5,1,0],[6,1,1],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,4],[5,3,4], // eyes
+      [3,4,4],[4,4,0],[5,4,4], // glasses bridge
+      [4,5,0], // mouth
+      [2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],
+      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
+      [1,6,3],[7,6,3], // arms
+      [1,7,3],[7,7,3],
+      [3,8,2],[5,8,2],
+      [3,9,3],[5,9,3],
+      [3,10,3],[5,10,3],
+      [2,11,1],[3,11,1],[5,11,1],[6,11,1],
+    ],
+    // A2 — Scout: hoodie + cap
+    [
+      [4,0,1],[5,0,1],
+      [3,1,1],[4,1,1],[5,1,1],[6,1,1],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,4],[5,3,4],
+      [4,5,0],
+      [2,6,3],[3,6,3],[4,6,3],[5,6,3],[6,6,3],
+      [2,7,3],[3,7,3],[4,7,3],[5,7,3],[6,7,3],
+      [1,6,2],[7,6,2],
+      [1,7,2],[7,7,2],
+      [3,8,3],[5,8,3],
+      [3,9,2],[5,9,2],
+      [3,10,2],[5,10,2],
+      [3,11,1],[4,11,1],[5,11,1],
+    ],
+    // A3 — Trader: tie + briefcase
+    [
+      [3,0,1],[4,0,1],[5,0,1],[6,0,1],
+      [2,1,0],[3,1,0],[4,1,0],[5,1,0],[6,1,0],[7,1,0],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,4],[5,3,4],
+      [4,4,3],[4,5,3],
+      [2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],
+      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
+      [1,6,0],[7,6,0],
+      [1,7,3],[7,7,3],[8,7,3],[1,8,3],[8,8,3],
+      [3,8,2],[5,8,2],
+      [3,9,2],[5,9,2],
+      [3,10,2],[5,10,2],
+      [3,11,0],[4,11,0],[5,11,0],
+    ],
+    // A4 — Risk: dark hood
+    [
+      [3,0,1],[4,0,1],[5,0,1],
+      [2,1,1],[3,1,0],[4,1,0],[5,1,0],[6,1,1],
+      [2,2,1],[3,2,0],[4,2,0],[5,2,0],[6,2,1],
+      [3,3,4],[5,3,4],
+      [4,5,4],
+      [2,6,1],[3,6,1],[4,6,2],[5,6,1],[6,6,1],
+      [2,7,1],[3,7,2],[4,7,2],[5,7,2],[6,7,1],
+      [1,6,1],[7,6,1],
+      [1,7,1],[7,7,1],
+      [3,8,2],[5,8,2],
+      [3,9,1],[5,9,1],
+      [3,10,1],[5,10,1],
+      [3,11,1],[4,11,1],[5,11,1],
+    ],
+    // A5 — Social: bright shirt + headband
+    [
+      [4,0,3],[5,0,3],
+      [3,1,0],[4,1,0],[5,1,0],[6,1,0],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,4],[5,3,4],
+      [3,4,0],[4,4,3],[5,4,0],
+      [4,5,0],
+      [2,6,3],[3,6,3],[4,6,3],[5,6,3],[6,6,3],
+      [2,7,3],[3,7,3],[4,7,3],[5,7,3],[6,7,3],
+      [1,6,0],[7,6,0],
+      [1,7,0],[7,7,0],
+      [3,8,3],[5,8,3],
+      [3,9,3],[5,9,3],
+      [3,10,3],[5,10,3],
+      [2,11,0],[3,11,0],[5,11,0],[6,11,0],
+    ],
+    // A6 — Pixel Wizard: robe + staff suggestion
+    [
+      [4,0,3],[5,0,3],
+      [3,1,1],[4,1,1],[5,1,1],[6,1,1],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,4],[5,3,4],
+      [4,5,0],
+      [2,6,1],[3,6,2],[4,6,2],[5,6,2],[6,6,1],
+      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
+      [1,6,3],[7,6,3],
+      [1,7,2],[7,7,2],[0,6,3],[8,6,3],
+      [3,8,2],[5,8,2],
+      [3,9,1],[5,9,1],
+      [3,10,1],[5,10,1],
+      [3,11,2],[4,11,2],[5,11,2],
+    ],
+    // A7 — Cyber: visor + tech suit
+    [
+      [3,0,2],[4,0,2],[5,0,2],[6,0,2],
+      [2,1,2],[3,1,0],[4,1,0],[5,1,0],[6,1,0],[7,1,2],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,3],[4,3,3],[5,3,3], // visor
+      [4,5,0],
+      [2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],
+      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
+      [1,6,3],[7,6,3],
+      [1,7,3],[7,7,3],
+      [3,8,3],[5,8,3],
+      [3,9,2],[5,9,2],
+      [3,10,2],[5,10,2],
+      [2,11,3],[3,11,3],[5,11,3],[6,11,3],
+    ],
+    // A8 — Gold VIP: crown + cape
+    [
+      [3,0,3],[4,0,3],[5,0,3],
+      [3,1,3],[4,1,0],[5,1,0],[5,1,3],
+      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
+      [3,3,4],[5,3,4],
+      [4,4,3],
+      [4,5,0],
+      [2,6,3],[3,6,2],[4,6,2],[5,6,2],[6,6,3],
+      [1,7,3],[2,7,3],[3,7,2],[4,7,2],[5,7,2],[6,7,3],[7,7,3],
+      [1,6,3],[7,6,3],
+      [3,8,2],[5,8,2],
+      [3,9,3],[5,9,3],
+      [3,10,3],[5,10,3],
+      [3,11,0],[4,11,0],[5,11,0],
+    ],
+  ];
+
+  // Per-avatar color palettes: [skin, hair, body, accent, detail]
+  static const List<List<Color>> _palettes = [
+    [Color(0xFFf5c5a3), Color(0xFF3d2b1f), Color(0xFF1a3a5c), Color(0xFF4fc3f7), Color(0xFF1a1a2e)], // A1
+    [Color(0xFFf5c5a3), Color(0xFF7b3f00), Color(0xFF2d6a4f), Color(0xFF52b788), Color(0xFF1a1a2e)], // A2
+    [Color(0xFFf5c5a3), Color(0xFF2c2c54), Color(0xFF1e3050), Color(0xFFf5c518), Color(0xFF1a1a2e)], // A3
+    [Color(0xFFd4a090), Color(0xFF1a1a2e), Color(0xFF2d2d44), Color(0xFF7b2fff), Color(0xFF00f5a0)], // A4
+    [Color(0xFFfde4c8), Color(0xFFc77dff), Color(0xFFe63946), Color(0xFFff9f1c), Color(0xFF1a1a2e)], // A5
+    [Color(0xFFf0d4b0), Color(0xFF4a0e8f), Color(0xFF6a0dad), Color(0xFF00f5a0), Color(0xFFffd700)], // A6
+    [Color(0xFFc8e6f0), Color(0xFF0a1628), Color(0xFF162040), Color(0xFF00f5a0), Color(0xFF4fc3f7)], // A7
+    [Color(0xFFfde4c8), Color(0xFFf5c518), Color(0xFF8b0000), Color(0xFFf5c518), Color(0xFF1a1a2e)], // A8
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (avatarIndex >= _avatars.length) return;
+
+    final pixels = _avatars[avatarIndex];
+    final palette = _palettes[avatarIndex];
+
+    // Grid is 9 cols × 12 rows
+    final cellW = size.width / 9;
+    final cellH = size.height / 12;
+
+    for (final pixel in pixels) {
+      final col = pixel[0];
+      final row = pixel[1];
+      final colorIdx = pixel[2];
+
+      // Use primaryColor tint for non-skin pixels when selected
+      final baseColor = colorIdx < palette.length ? palette[colorIdx] : palette[0];
+      final paint = Paint()
+        ..color = colorIdx == 0
+            ? baseColor // skin always original
+            : Color.lerp(baseColor, primaryColor, 0.15)!;
+
+      final rect = Rect.fromLTWH(
+        col * cellW,
+        row * cellH,
+        cellW - 0.5,
+        cellH - 0.5,
+      );
+      canvas.drawRect(rect, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PixelAvatarPainter old) =>
+      old.avatarIndex != avatarIndex || old.primaryColor != primaryColor;
 }
 
 // ── Step 2: Market Focus ─────────────────────────────────────────────────────

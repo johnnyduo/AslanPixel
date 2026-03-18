@@ -31,6 +31,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _selectedRiskStyle;
 
   bool _isSaving = false;
+  bool _prefilledFromBloc = false;
 
   static const List<String> _avatarIds = [
     'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8',
@@ -52,15 +53,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill from current ProfileBloc state if available.
-    final state = context.read<ProfileBloc>().state;
-    final user = state is ProfileLoaded ? state.user : null;
-    _displayNameController = TextEditingController(
-      text: user?.displayName ?? '',
-    );
-    _selectedAvatarId = user?.avatarId;
-    _selectedMarketFocus = user?.marketFocus;
-    _selectedRiskStyle = user?.riskStyle;
+    // Controller initialised with empty text; pre-fill happens in
+    // didChangeDependencies once the BLoC is safely accessible.
+    _displayNameController = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-fill from current ProfileBloc state exactly once.
+    // didChangeDependencies is the correct lifecycle hook for
+    // context.read() calls that need an inherited-widget dependency.
+    if (!_prefilledFromBloc) {
+      _prefilledFromBloc = true;
+      final state = context.read<ProfileBloc>().state;
+      final user = state is ProfileLoaded ? state.user : null;
+      _displayNameController.text = user?.displayName ?? '';
+      _selectedAvatarId = user?.avatarId;
+      _selectedMarketFocus = user?.marketFocus;
+      _selectedRiskStyle = user?.riskStyle;
+    }
   }
 
   @override

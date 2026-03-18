@@ -17,7 +17,7 @@ const _kTextDisabled = Color(0xFF3d5a78);
 const _kGold = Color(0xFFf5c518);
 const _kCyan = Color(0xFF4fc3f7);
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key, required this.uid});
 
   static const routeName = '/notifications';
@@ -25,12 +25,23 @@ class NotificationPage extends StatelessWidget {
   final String uid;
 
   @override
-  Widget build(BuildContext context) {
-    // NotificationBloc is provided by the parent DI layer.
-    // Trigger the watch as soon as the page is built.
-    context.read<NotificationBloc>().add(NotificationWatchStarted(uid));
-    return _NotificationView(uid: uid);
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Dispatch watch event once after frame is built.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<NotificationBloc>().add(NotificationWatchStarted(widget.uid));
+      }
+    });
   }
+
+  @override
+  Widget build(BuildContext context) => _NotificationView(uid: widget.uid);
 }
 
 class _NotificationView extends StatelessWidget {
