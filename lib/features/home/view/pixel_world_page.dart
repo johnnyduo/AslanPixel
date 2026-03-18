@@ -1,0 +1,398 @@
+import 'package:flame/game.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:aslan_pixel/core/enums/agent_type.dart';
+import 'package:aslan_pixel/features/home/bloc/pixel_world_bloc.dart';
+import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
+
+// ---------------------------------------------------------------------------
+// Color constants
+// ---------------------------------------------------------------------------
+
+const _colorNavy = Color(0xFF0A1628);
+const _colorNeonGreen = Color(0xFF00F5A0);
+const _colorGold = Color(0xFFF5C518);
+const _colorCyberPurple = Color(0xFF7B2FFF);
+const _colorCyan = Color(0xFF00D9FF);
+
+Color _agentChipColor(AgentType type) {
+  switch (type) {
+    case AgentType.analyst:
+      return _colorNeonGreen;
+    case AgentType.scout:
+      return _colorGold;
+    case AgentType.risk:
+      return _colorCyberPurple;
+    case AgentType.social:
+      return _colorCyan;
+  }
+}
+
+IconData _statusIcon(AgentStatus status) {
+  switch (status) {
+    case AgentStatus.idle:
+      return Icons.pause_circle_outline;
+    case AgentStatus.working:
+      return Icons.run_circle_outlined;
+    case AgentStatus.returning:
+      return Icons.arrow_circle_down_outlined;
+    case AgentStatus.celebrating:
+      return Icons.celebration;
+    case AgentStatus.fail:
+      return Icons.error_outline;
+  }
+}
+
+Color _statusIconColor(AgentStatus status) {
+  switch (status) {
+    case AgentStatus.idle:
+      return Colors.grey;
+    case AgentStatus.working:
+      return _colorNeonGreen;
+    case AgentStatus.returning:
+      return _colorGold;
+    case AgentStatus.celebrating:
+      return _colorGold;
+    case AgentStatus.fail:
+      return Colors.redAccent;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PixelWorldPage
+// ---------------------------------------------------------------------------
+
+/// The pixel world screen — wraps [PixelWorldBloc] and embeds the Flame game.
+class PixelWorldPage extends StatefulWidget {
+  const PixelWorldPage({super.key});
+
+  static const String routeName = '/pixel-world';
+
+  @override
+  State<PixelWorldPage> createState() => _PixelWorldPageState();
+}
+
+class _PixelWorldPageState extends State<PixelWorldPage> {
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<PixelWorldBloc>(
+      create: (_) => PixelWorldBloc()..add(const PixelWorldStarted()),
+      child: const _PixelWorldView(),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _PixelWorldView
+// ---------------------------------------------------------------------------
+
+class _PixelWorldView extends StatefulWidget {
+  const _PixelWorldView();
+
+  @override
+  State<_PixelWorldView> createState() => _PixelWorldViewState();
+}
+
+class _PixelWorldViewState extends State<_PixelWorldView> {
+  PixelRoomGame? _game;
+
+  void _handleAgentTap(BuildContext context, AgentType agentType) {
+    context.read<PixelWorldBloc>().add(PixelWorldAgentTapped(agentType));
+    _showAgentSheet(context, agentType);
+  }
+
+  void _showAgentSheet(BuildContext context, AgentType agentType) {
+    final bloc = context.read<PixelWorldBloc>();
+    final state = bloc.state;
+    final status = state is PixelWorldLoaded
+        ? state.agentStatuses[agentType] ?? AgentStatus.idle
+        : AgentStatus.idle;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF12213A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _AgentDetailSheet(
+        agentType: agentType,
+        agentStatus: status,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _colorNavy,
+      body: BlocConsumer<PixelWorldBloc, PixelWorldState>(
+        listener: (context, state) {
+          if (state is PixelWorldLoaded && _game == null) {
+            setState(() {
+              _game = PixelRoomGame(
+                agentStatuses: state.agentStatuses,
+                onAgentTapped: (type) => _handleAgentTap(context, type),
+              );
+            });
+          } else if (state is PixelWorldLoaded && _game != null) {
+            _game!.updateAgentStatuses(state.agentStatuses);
+          }
+        },
+        builder: (context, state) {
+          return Stack(
+            children: [
+              // ---- Game area ----
+              if (_game != null)
+                GameWidget<PixelRoomGame>(game: _game!)
+              else
+                const SizedBox.expand(),
+
+              // ---- Loading overlay ----
+              if (state is PixelWorldLoading)
+                const Center(
+                  child: CircularProgressIndicator(
+                    color: _colorNeonGreen,
+                    strokeWidth: 3,
+                  ),
+                ),
+
+              // ---- Error overlay ----
+              if (state is PixelWorldError)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(color: Colors.redAccent),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+
+              // ---- Agent status chips ----
+              if (state is PixelWorldLoaded)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: MediaQuery.of(context).padding.bottom + 12,
+                  child: _AgentStatusBar(
+                    agentStatuses: state.agentStatuses,
+                    onChipTap: (type) => _handleAgentTap(context, type),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _AgentStatusBar
+// ---------------------------------------------------------------------------
+
+class _AgentStatusBar extends StatelessWidget {
+  const _AgentStatusBar({
+    required this.agentStatuses,
+    required this.onChipTap,
+  });
+
+  final Map<AgentType, AgentStatus> agentStatuses;
+  final void Function(AgentType) onChipTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: AgentType.values
+            .map(
+              (type) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _AgentChip(
+                    agentType: type,
+                    agentStatus:
+                        agentStatuses[type] ?? AgentStatus.idle,
+                    onTap: () => onChipTap(type),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _AgentChip
+// ---------------------------------------------------------------------------
+
+class _AgentChip extends StatelessWidget {
+  const _AgentChip({
+    required this.agentType,
+    required this.agentStatus,
+    required this.onTap,
+  });
+
+  final AgentType agentType;
+  final AgentStatus agentStatus;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = _agentChipColor(agentType);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        decoration: BoxDecoration(
+          color: chipColor.withAlpha(30),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: chipColor.withAlpha(120), width: 1),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _statusIcon(agentStatus),
+              size: 18,
+              color: _statusIconColor(agentStatus),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              agentType.displayName,
+              style: TextStyle(
+                color: chipColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              agentStatus.label,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 9,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _AgentDetailSheet
+// ---------------------------------------------------------------------------
+
+class _AgentDetailSheet extends StatelessWidget {
+  const _AgentDetailSheet({
+    required this.agentType,
+    required this.agentStatus,
+  });
+
+  final AgentType agentType;
+  final AgentStatus agentStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = _agentChipColor(agentType);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Agent name
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: chipColor.withAlpha(60),
+                  child: Icon(
+                    _statusIcon(agentStatus),
+                    color: chipColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      agentType.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      agentStatus.label,
+                      style: TextStyle(
+                        color: _statusIconColor(agentStatus),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+
+            // Send on Mission button — Phase 3 stub
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: chipColor,
+                  foregroundColor: _colorNavy,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Phase 3'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Send on Mission',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
