@@ -14,7 +14,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:sizer/sizer.dart';
 
-// TODO: import 'firebase_options.dart'; — generate via `flutterfire configure`
+import 'firebase_options.dart';
 import 'core/app/app_bloc.dart';
 import 'core/config/app_colors.dart';
 import 'core/config/env_config.dart';
@@ -78,9 +78,9 @@ void _setupGlobalErrorHandlers() {
 Future<void> _initializeFirebaseCore() async {
   if (Firebase.apps.isNotEmpty) return;
   try {
-    // TODO: pass options: DefaultFirebaseOptions.currentPlatform
-    //       once firebase_options.dart is generated via `flutterfire configure`
-    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 10));
   } catch (e) {
     debugPrint('[Main] Firebase init error: $e');
   }
