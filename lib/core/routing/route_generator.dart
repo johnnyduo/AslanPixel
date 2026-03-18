@@ -4,6 +4,8 @@ import 'package:page_transition/page_transition.dart';
 import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
 import 'package:aslan_pixel/features/broker/view/broker_page.dart';
+import 'package:aslan_pixel/features/home/data/repositories/ranking_repository.dart';
+import 'package:aslan_pixel/features/home/view/leaderboard_page.dart';
 import 'package:aslan_pixel/features/home/view/main_tabs_page.dart';
 import 'package:aslan_pixel/features/inventory/view/inventory_page.dart';
 import 'package:aslan_pixel/features/onboarding/view/onboarding_page.dart';
@@ -82,6 +84,13 @@ class RouteGenerator {
             return gotoRightToLeftPage(const InventoryPage());
           case BrokerPage.routeName:
             return gotoRightToLeftPage(const BrokerPage());
+          case LeaderboardPage.routeName:
+            if (args is RankingRepository) {
+              return gotoRightToLeftPage(
+                LeaderboardPage(rankingRepository: args),
+              );
+            }
+            return _errorRoute();
           default:
             return _errorRoute();
         }
