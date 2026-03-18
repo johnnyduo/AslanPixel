@@ -1,0 +1,176 @@
+###############################
+# FLUTTER / DART / PUB
+###############################
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+**/doc/api/
+
+###############################
+# GLOBAL NODE MODULES IGNORE
+###############################
+node_modules/
+**/node_modules/
+*/node_modules/
+*/**/node_modules/
+
+###############################
+# BUILD OUTPUT (ALL PLATFORMS)
+###############################
+/build/
+/release/
+/debug/
+/profile/
+**/build/
+/coverage/
+*.map.json
+app.*.symbols
+app.*.map.json
+
+###############################
+# FLUTTER WEB
+###############################
+/web/build/
+/web/.dart_tool/
+/web/node_modules/
+/web/package-lock.json
+/web/.firebase/
+/web/.firebaserc
+/web/firebase-debug.log
+
+###############################
+# ANDROID
+###############################
+/android/.gradle
+/android/local.properties
+/android/captures/
+android/**/gradle-wrapper.jar
+
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+/android/gradlew
+/android/gradlew.bat
+
+###############################
+# iOS / XCODE
+###############################
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*.moved-aside
+**/ios/**/*sync/
+**/ios/**/xcuserdata
+**/ios/**/DerivedData/
+**/ios/**/.symlinks/
+**/ios/**/.vagrant/
+**/ios/.generated/
+
+# iOS Flutter artifacts
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/ephemeral
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/.last_build_id
+
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+###############################
+# IDE & TOOLING
+###############################
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Claude Code (local settings, not for version control)
+.claude/
+
+# macOS / System
+.DS_Store
+
+# Linux / Editor Swap
+*.swp
+*~
+
+###############################
+# ENV / SECRETS
+###############################
+.env
+.env.local
+.env.development
+.env.production
+.env.vercel
+!.env.example
+*.key
+*.pem
+*.p12
+*.jks
+*.pepk
+*.keystore
+keystore.properties
+key.properties
+android/app/keystore/
+!android/app/keystore/.gitkeep
+
+###############################
+# OPTIONAL — Firebase config
+###############################
+# Uncomment if you do NOT want to commit Firebase keys
+# /android/app/google-services.json
+# /ios/Runner/GoogleService-Info.plist
+# /lib/firebase_options.dart
+
+###############################
+# GENERATED CODE (Dart)
+###############################
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+###############################
+# SCREENSHOTS (captured by integration tests)
+###############################
+screenshots/
+manual/public/screenshots/
+
+###############################
+# FASTLANE
+###############################
+ios/fastlane/report.xml
+ios/fastlane/README.md
+ios/fastlane/test_output/
+ios/fastlane/.env.default
+Gemfile.lock
+
+###############################
+# DATABASE / TEMP
+###############################
+*.db
+*.sqlite
+*.sqlite3
+
+tmp/
+temp/
+*.tmp
+*.bak
+*.old
+*.backup
+._*
+firebase-debug.log
