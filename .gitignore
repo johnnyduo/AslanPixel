@@ -122,6 +122,7 @@ android/**/gradle-wrapper.jar
 .env.development
 .env.production
 .env.vercel
+.env.staging
 !.env.example
 *.key
 *.pem
@@ -133,6 +134,48 @@ keystore.properties
 key.properties
 android/app/keystore/
 !android/app/keystore/.gitkeep
+
+###############################
+# FIREBASE / GOOGLE CREDENTIALS
+###############################
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+google-credentials.json
+service-account*.json
+*-service-account.json
+gcloud-key*.json
+
+###############################
+# BROKER / FINANCIAL SECRETS
+###############################
+# Broker API keys and tokens must NEVER be committed
+broker_credentials*
+*broker*.key
+*broker*.pem
+*api_key*
+*secret_key*
+encryption_key*
+
+###############################
+# SECURITY — GENERAL
+###############################
+# Private keys of any kind
+*.rsa
+*.dsa
+*.ed25519
+*.ecdsa
+# Certificate files
+*.crt
+*.csr
+*.cert
+# SSH
+id_rsa
+id_dsa
+id_ed25519
+id_ecdsa
+*.pub
+~/.ssh/
 
 ###############################
 # OPTIONAL — Firebase config
