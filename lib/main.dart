@@ -40,12 +40,13 @@ Future<void> main() async {
   // Use bundled fonts — prevent runtime HTTP fetch (SSL failures on some devices)
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  _setupGlobalErrorHandlers();
-
   // Load environment variables
   await EnvConfig.load(env: kDebugMode ? 'development' : 'production');
 
   await _initializeFirebaseCore();
+
+  // Set up error handlers AFTER Firebase is initialized (Crashlytics needs it)
+  _setupGlobalErrorHandlers();
 
   runApp(const MyApp());
   unawaited(setConfig());

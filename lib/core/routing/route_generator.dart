@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:page_transition/page_transition.dart';
 
+import 'package:aslan_pixel/features/auth/bloc/auth_bloc.dart';
+import 'package:aslan_pixel/features/auth/data/datasources/firebase_auth_datasource.dart';
 import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
 import 'package:aslan_pixel/features/broker/view/broker_page.dart';
@@ -50,9 +52,9 @@ class RouteGenerator {
       if (args == null) {
         switch (settings.name) {
           case SignInPage.routeName:
-            return gotoPage(const SignInPage());
+            return gotoPage(_withAuthBloc(const SignInPage()));
           case SignUpPage.routeName:
-            return gotoRightToLeftPage(const SignUpPage());
+            return gotoRightToLeftPage(_withAuthBloc(const SignUpPage()));
           case MainTabsPage.routeName:
             return gotoPage(const MainTabsPage());
           case OnboardingPage.routeName:
@@ -79,9 +81,9 @@ class RouteGenerator {
       } else {
         switch (settings.name) {
           case SignInPage.routeName:
-            return gotoPage(const SignInPage());
+            return gotoPage(_withAuthBloc(const SignInPage()));
           case SignUpPage.routeName:
-            return gotoRightToLeftPage(const SignUpPage());
+            return gotoRightToLeftPage(_withAuthBloc(const SignUpPage()));
           case MainTabsPage.routeName:
             if (args is int) {
               return gotoPage(MainTabsPage(tabIndex: args));
@@ -141,6 +143,14 @@ class RouteGenerator {
       );
       return _errorRoute();
     }
+  }
+
+  // Wrap auth pages with AuthBloc
+  static Widget _withAuthBloc(Widget child) {
+    return BlocProvider<AuthBloc>(
+      create: (_) => AuthBloc(repository: FirebaseAuthDatasource()),
+      child: child,
+    );
   }
 
   // Error/fallback route
