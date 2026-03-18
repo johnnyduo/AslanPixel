@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:aslan_pixel/features/home/view/home_page.dart';
 
-/// Placeholder Main Tabs page — Phase 1 stub.
-/// Full implementation in Phase 2 (home + pixel world + portfolio + social + profile).
+/// Main Tabs page — Phase 2D: Home dashboard is live; other tabs remain stubs.
 class MainTabsPage extends StatefulWidget {
   const MainTabsPage({super.key, this.tabIndex = 0});
 
@@ -33,7 +33,7 @@ class _MainTabsPageState extends State<MainTabsPage> {
   ];
 
   static const _pages = [
-    _PlaceholderTab(label: 'Home'),
+    HomePage(),
     _PlaceholderTab(label: 'Pixel World'),
     _PlaceholderTab(label: 'Portfolio'),
     _PlaceholderTab(label: 'Social'),
