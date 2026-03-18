@@ -1,9 +1,6 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  strong-mode: true
-  language:
-    enableSuperMixins: true
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
