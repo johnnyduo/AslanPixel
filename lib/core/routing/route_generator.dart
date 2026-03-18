@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 
-import '../../features/auth/view/sign_in_page.dart';
-import '../../features/auth/view/sign_up_page.dart';
-import '../../features/home/view/main_tabs_page.dart';
-import '../../features/onboarding/view/onboarding_page.dart';
+import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
+import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
+import 'package:aslan_pixel/features/broker/view/broker_page.dart';
+import 'package:aslan_pixel/features/home/view/main_tabs_page.dart';
+import 'package:aslan_pixel/features/inventory/view/inventory_page.dart';
+import 'package:aslan_pixel/features/onboarding/view/onboarding_page.dart';
+import 'package:aslan_pixel/features/pixel_art/view/pixel_art_gallery_page.dart';
+import 'package:aslan_pixel/features/profile/view/edit_profile_page.dart';
+import 'package:aslan_pixel/features/profile/view/profile_page.dart';
 import '../utils/crash_reporter.dart';
-
-// TODO: add ProfilePage when implemented
-// import '../../features/profile/view/profile_page.dart';
 
 class RouteGenerator {
   static PageTransition gotoPage(
@@ -44,7 +46,16 @@ class RouteGenerator {
             return gotoPage(const MainTabsPage());
           case OnboardingPage.routeName:
             return gotoPage(const OnboardingPage());
-          // TODO: ProfilePage.routeName → '/profile'
+          case ProfilePage.routeName:
+            return gotoRightToLeftPage(const ProfilePage());
+          case EditProfilePage.routeName:
+            return gotoRightToLeftPage(const EditProfilePage());
+          case PixelArtGalleryPage.routeName:
+            return gotoRightToLeftPage(const PixelArtGalleryPage());
+          case InventoryPage.routeName:
+            return gotoRightToLeftPage(const InventoryPage());
+          case BrokerPage.routeName:
+            return gotoRightToLeftPage(const BrokerPage());
           default:
             return _errorRoute();
         }
@@ -61,12 +72,26 @@ class RouteGenerator {
             return gotoPage(const MainTabsPage());
           case OnboardingPage.routeName:
             return gotoPage(const OnboardingPage());
+          case ProfilePage.routeName:
+            return gotoRightToLeftPage(const ProfilePage());
+          case EditProfilePage.routeName:
+            return gotoRightToLeftPage(const EditProfilePage());
+          case PixelArtGalleryPage.routeName:
+            return gotoRightToLeftPage(const PixelArtGalleryPage());
+          case InventoryPage.routeName:
+            return gotoRightToLeftPage(const InventoryPage());
+          case BrokerPage.routeName:
+            return gotoRightToLeftPage(const BrokerPage());
           default:
             return _errorRoute();
         }
       }
     } catch (e, stack) {
-      CrashReporter.recordError(e, stack: stack, reason: 'Route: ${settings.name}');
+      CrashReporter.recordError(
+        e,
+        stack: stack,
+        reason: 'Route: ${settings.name}',
+      );
       return _errorRoute();
     }
   }

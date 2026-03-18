@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:aslan_pixel/features/home/view/home_page.dart';
+import 'package:aslan_pixel/features/feed/view/feed_page.dart';
+import 'package:aslan_pixel/features/finance/view/finance_page.dart';
+import 'package:aslan_pixel/features/profile/view/profile_page.dart';
 
-/// Main Tabs page — Phase 2D: Home dashboard is live; other tabs remain stubs.
+/// Main Tabs page — Phase 5C: Profile tab is live.
 class MainTabsPage extends StatefulWidget {
   const MainTabsPage({super.key, this.tabIndex = 0});
 
@@ -32,12 +35,12 @@ class _MainTabsPageState extends State<MainTabsPage> {
     Icons.person_outline,
   ];
 
-  static const _pages = [
-    HomePage(),
-    _PlaceholderTab(label: 'Pixel World'),
-    _PlaceholderTab(label: 'Portfolio'),
-    _PlaceholderTab(label: 'Social'),
-    _PlaceholderTab(label: 'Profile'),
+  static final _pages = [
+    const HomePage(),
+    const _PlaceholderTab(label: 'Pixel World'),
+    const FinancePage(),
+    const FeedPage(),
+    const ProfilePage(),
   ];
 
   @override
