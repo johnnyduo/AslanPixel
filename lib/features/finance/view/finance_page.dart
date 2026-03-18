@@ -1,9 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aslan_pixel/data/services/cached_ai_service.dart';
+import 'package:aslan_pixel/data/services/gemini_ai_service.dart';
+import 'package:aslan_pixel/features/finance/bloc/ai_insight_bloc.dart';
+import 'package:aslan_pixel/features/finance/bloc/ai_insight_event.dart';
+import 'package:aslan_pixel/features/finance/bloc/ai_insight_state.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_bloc.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_event.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_state.dart';
+import 'package:aslan_pixel/features/finance/data/datasources/firestore_ai_insight_datasource.dart';
 import 'package:aslan_pixel/features/finance/data/datasources/firestore_prediction_datasource.dart';
+import 'package:aslan_pixel/features/finance/view/market_insight_card.dart';
 import 'package:aslan_pixel/features/finance/view/prediction_event_card.dart';
 import 'package:aslan_pixel/features/home/view/market_ticker_tile.dart';
 
@@ -14,7 +22,6 @@ import 'package:aslan_pixel/features/home/view/market_ticker_tile.dart';
 const Color _navy = Color(0xFF0A1628);
 const Color _surface = Color(0xFF0F2040);
 const Color _neonGreen = Color(0xFF00F5A0);
-const Color _cyberPurple = Color(0xFF7B2FFF);
 const Color _textWhite = Color(0xFFE8F4F8);
 
 // ---------------------------------------------------------------------------
@@ -160,66 +167,65 @@ class _MarketTab extends StatelessWidget {
     _MockTicker(symbol: 'SET', price: '1,412', change: -0.31),
   ];
 
+  static const String _insightContext = 'BTC ETH SET';
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Market tickers
-        ...List.generate(_mockTickers.length, (i) {
-          final t = _mockTickers[i];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: MarketTickerTile(
-              symbol: t.symbol,
-              price: t.price,
-              changePercent: t.change,
-            ),
-          );
-        }),
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-        const SizedBox(height: 20),
-
-        // "Market Insights coming soon" banner
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-          decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _neonGreen, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.insights_outlined, color: _neonGreen, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Market Insights',
-                      style: TextStyle(
-                        color: _textWhite,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Coming soon',
-                      style: TextStyle(
-                        color: _cyberPurple,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return BlocProvider<AiInsightBloc>(
+      create: (_) => AiInsightBloc(
+        aiService: CachedAiService(GeminiAiService()),
+        repository: FirestoreAiInsightDatasource(),
+      )..add(
+          AiInsightRequested(
+            uid: uid,
+            type: 'market_summary',
+            context: _insightContext,
           ),
         ),
-      ],
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // AI Market Insight card
+          BlocBuilder<AiInsightBloc, AiInsightState>(
+            builder: (ctx, state) {
+              final isLoading = state is AiInsightLoading ||
+                  state is AiInsightInitial;
+              final insight = state is AiInsightLoaded && state.insights.isNotEmpty
+                  ? state.insights.first
+                  : null;
+
+              return MarketInsightCard(
+                insight: insight,
+                isLoading: isLoading,
+                onRefresh: () => ctx.read<AiInsightBloc>().add(
+                      AiInsightRequested(
+                        uid: uid,
+                        type: 'market_summary',
+                        context: _insightContext,
+                      ),
+                    ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Market tickers
+          ...List.generate(_mockTickers.length, (i) {
+            final t = _mockTickers[i];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: MarketTickerTile(
+                symbol: t.symbol,
+                price: t.price,
+                changePercent: t.change,
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
