@@ -99,8 +99,13 @@ android/**/gradle-wrapper.jar
 .vscode/
 *.code-workspace
 
-# Claude Code (local settings, not for version control)
-.claude/
+# Claude Code — local settings excluded, but skills ARE tracked in git
+.claude/settings.local.json
+.claude/todos.json
+# Allow skills and project-specific Claude config
+!.claude/
+!.claude/skills/
+!.claude/skills/**
 
 # macOS / System
 .DS_Store
