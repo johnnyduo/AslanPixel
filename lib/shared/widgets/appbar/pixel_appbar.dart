@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:aslan_pixel/core/config/app_colors.dart';
+import 'package:aslan_pixel/shared/widgets/notification_bell.dart';
 import 'package:aslan_pixel/shared/widgets/style.dart';
 
 /// Standard AppBar for Aslan Pixel screens.
@@ -15,6 +16,9 @@ class PixelAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final bool centerTitle;
 
+  /// When provided, a [NotificationBell] is appended to [actions].
+  final String? uid;
+
   const PixelAppBar({
     super.key,
     required this.title,
@@ -22,6 +26,7 @@ class PixelAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = true,
     this.onBack,
     this.centerTitle = false,
+    this.uid,
   }) : assert(actions.length <= 3, 'Max 3 action icons allowed');
 
   @override
@@ -80,14 +85,15 @@ class PixelAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
-                children: actions
-                    .map(
-                      (w) => Padding(
-                        padding: const EdgeInsets.only(right: 4.0),
-                        child: w,
-                      ),
-                    )
-                    .toList(),
+                children: [
+                  ...actions.map(
+                    (w) => Padding(
+                      padding: const EdgeInsets.only(right: 4.0),
+                      child: w,
+                    ),
+                  ),
+                  if (uid != null) NotificationBell(uid: uid!),
+                ],
               ),
               spacerW(w: 4),
             ],
@@ -107,6 +113,7 @@ class PixelAppBarWithBorder extends PixelAppBar {
     super.showBackButton,
     super.onBack,
     super.centerTitle,
+    super.uid,
   });
 
   @override

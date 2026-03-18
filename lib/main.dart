@@ -21,6 +21,7 @@ import 'core/config/env_config.dart';
 import 'core/config/theme_provider.dart';
 import 'core/routing/route.dart';
 import 'core/routing/route_generator.dart';
+import 'core/utils/fcm_service.dart';
 import 'core/utils/globals.dart';
 
 bool _isLikelyNetworkError(Object error) {
@@ -106,6 +107,7 @@ Future<void> setConfig() async {
 
   // Phase 3: Non-blocking post-init (fire-and-forget)
   unawaited(appBloc.preloadCaches());
+  unawaited(FcmService().initialize());
 
   if (!kIsWeb) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
