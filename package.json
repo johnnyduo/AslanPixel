@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@google/genai": "^1.46.0"
+  }
+}

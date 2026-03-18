@@ -8,6 +8,8 @@ import 'package:flutter/material.dart'
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/home/bloc/agent_status.dart';
+import 'package:aslan_pixel/features/home/game/npc_sprite_component.dart';
+import 'package:aslan_pixel/features/home/game/room_background_component.dart';
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -158,16 +160,56 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     // Fixed canvas size — camera will letterbox/scale to fit the widget.
     camera.viewfinder.visibleGameSize = Vector2(_canvasWidth, _canvasHeight);
 
-    // Background fill (redundant given backgroundColor() but explicit for
-    // future sprite replacement).
+    // ------------------------------------------------------------------
+    // Layer 1: Room background (replaces plain RectangleComponent fill)
+    // ------------------------------------------------------------------
     await add(
-      RectangleComponent(
-        size: Vector2(_canvasWidth, _canvasHeight),
-        paint: Paint()..color = _colorNavy,
+      RoomBackgroundComponent(
+        roomSize: Vector2(_canvasWidth, _canvasHeight),
       ),
     );
 
-    // Add one PixelAgentComponent per agent type.
+    // ------------------------------------------------------------------
+    // Layer 2: NPC sprites
+    //
+    // Three NPCs at fixed positions in the room canvas:
+    //   - Banker  → top-left area  (near the desk furniture zone)
+    //   - Trader  → centre of room
+    //   - Champion→ bottom-right area
+    //
+    // Sprite identifiers match assets/sprites/npcs/npc_{name}_{dir}.png
+    // ------------------------------------------------------------------
+    final npcConfigs = [
+      _NpcConfig(
+        name: 'npc_banker',
+        position: Vector2(_canvasWidth * 0.22, _canvasHeight * 0.35),
+        direction: NpcDirection.south,
+      ),
+      _NpcConfig(
+        name: 'npc_trader',
+        position: Vector2(_canvasWidth * 0.50, _canvasHeight * 0.52),
+        direction: NpcDirection.south,
+      ),
+      _NpcConfig(
+        name: 'npc_champion',
+        position: Vector2(_canvasWidth * 0.78, _canvasHeight * 0.68),
+        direction: NpcDirection.south,
+      ),
+    ];
+
+    for (final cfg in npcConfigs) {
+      await add(
+        NpcSpriteComponent(
+          npcName: cfg.name,
+          position: cfg.position,
+          initialDirection: cfg.direction,
+        ),
+      );
+    }
+
+    // ------------------------------------------------------------------
+    // Layer 3: Agent circles (existing PixelAgentComponent instances)
+    // ------------------------------------------------------------------
     for (final type in AgentType.values) {
       final status = _agentStatuses[type] ?? AgentStatus.idle;
       final position = _agentPositions[type]!;
@@ -192,4 +234,20 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
       _agentComponents[entry.key]?.agentStatus = entry.value;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Private data class
+// ---------------------------------------------------------------------------
+
+class _NpcConfig {
+  const _NpcConfig({
+    required this.name,
+    required this.position,
+    required this.direction,
+  });
+
+  final String name;
+  final Vector2 position;
+  final NpcDirection direction;
 }
