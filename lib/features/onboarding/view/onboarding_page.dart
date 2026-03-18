@@ -2,8 +2,92 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/config/app_colors.dart';
-import '../bloc/onboarding_bloc.dart';
+import 'package:aslan_pixel/core/config/app_colors.dart';
+import 'package:aslan_pixel/features/onboarding/bloc/onboarding_bloc.dart';
+import 'package:aslan_pixel/features/onboarding/view/pixel_avatar_painter.dart';
+
+// ---------------------------------------------------------------------------
+// Avatar metadata — names and sprite asset paths
+// ---------------------------------------------------------------------------
+
+class _AvatarMeta {
+  const _AvatarMeta({
+    required this.id,
+    required this.name,
+    required this.role,
+    required this.spriteAsset,
+    required this.painterIndex,
+  });
+
+  final String id;
+  final String name;
+  final String role;
+  final String spriteAsset;
+  final int painterIndex;
+}
+
+const List<_AvatarMeta> _avatars = [
+  _AvatarMeta(
+    id: 'A1',
+    name: 'Nexus',
+    role: 'Analyst',
+    spriteAsset: 'assets/sprites/avatars/avatar_a1_nexus_front.png',
+    painterIndex: 0,
+  ),
+  _AvatarMeta(
+    id: 'A2',
+    name: 'Valen',
+    role: 'Scout',
+    spriteAsset: 'assets/sprites/avatars/avatar_a2_valen_front.png',
+    painterIndex: 1,
+  ),
+  _AvatarMeta(
+    id: 'A3',
+    name: 'Lyra',
+    role: 'Trader',
+    spriteAsset: 'assets/sprites/avatars/avatar_a3_lyra_front.png',
+    painterIndex: 2,
+  ),
+  _AvatarMeta(
+    id: 'A4',
+    name: 'Sora',
+    role: 'Hacker',
+    spriteAsset: 'assets/sprites/avatars/avatar_a4_sora_front.png',
+    painterIndex: 3,
+  ),
+  _AvatarMeta(
+    id: 'A5',
+    name: 'Riven',
+    role: 'Influencer',
+    spriteAsset: 'assets/sprites/avatars/avatar_a5_riven_front.png',
+    painterIndex: 4,
+  ),
+  _AvatarMeta(
+    id: 'A6',
+    name: 'Kai',
+    role: 'Wizard',
+    spriteAsset: 'assets/sprites/avatars/avatar_a6_kai_front.png',
+    painterIndex: 5,
+  ),
+  _AvatarMeta(
+    id: 'A7',
+    name: 'Specter',
+    role: 'Agent',
+    spriteAsset: 'assets/sprites/avatars/avatar_a7_specter_front.png',
+    painterIndex: 6,
+  ),
+  _AvatarMeta(
+    id: 'A8',
+    name: 'Drako',
+    role: 'Tycoon',
+    spriteAsset: 'assets/sprites/avatars/avatar_a8_drako_front.png',
+    painterIndex: 7,
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -27,13 +111,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void _next(BuildContext context) {
     if (_currentPage < 2) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOutCubic,
       );
     } else {
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       context.read<OnboardingBloc>().add(OnboardingCompleted(uid));
     }
+  }
+
+  void _skip(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    context.read<OnboardingBloc>().add(OnboardingCompleted(uid));
   }
 
   @override
@@ -45,10 +134,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
         currentPage: _currentPage,
         onPageChanged: (page) => setState(() => _currentPage = page),
         onNext: _next,
+        onSkip: _skip,
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// View shell
+// ---------------------------------------------------------------------------
 
 class _OnboardingView extends StatelessWidget {
   const _OnboardingView({
@@ -56,12 +150,14 @@ class _OnboardingView extends StatelessWidget {
     required this.currentPage,
     required this.onPageChanged,
     required this.onNext,
+    required this.onSkip,
   });
 
   final PageController pageController;
   final int currentPage;
   final ValueChanged<int> onPageChanged;
   final void Function(BuildContext context) onNext;
+  final void Function(BuildContext context) onSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -78,38 +174,72 @@ class _OnboardingView extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 24),
-              _ProgressDots(currentPage: currentPage, colors: colors),
-              const SizedBox(height: 24),
+              // ── Top bar: dots + skip ──────────────────────────────────
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    _ProgressDots(currentPage: currentPage, colors: colors),
+                    const Spacer(),
+                    if (currentPage < 2)
+                      GestureDetector(
+                        onTap: () => onSkip(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          child: Text(
+                            'ข้าม',
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // ── Pages ─────────────────────────────────────────────────
               Expanded(
                 child: PageView(
                   controller: pageController,
                   onPageChanged: onPageChanged,
                   physics: const NeverScrollableScrollPhysics(),
                   children: const [
+                    _IntroStep(),
                     _AvatarStep(),
-                    _MarketFocusStep(),
-                    _RiskStyleStep(),
+                    _UsernameStep(),
                   ],
                 ),
               ),
+
+              // ── Next / Start button ───────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
                 child: BlocBuilder<OnboardingBloc, OnboardingState>(
                   builder: (context, state) {
                     final isSubmitting = state is OnboardingSubmitting;
+                    final label = currentPage == 0
+                        ? 'เริ่มต้น'
+                        : currentPage == 1
+                            ? 'เลือกแล้ว!'
+                            : 'เข้าสู่โลก';
                     return SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: isSubmitting ? null : () => onNext(context),
+                        onPressed:
+                            isSubmitting ? null : () => onNext(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.primary,
                           foregroundColor: colors.textOnPrimary,
                           disabledBackgroundColor:
                               colors.primary.withValues(alpha: 0.4),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 0,
                         ),
@@ -123,10 +253,10 @@ class _OnboardingView extends StatelessWidget {
                                 ),
                               )
                             : Text(
-                                currentPage < 2 ? 'Next' : 'Start',
+                                label,
                                 style: const TextStyle(
                                   fontSize: 17,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -143,7 +273,9 @@ class _OnboardingView extends StatelessWidget {
   }
 }
 
-// ── Progress Dots ────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Progress Dots
+// ---------------------------------------------------------------------------
 
 class _ProgressDots extends StatelessWidget {
   const _ProgressDots({
@@ -157,18 +289,27 @@ class _ProgressDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: List.generate(3, (index) {
         final isActive = index == currentPage;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 280),
           curve: Curves.easeInOut,
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: isActive ? 24 : 8,
+          width: isActive ? 28 : 8,
           height: 8,
           decoration: BoxDecoration(
             color: isActive ? colors.primary : colors.border,
             borderRadius: BorderRadius.circular(4),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.45),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
         );
       }),
@@ -176,7 +317,218 @@ class _ProgressDots extends StatelessWidget {
   }
 }
 
-// ── Step 1: Avatar Picker ────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Step 1: Intro
+// ---------------------------------------------------------------------------
+
+class _IntroStep extends StatefulWidget {
+  const _IntroStep();
+
+  @override
+  State<_IntroStep> createState() => _IntroStepState();
+}
+
+class _IntroStepState extends State<_IntroStep>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _glow;
+  late final Animation<double> _fadeIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+
+    _glow = Tween<double>(begin: 0.35, end: 1.0).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+
+    _fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _pulse,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: [
+          const Spacer(flex: 2),
+
+          // ── Animated logo ──
+          AnimatedBuilder(
+            animation: _pulse,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _fadeIn.value,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colors.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withValues(alpha: _glow.value * 0.55),
+                        blurRadius: 40 + _glow.value * 30,
+                        spreadRadius: 4 + _glow.value * 8,
+                      ),
+                      BoxShadow(
+                        color: colors.cyber.withValues(alpha: _glow.value * 0.25),
+                        blurRadius: 60,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: child,
+                ),
+              );
+            },
+            child: Center(
+              child: ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    const Color(0xFF00f5a0),
+                    const Color(0xFF7b2fff),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: const Text(
+                  'AP',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 52,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 48),
+
+          // ── App name ──
+          Text(
+            'Aslan Pixel',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Thai tagline ──
+          Text(
+            'เครือข่ายการเงินสังคม\nและโลกพิกเซลที่รอคุณ',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 17,
+              height: 1.55,
+              letterSpacing: 0.2,
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          // ── Feature chips ──
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: [
+              _FeatureChip(
+                icon: Icons.auto_graph_rounded,
+                label: 'วิเคราะห์พอร์ต',
+                colors: colors,
+              ),
+              _FeatureChip(
+                icon: Icons.gamepad_rounded,
+                label: 'โลกพิกเซล',
+                colors: colors,
+              ),
+              _FeatureChip(
+                icon: Icons.people_alt_rounded,
+                label: 'Social Feed',
+                colors: colors,
+              ),
+              _FeatureChip(
+                icon: Icons.smart_toy_rounded,
+                label: 'AI Agents',
+                colors: colors,
+              ),
+            ],
+          ),
+
+          const Spacer(flex: 3),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureChip extends StatelessWidget {
+  const _FeatureChip({
+    required this.icon,
+    required this.label,
+    required this.colors,
+  });
+
+  final IconData icon;
+  final String label;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colors.primary, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: Avatar Picker
+// ---------------------------------------------------------------------------
 
 class _AvatarStep extends StatelessWidget {
   const _AvatarStep();
@@ -186,99 +538,51 @@ class _AvatarStep extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose Your Avatar',
+            'เลือกตัวละครของคุณ',
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: 26,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'This is how you appear in the Pixel World.',
-            style: TextStyle(color: colors.textSecondary, fontSize: 15),
+            'ตัวละครนี้จะปรากฏในโลกพิกเซลของคุณ',
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
           Expanded(
             child: BlocBuilder<OnboardingBloc, OnboardingState>(
               builder: (context, state) {
-                final selected =
+                final selectedId =
                     state is OnboardingInProgress ? state.avatarId : null;
 
                 return GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.78, // taller cards (80×100 ratio)
                   ),
-                  itemCount: 8,
+                  itemCount: _avatars.length,
                   itemBuilder: (context, index) {
-                    final id = 'A${index + 1}';
-                    final isSelected = selected == id;
-                    return GestureDetector(
+                    final meta = _avatars[index];
+                    final isSelected = selectedId == meta.id;
+
+                    return _AvatarCard(
+                      meta: meta,
+                      isSelected: isSelected,
+                      colors: colors,
                       onTap: () => context
                           .read<OnboardingBloc>()
-                          .add(OnboardingAvatarSelected(id)),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colors.primary.withValues(alpha: 0.15)
-                              : colors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected
-                                ? colors.primary
-                                : colors.border,
-                            width: isSelected ? 2.5 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color:
-                                        colors.primary.withValues(alpha: 0.25),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  )
-                                ]
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 52,
-                              height: 52,
-                              child: CustomPaint(
-                                painter: _PixelAvatarPainter(
-                                  avatarIndex: index,
-                                  primaryColor: isSelected
-                                      ? colors.primary
-                                      : colors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              id,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? colors.primary
-                                    : colors.textDisabled,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                          .add(OnboardingAvatarSelected(meta.id)),
                     );
                   },
                 );
@@ -291,384 +595,15 @@ class _AvatarStep extends StatelessWidget {
   }
 }
 
-// ── Pixel Avatar Painter ──────────────────────────────────────────────────────
-//
-// 8 unique 9×12 pixel-art characters drawn with CustomPainter.
-// Each character has: head, eyes, body, arms, legs — distinct colors per avatar.
-
-class _PixelAvatarPainter extends CustomPainter {
-  const _PixelAvatarPainter({
-    required this.avatarIndex,
-    required this.primaryColor,
-  });
-
-  final int avatarIndex;
-  final Color primaryColor;
-
-  // 8 avatar designs: each is a list of (col, row, colorIndex) pixels
-  // colorIndex: 0=skin, 1=hair/hat, 2=body, 3=accent, 4=eyes/detail
-  static const List<List<List<int>>> _avatars = [
-    // A1 — Analyst: suit + glasses
-    [
-      [3,0,1],[4,0,1],[5,0,1],
-      [2,1,1],[3,1,0],[4,1,0],[5,1,0],[6,1,1],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,4],[5,3,4], // eyes
-      [3,4,4],[4,4,0],[5,4,4], // glasses bridge
-      [4,5,0], // mouth
-      [2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],
-      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
-      [1,6,3],[7,6,3], // arms
-      [1,7,3],[7,7,3],
-      [3,8,2],[5,8,2],
-      [3,9,3],[5,9,3],
-      [3,10,3],[5,10,3],
-      [2,11,1],[3,11,1],[5,11,1],[6,11,1],
-    ],
-    // A2 — Scout: hoodie + cap
-    [
-      [4,0,1],[5,0,1],
-      [3,1,1],[4,1,1],[5,1,1],[6,1,1],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,4],[5,3,4],
-      [4,5,0],
-      [2,6,3],[3,6,3],[4,6,3],[5,6,3],[6,6,3],
-      [2,7,3],[3,7,3],[4,7,3],[5,7,3],[6,7,3],
-      [1,6,2],[7,6,2],
-      [1,7,2],[7,7,2],
-      [3,8,3],[5,8,3],
-      [3,9,2],[5,9,2],
-      [3,10,2],[5,10,2],
-      [3,11,1],[4,11,1],[5,11,1],
-    ],
-    // A3 — Trader: tie + briefcase
-    [
-      [3,0,1],[4,0,1],[5,0,1],[6,0,1],
-      [2,1,0],[3,1,0],[4,1,0],[5,1,0],[6,1,0],[7,1,0],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,4],[5,3,4],
-      [4,4,3],[4,5,3],
-      [2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],
-      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
-      [1,6,0],[7,6,0],
-      [1,7,3],[7,7,3],[8,7,3],[1,8,3],[8,8,3],
-      [3,8,2],[5,8,2],
-      [3,9,2],[5,9,2],
-      [3,10,2],[5,10,2],
-      [3,11,0],[4,11,0],[5,11,0],
-    ],
-    // A4 — Risk: dark hood
-    [
-      [3,0,1],[4,0,1],[5,0,1],
-      [2,1,1],[3,1,0],[4,1,0],[5,1,0],[6,1,1],
-      [2,2,1],[3,2,0],[4,2,0],[5,2,0],[6,2,1],
-      [3,3,4],[5,3,4],
-      [4,5,4],
-      [2,6,1],[3,6,1],[4,6,2],[5,6,1],[6,6,1],
-      [2,7,1],[3,7,2],[4,7,2],[5,7,2],[6,7,1],
-      [1,6,1],[7,6,1],
-      [1,7,1],[7,7,1],
-      [3,8,2],[5,8,2],
-      [3,9,1],[5,9,1],
-      [3,10,1],[5,10,1],
-      [3,11,1],[4,11,1],[5,11,1],
-    ],
-    // A5 — Social: bright shirt + headband
-    [
-      [4,0,3],[5,0,3],
-      [3,1,0],[4,1,0],[5,1,0],[6,1,0],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,4],[5,3,4],
-      [3,4,0],[4,4,3],[5,4,0],
-      [4,5,0],
-      [2,6,3],[3,6,3],[4,6,3],[5,6,3],[6,6,3],
-      [2,7,3],[3,7,3],[4,7,3],[5,7,3],[6,7,3],
-      [1,6,0],[7,6,0],
-      [1,7,0],[7,7,0],
-      [3,8,3],[5,8,3],
-      [3,9,3],[5,9,3],
-      [3,10,3],[5,10,3],
-      [2,11,0],[3,11,0],[5,11,0],[6,11,0],
-    ],
-    // A6 — Pixel Wizard: robe + staff suggestion
-    [
-      [4,0,3],[5,0,3],
-      [3,1,1],[4,1,1],[5,1,1],[6,1,1],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,4],[5,3,4],
-      [4,5,0],
-      [2,6,1],[3,6,2],[4,6,2],[5,6,2],[6,6,1],
-      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
-      [1,6,3],[7,6,3],
-      [1,7,2],[7,7,2],[0,6,3],[8,6,3],
-      [3,8,2],[5,8,2],
-      [3,9,1],[5,9,1],
-      [3,10,1],[5,10,1],
-      [3,11,2],[4,11,2],[5,11,2],
-    ],
-    // A7 — Cyber: visor + tech suit
-    [
-      [3,0,2],[4,0,2],[5,0,2],[6,0,2],
-      [2,1,2],[3,1,0],[4,1,0],[5,1,0],[6,1,0],[7,1,2],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,3],[4,3,3],[5,3,3], // visor
-      [4,5,0],
-      [2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],
-      [2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],
-      [1,6,3],[7,6,3],
-      [1,7,3],[7,7,3],
-      [3,8,3],[5,8,3],
-      [3,9,2],[5,9,2],
-      [3,10,2],[5,10,2],
-      [2,11,3],[3,11,3],[5,11,3],[6,11,3],
-    ],
-    // A8 — Gold VIP: crown + cape
-    [
-      [3,0,3],[4,0,3],[5,0,3],
-      [3,1,3],[4,1,0],[5,1,0],[5,1,3],
-      [2,2,0],[3,2,0],[4,2,0],[5,2,0],[6,2,0],
-      [3,3,4],[5,3,4],
-      [4,4,3],
-      [4,5,0],
-      [2,6,3],[3,6,2],[4,6,2],[5,6,2],[6,6,3],
-      [1,7,3],[2,7,3],[3,7,2],[4,7,2],[5,7,2],[6,7,3],[7,7,3],
-      [1,6,3],[7,6,3],
-      [3,8,2],[5,8,2],
-      [3,9,3],[5,9,3],
-      [3,10,3],[5,10,3],
-      [3,11,0],[4,11,0],[5,11,0],
-    ],
-  ];
-
-  // Per-avatar color palettes: [skin, hair, body, accent, detail]
-  static const List<List<Color>> _palettes = [
-    [Color(0xFFf5c5a3), Color(0xFF3d2b1f), Color(0xFF1a3a5c), Color(0xFF4fc3f7), Color(0xFF1a1a2e)], // A1
-    [Color(0xFFf5c5a3), Color(0xFF7b3f00), Color(0xFF2d6a4f), Color(0xFF52b788), Color(0xFF1a1a2e)], // A2
-    [Color(0xFFf5c5a3), Color(0xFF2c2c54), Color(0xFF1e3050), Color(0xFFf5c518), Color(0xFF1a1a2e)], // A3
-    [Color(0xFFd4a090), Color(0xFF1a1a2e), Color(0xFF2d2d44), Color(0xFF7b2fff), Color(0xFF00f5a0)], // A4
-    [Color(0xFFfde4c8), Color(0xFFc77dff), Color(0xFFe63946), Color(0xFFff9f1c), Color(0xFF1a1a2e)], // A5
-    [Color(0xFFf0d4b0), Color(0xFF4a0e8f), Color(0xFF6a0dad), Color(0xFF00f5a0), Color(0xFFffd700)], // A6
-    [Color(0xFFc8e6f0), Color(0xFF0a1628), Color(0xFF162040), Color(0xFF00f5a0), Color(0xFF4fc3f7)], // A7
-    [Color(0xFFfde4c8), Color(0xFFf5c518), Color(0xFF8b0000), Color(0xFFf5c518), Color(0xFF1a1a2e)], // A8
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (avatarIndex >= _avatars.length) return;
-
-    final pixels = _avatars[avatarIndex];
-    final palette = _palettes[avatarIndex];
-
-    // Grid is 9 cols × 12 rows
-    final cellW = size.width / 9;
-    final cellH = size.height / 12;
-
-    for (final pixel in pixels) {
-      final col = pixel[0];
-      final row = pixel[1];
-      final colorIdx = pixel[2];
-
-      // Use primaryColor tint for non-skin pixels when selected
-      final baseColor = colorIdx < palette.length ? palette[colorIdx] : palette[0];
-      final paint = Paint()
-        ..color = colorIdx == 0
-            ? baseColor // skin always original
-            : Color.lerp(baseColor, primaryColor, 0.15)!;
-
-      final rect = Rect.fromLTWH(
-        col * cellW,
-        row * cellH,
-        cellW - 0.5,
-        cellH - 0.5,
-      );
-      canvas.drawRect(rect, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PixelAvatarPainter old) =>
-      old.avatarIndex != avatarIndex || old.primaryColor != primaryColor;
-}
-
-// ── Step 2: Market Focus ─────────────────────────────────────────────────────
-
-class _MarketFocusStep extends StatelessWidget {
-  const _MarketFocusStep();
-
-  static const _options = [
-    _MarketOption(id: 'crypto', label: 'Crypto', icon: Icons.currency_bitcoin),
-    _MarketOption(
-        id: 'fx', label: 'Forex', icon: Icons.currency_exchange),
-    _MarketOption(id: 'stocks', label: 'Stocks', icon: Icons.trending_up),
-    _MarketOption(id: 'mixed', label: 'Mixed', icon: Icons.pie_chart),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Market Focus',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your agents will prioritize this market.',
-            style: TextStyle(color: colors.textSecondary, fontSize: 15),
-          ),
-          const SizedBox(height: 32),
-          BlocBuilder<OnboardingBloc, OnboardingState>(
-            builder: (context, state) {
-              final selected =
-                  state is OnboardingInProgress ? state.marketFocus : null;
-
-              return Column(
-                children: _options.map((option) {
-                  final isSelected = selected == option.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _SelectionCard(
-                      label: option.label,
-                      icon: option.icon,
-                      isSelected: isSelected,
-                      selectedColor: colors.primary,
-                      onTap: () => context
-                          .read<OnboardingBloc>()
-                          .add(OnboardingMarketFocusSelected(option.id)),
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MarketOption {
-  const _MarketOption({
-    required this.id,
-    required this.label,
-    required this.icon,
-  });
-
-  final String id;
-  final String label;
-  final IconData icon;
-}
-
-// ── Step 3: Risk Style ───────────────────────────────────────────────────────
-
-class _RiskStyleStep extends StatelessWidget {
-  const _RiskStyleStep();
-
-  static const _options = [
-    _RiskOption(
-      id: 'calm',
-      emoji: '🐢',
-      label: 'Calm',
-      description: 'Low risk, steady gains. Capital preservation first.',
-    ),
-    _RiskOption(
-      id: 'balanced',
-      emoji: '⚖️',
-      label: 'Balanced',
-      description: 'Moderate risk. A mix of growth and stability.',
-    ),
-    _RiskOption(
-      id: 'bold',
-      emoji: '🚀',
-      label: 'Bold',
-      description: 'High risk, high reward. You live for the thrill.',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Risk Style',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'How does your inner trader roll?',
-            style: TextStyle(color: colors.textSecondary, fontSize: 15),
-          ),
-          const SizedBox(height: 32),
-          BlocBuilder<OnboardingBloc, OnboardingState>(
-            builder: (context, state) {
-              final selected =
-                  state is OnboardingInProgress ? state.riskStyle : null;
-
-              return Column(
-                children: _options.map((option) {
-                  final isSelected = selected == option.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _RiskCard(
-                      option: option,
-                      isSelected: isSelected,
-                      colors: colors,
-                      onTap: () => context
-                          .read<OnboardingBloc>()
-                          .add(OnboardingRiskStyleSelected(option.id)),
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RiskOption {
-  const _RiskOption({
-    required this.id,
-    required this.emoji,
-    required this.label,
-    required this.description,
-  });
-
-  final String id;
-  final String emoji;
-  final String label;
-  final String description;
-}
-
-class _RiskCard extends StatelessWidget {
-  const _RiskCard({
-    required this.option,
+class _AvatarCard extends StatelessWidget {
+  const _AvatarCard({
+    required this.meta,
     required this.isSelected,
     required this.colors,
     required this.onTap,
   });
 
-  final _RiskOption option;
+  final _AvatarMeta meta;
   final bool isSelected;
   final AppColorScheme colors;
   final VoidCallback onTap;
@@ -678,109 +613,322 @@ class _RiskCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary.withValues(alpha: 0.08)
-              : colors.cardBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? colors.primary : colors.border,
-            width: isSelected ? 2 : 1,
-          ),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        transformAlignment: Alignment.center,
+        transform: Matrix4.diagonal3Values(
+          isSelected ? 1.05 : 1.0,
+          isSelected ? 1.05 : 1.0,
+          1.0,
         ),
-        child: Row(
-          children: [
-            Text(option.emoji, style: const TextStyle(fontSize: 28)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    option.label,
-                    style: TextStyle(
-                      color: isSelected ? colors.primary : colors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          // Gradient border via outer container + inner padding trick
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFF00f5a0), Color(0xFFf5c518)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : colors.border,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.accent.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 2),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    option.description,
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 13,
-                    ),
+                  BoxShadow(
+                    color: colors.primary.withValues(alpha: 0.25),
+                    blurRadius: 24,
+                    spreadRadius: -2,
                   ),
-                ],
+                ]
+              : null,
+        ),
+        padding: EdgeInsets.all(isSelected ? 2.0 : 1.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colors.primary.withValues(alpha: 0.08)
+                : colors.surface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 6),
+              // Avatar image: try PNG sprite, fall back to CustomPainter
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: _AvatarImage(
+                    meta: meta,
+                    isSelected: isSelected,
+                    colors: colors,
+                  ),
+                ),
               ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle_rounded, color: colors.primary, size: 22),
-          ],
+              const SizedBox(height: 4),
+              // Character name
+              Text(
+                meta.name,
+                style: TextStyle(
+                  color: isSelected ? colors.primary : colors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              // Role subtitle
+              Text(
+                meta.role,
+                style: TextStyle(
+                  color: isSelected
+                      ? colors.accent.withValues(alpha: 0.9)
+                      : colors.textDisabled,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 5),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Shared Selection Card (Market Focus) ────────────────────────────────────
-
-class _SelectionCard extends StatelessWidget {
-  const _SelectionCard({
-    required this.label,
-    required this.icon,
+class _AvatarImage extends StatelessWidget {
+  const _AvatarImage({
+    required this.meta,
     required this.isSelected,
-    required this.selectedColor,
-    required this.onTap,
+    required this.colors,
   });
 
-  final String label;
-  final IconData icon;
+  final _AvatarMeta meta;
   final bool isSelected;
-  final Color selectedColor;
-  final VoidCallback onTap;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      meta.spriteAsset,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none, // pixel-art: no blurring
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback to CustomPainter if sprite not loaded
+        return CustomPaint(
+          painter: PixelAvatarPainter(avatarIndex: meta.painterIndex),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 3: Username Input
+// ---------------------------------------------------------------------------
+
+class _UsernameStep extends StatefulWidget {
+  const _UsernameStep();
+
+  @override
+  State<_UsernameStep> createState() => _UsernameStepState();
+}
+
+class _UsernameStepState extends State<_UsernameStep> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? selectedColor.withValues(alpha: 0.08)
-              : colors.cardBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? selectedColor : colors.border,
-            width: isSelected ? 2 : 1,
+    return BlocBuilder<OnboardingBloc, OnboardingState>(
+      builder: (context, state) {
+        final selectedId =
+            state is OnboardingInProgress ? state.avatarId : null;
+        final meta = selectedId != null
+            ? _avatars.firstWhere(
+                (a) => a.id == selectedId,
+                orElse: () => _avatars.first,
+              )
+            : _avatars.first;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 8),
+
+              Text(
+                'ตั้งชื่อตัวละคร',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              Text(
+                'ชื่อที่คนอื่นในโลกพิกเซลจะเห็น',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // ── Avatar preview ──────────────────────────────────────
+              _AvatarPreviewCard(meta: meta, colors: colors),
+
+              const SizedBox(height: 32),
+
+              // ── Username field ───────────────────────────────────────
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.inputBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colors.inputBorder, width: 1.5),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  maxLength: 20,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'เช่น PixelTrader99',
+                    hintStyle: TextStyle(
+                      color: colors.textDisabled,
+                      fontSize: 15,
+                    ),
+                    counterText: '',
+                    prefixIcon: Icon(
+                      Icons.alternate_email_rounded,
+                      color: colors.textTertiary,
+                      size: 20,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                  onChanged: (value) => context
+                      .read<OnboardingBloc>()
+                      .add(OnboardingUsernameChanged(value.trim())),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Text(
+                'ไม่ต้องห่วง — แก้ไขได้ภายหลังในโปรไฟล์',
+                style: TextStyle(
+                  color: colors.textDisabled,
+                  fontSize: 12,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+            ],
           ),
+        );
+      },
+    );
+  }
+}
+
+class _AvatarPreviewCard extends StatelessWidget {
+  const _AvatarPreviewCard({
+    required this.meta,
+    required this.colors,
+  });
+
+  final _AvatarMeta meta;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 130,
+      height: 160,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00f5a0), Color(0xFFf5c518)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Row(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.4),
+            blurRadius: 24,
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: colors.accent.withValues(alpha: 0.2),
+            blurRadius: 40,
+            spreadRadius: -4,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(17),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
           children: [
-            Icon(
-              icon,
-              color: isSelected ? selectedColor : colors.textSecondary,
-              size: 24,
+            Expanded(
+              child: Image.asset(
+                meta.spriteAsset,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.none,
+                errorBuilder: (context, error, stackTrace) => CustomPaint(
+                  painter: PixelAvatarPainter(avatarIndex: meta.painterIndex),
+                  size: const Size(80, 100),
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(height: 8),
             Text(
-              label,
+              meta.name,
               style: TextStyle(
-                color: isSelected ? selectedColor : colors.textPrimary,
-                fontSize: 16,
+                color: colors.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Text(
+              meta.role,
+              style: TextStyle(
+                color: colors.accent,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const Spacer(),
-            if (isSelected)
-              Icon(Icons.check_circle_rounded, color: selectedColor, size: 22),
           ],
         ),
       ),

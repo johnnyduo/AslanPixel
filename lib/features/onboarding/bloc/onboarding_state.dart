@@ -16,25 +16,29 @@ class OnboardingInProgress extends OnboardingState {
     this.avatarId,
     this.marketFocus,
     this.riskStyle,
+    this.username,
   });
 
   final String? avatarId;
   final String? marketFocus;
   final String? riskStyle;
+  final String? username;
 
   OnboardingInProgress copyWith({
     String? avatarId,
     String? marketFocus,
     String? riskStyle,
+    String? username,
   }) =>
       OnboardingInProgress(
         avatarId: avatarId ?? this.avatarId,
         marketFocus: marketFocus ?? this.marketFocus,
         riskStyle: riskStyle ?? this.riskStyle,
+        username: username ?? this.username,
       );
 
   @override
-  List<Object?> get props => [avatarId, marketFocus, riskStyle];
+  List<Object?> get props => [avatarId, marketFocus, riskStyle, username];
 }
 
 class OnboardingSubmitting extends OnboardingState {

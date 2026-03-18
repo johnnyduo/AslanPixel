@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-
-import 'package:aslan_pixel/features/feed/data/models/feed_post_model.dart';
-import 'package:aslan_pixel/features/feed/bloc/feed_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:aslan_pixel/features/feed/bloc/feed_bloc.dart';
+import 'package:aslan_pixel/features/feed/data/models/feed_post_model.dart';
+import 'package:aslan_pixel/features/feed/utils/post_text_parser.dart';
 
 // ── Colour constants ──────────────────────────────────────────────────────────
 const Color _neonGreen = Color(0xFF00F5A0);
@@ -12,6 +13,11 @@ const Color _textWhite = Color(0xFFE8F4F8);
 const Color _surface = Color(0xFF0F2040);
 
 /// A card widget that renders a single [FeedPostModel] in the feed list.
+///
+/// Supports:
+/// - Hashtag (#) → neon-green bold spans via [buildRichPostText]
+/// - Mention (@) → cyan spans via [buildRichPostText]
+/// - Animated heart reaction (scale pulse + optimistic like count)
 class FeedPostCard extends StatelessWidget {
   const FeedPostCard({super.key, required this.post, this.currentUid});
 
@@ -39,13 +45,9 @@ class FeedPostCard extends StatelessWidget {
               children: [
                 _AuthorRow(post: post),
                 const SizedBox(height: 10),
-                Text(
-                  post.contentTh ?? post.content,
-                  style: const TextStyle(
-                    color: _textWhite,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
+                // ── Rich text with hashtag / mention parsing ──────────────
+                RichText(
+                  text: buildRichPostText(post.contentTh ?? post.content),
                 ),
                 const SizedBox(height: 12),
                 _ReactionRow(post: post, currentUid: currentUid),
@@ -107,7 +109,9 @@ class _AuthorRow extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isSystem ? _neonGreen.withValues(alpha: 0.15) : _purple.withValues(alpha: 0.25),
+            color: isSystem
+                ? _neonGreen.withValues(alpha: 0.15)
+                : _purple.withValues(alpha: 0.25),
             border: Border.all(
               color: isSystem ? _neonGreen : _purple,
               width: 1.5,
@@ -115,10 +119,10 @@ class _AuthorRow extends StatelessWidget {
           ),
           child: Center(
             child: isSystem
-                ? Icon(Icons.smart_toy_outlined, size: 18, color: _neonGreen)
+                ? const Icon(Icons.smart_toy_outlined, size: 18, color: _neonGreen)
                 : Text(
                     initial ?? '?',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: _neonGreen,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -162,6 +166,8 @@ class _AuthorRow extends StatelessWidget {
   }
 }
 
+// ── Reaction row ───────────────────────────────────────────────────────────────
+
 class _ReactionRow extends StatelessWidget {
   const _ReactionRow({required this.post, this.currentUid});
 
@@ -185,38 +191,103 @@ class _ReactionRow extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        // Like button
-        GestureDetector(
-          onTap: () {
-            if (currentUid != null) {
-              context.read<FeedBloc>().add(
-                    FeedReactionAdded(
-                      postId: post.postId,
-                      emoji: '❤️',
-                      uid: currentUid!,
-                    ),
-                  );
-            }
-          },
-          child: Row(
-            children: [
-              Icon(Icons.favorite_border, size: 16, color: _gold),
-              const SizedBox(width: 4),
-              Text(
-                '❤️ ถูกใจ',
-                style: TextStyle(
-                  color: _gold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Animated heart like button
+        _HeartButton(post: post, currentUid: currentUid),
       ],
     );
   }
 }
+
+// ── Animated heart button ─────────────────────────────────────────────────────
+
+class _HeartButton extends StatefulWidget {
+  const _HeartButton({required this.post, this.currentUid});
+
+  final FeedPostModel post;
+  final String? currentUid;
+
+  @override
+  State<_HeartButton> createState() => _HeartButtonState();
+}
+
+class _HeartButtonState extends State<_HeartButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  // Optimistic local like state.
+  bool _liked = false;
+  int _extraLikes = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.4), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.4, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    if (widget.currentUid != null) {
+      context.read<FeedBloc>().add(
+            FeedReactionAdded(
+              postId: widget.post.postId,
+              emoji: '❤️',
+              uid: widget.currentUid!,
+            ),
+          );
+    }
+    setState(() {
+      _liked = !_liked;
+      _extraLikes = _liked ? 1 : 0;
+    });
+    _controller.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final heartCount =
+        (widget.post.reactions['❤️'] ?? 0) + _extraLikes;
+
+    return GestureDetector(
+      onTap: _onTap,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Row(
+          children: [
+            Icon(
+              _liked ? Icons.favorite : Icons.favorite_border,
+              size: 16,
+              color: _liked ? Colors.redAccent : _gold,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              heartCount > 0 ? '❤️ $heartCount' : '❤️ ถูกใจ',
+              style: TextStyle(
+                color: _liked ? Colors.redAccent : _gold,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Reaction chip ─────────────────────────────────────────────────────────────
 
 class _ReactionChip extends StatelessWidget {
   const _ReactionChip({required this.emoji, required this.count});

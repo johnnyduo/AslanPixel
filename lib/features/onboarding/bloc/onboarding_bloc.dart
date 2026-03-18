@@ -12,6 +12,7 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     on<OnboardingAvatarSelected>(_onAvatarSelected);
     on<OnboardingMarketFocusSelected>(_onMarketFocusSelected);
     on<OnboardingRiskStyleSelected>(_onRiskStyleSelected);
+    on<OnboardingUsernameChanged>(_onUsernameChanged);
     on<OnboardingCompleted>(_onCompleted);
   }
 
@@ -41,6 +42,14 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     emit(current.copyWith(riskStyle: event.style));
   }
 
+  void _onUsernameChanged(
+    OnboardingUsernameChanged event,
+    Emitter<OnboardingState> emit,
+  ) {
+    final current = _currentProgress();
+    emit(current.copyWith(username: event.username));
+  }
+
   Future<void> _onCompleted(
     OnboardingCompleted event,
     Emitter<OnboardingState> emit,
@@ -53,6 +62,8 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
         'avatarId': progress.avatarId,
         'marketFocus': progress.marketFocus,
         'riskStyle': progress.riskStyle,
+        if (progress.username != null && progress.username!.isNotEmpty)
+          'username': progress.username,
         'onboardingComplete': true,
         'updatedAt': FieldValue.serverTimestamp(),
       });

@@ -7,6 +7,8 @@ import 'package:aslan_pixel/features/auth/data/datasources/firebase_auth_datasou
 import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
 import 'package:aslan_pixel/features/broker/view/broker_page.dart';
+import 'package:aslan_pixel/features/feed/view/feed_page.dart';
+import 'package:aslan_pixel/features/finance/view/finance_page.dart';
 import 'package:aslan_pixel/features/home/bloc/ranking_bloc.dart';
 import 'package:aslan_pixel/features/home/data/datasources/firestore_ranking_datasource.dart';
 import 'package:aslan_pixel/features/home/view/leaderboard_page.dart';
@@ -76,6 +78,10 @@ class RouteGenerator {
             return gotoRightToLeftPage(const QuestPage());
           case SettingsPage.routeName:
             return gotoRightToLeftPage(const SettingsPage());
+          case FeedPage.routeName:
+            return gotoRightToLeftPage(const FeedPage());
+          case FinancePage.routeName:
+            return gotoRightToLeftPage(const FinancePage());
           // Routes below require arguments — return error route when args are
           // missing so the app surfaces a meaningful fallback instead of an
           // unhandled exception from a null-argument dereference.
@@ -115,6 +121,10 @@ class RouteGenerator {
             return gotoRightToLeftPage(const QuestPage());
           case SettingsPage.routeName:
             return gotoRightToLeftPage(const SettingsPage());
+          case FeedPage.routeName:
+            return gotoRightToLeftPage(const FeedPage());
+          case FinancePage.routeName:
+            return gotoRightToLeftPage(const FinancePage());
           case LeaderboardPage.routeName:
             if (args is String && args.isNotEmpty) {
               return gotoRightToLeftPage(

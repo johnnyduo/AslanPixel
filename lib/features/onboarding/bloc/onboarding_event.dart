@@ -36,6 +36,15 @@ class OnboardingRiskStyleSelected extends OnboardingEvent {
   List<Object?> get props => [style];
 }
 
+class OnboardingUsernameChanged extends OnboardingEvent {
+  const OnboardingUsernameChanged(this.username);
+
+  final String username;
+
+  @override
+  List<Object?> get props => [username];
+}
+
 class OnboardingCompleted extends OnboardingEvent {
   const OnboardingCompleted(this.uid);
 

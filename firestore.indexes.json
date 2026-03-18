@@ -9,11 +9,27 @@
       ]
     },
     {
+      "collectionGroup": "feedPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "authorId", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "predictionEvents",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "settlementAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "active",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "expiresAt", "order": "ASCENDING" }
       ]
     },
     {
@@ -44,6 +60,15 @@
       "collectionGroup": "tasks",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "isSettled", "order": "ASCENDING" },
+        { "fieldPath": "completesAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "agentId", "order": "ASCENDING" },
         { "fieldPath": "isSettled", "order": "ASCENDING" },
         { "fieldPath": "completesAt", "order": "ASCENDING" }
       ]
