@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
 import 'package:aslan_pixel/features/quests/data/repositories/quest_repository.dart';
+import 'package:aslan_pixel/features/quests/engine/quest_generator.dart';
 
 /// Firestore implementation of [QuestRepository].
 ///
@@ -60,6 +61,46 @@ class FirestoreQuestDatasource implements QuestRepository {
         });
       }
     });
+  }
+
+  // ── Daily quest generation ────────────────────────────────────────────────
+
+  /// Checks whether daily quests need to be regenerated and, if so, writes a
+  /// fresh set of 3 quests to quests/{uid}/active/ and updates the
+  /// users/{uid}/settings/quests document with the current server timestamp.
+  Future<void> generateDailyQuestsIfNeeded(String uid) async {
+    final settingsRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('settings')
+        .doc('quests');
+
+    final settingsSnap = await settingsRef.get();
+    DateTime? lastQuestDate;
+    if (settingsSnap.exists) {
+      final ts = settingsSnap.data()?['lastQuestDate'] as Timestamp?;
+      lastQuestDate = ts?.toDate();
+    }
+
+    if (!QuestGenerator.needsRefresh(lastQuestDate)) return;
+
+    final now = DateTime.now();
+    final quests = QuestGenerator.generateDailyQuests(uid, now);
+
+    final batch = _firestore.batch();
+
+    for (final quest in quests) {
+      final docRef = _activeCol(uid).doc(quest.questId);
+      batch.set(docRef, quest.toMap());
+    }
+
+    batch.set(
+      settingsRef,
+      {'lastQuestDate': FieldValue.serverTimestamp()},
+      SetOptions(merge: true),
+    );
+
+    await batch.commit();
   }
 
   @override
