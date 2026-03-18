@@ -23,6 +23,7 @@ import 'core/routing/route.dart';
 import 'core/routing/route_generator.dart';
 import 'core/utils/fcm_service.dart';
 import 'core/utils/globals.dart';
+import 'core/utils/local_notification_service.dart';
 
 bool _isLikelyNetworkError(Object error) {
   final message = error.toString();
@@ -109,6 +110,7 @@ Future<void> setConfig() async {
   // Phase 3: Non-blocking post-init (fire-and-forget)
   unawaited(appBloc.preloadCaches());
   unawaited(FcmService().initialize());
+  unawaited(LocalNotificationService.instance.initialize());
 
   if (!kIsWeb) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

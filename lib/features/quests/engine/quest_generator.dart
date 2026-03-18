@@ -23,30 +23,35 @@ class QuestGenerator {
         objectiveTh: 'ส่ง Agent ทำงาน 1 ครั้ง',
         reward: {'coins': 20, 'xp': 10},
         target: 1,
+        actionType: 'agent_work',
       ),
       _QuestTemplate(
         type: 'daily',
         objectiveTh: 'อ่านข่าวตลาด 1 ครั้ง',
         reward: {'coins': 15, 'xp': 8},
         target: 1,
+        actionType: 'market_news',
       ),
       _QuestTemplate(
         type: 'daily',
         objectiveTh: 'โพสต์ในฟีด 1 ครั้ง',
         reward: {'coins': 25, 'xp': 15},
         target: 1,
+        actionType: 'feed_post',
       ),
       _QuestTemplate(
         type: 'daily',
         objectiveTh: 'เข้าร่วม Prediction 1 ครั้ง',
         reward: {'coins': 30, 'xp': 20},
         target: 1,
+        actionType: 'prediction',
       ),
       _QuestTemplate(
         type: 'daily',
         objectiveTh: 'ดู Plaza 1 ครั้ง',
         reward: {'coins': 10, 'xp': 5},
         target: 1,
+        actionType: 'plaza_visit',
       ),
     ];
 
@@ -68,6 +73,7 @@ class QuestGenerator {
         progress: 0,
         target: t.target,
         completed: false,
+        actionType: t.actionType,
       );
     }).toList();
   }
@@ -93,10 +99,12 @@ class _QuestTemplate {
     required this.objectiveTh,
     required this.reward,
     required this.target,
+    required this.actionType,
   });
 
   final String type;
   final String objectiveTh;
   final Map<String, dynamic> reward;
   final int target;
+  final String actionType;
 }

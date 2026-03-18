@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:aslan_pixel/core/utils/fcm_service.dart';
 import 'package:aslan_pixel/features/auth/data/models/user_model.dart';
 import 'package:aslan_pixel/features/auth/data/repositories/auth_repository.dart';
 
@@ -34,6 +37,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final user = await _repository.signInWithGoogle();
       if (user != null) {
+        if (user.uid != null) {
+          unawaited(FcmService().saveTokenToFirestore(user.uid!));
+        }
         emit(AuthSuccess(user: user));
       } else {
         // User cancelled the Google picker — go back to initial quietly.
@@ -54,6 +60,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final user = await _repository.signInWithApple();
       if (user != null) {
+        if (user.uid != null) {
+          unawaited(FcmService().saveTokenToFirestore(user.uid!));
+        }
         emit(AuthSuccess(user: user));
       } else {
         // User cancelled the Apple dialog — go back to initial quietly.
@@ -77,6 +86,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         event.password,
       );
       if (user != null) {
+        if (user.uid != null) {
+          unawaited(FcmService().saveTokenToFirestore(user.uid!));
+        }
         emit(AuthSuccess(user: user));
       } else {
         emit(const AuthFailure(message: 'เกิดข้อผิดพลาด กรุณาลองใหม่'));

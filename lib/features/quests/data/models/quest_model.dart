@@ -13,6 +13,7 @@ class QuestModel {
     required this.target,
     required this.completed,
     this.expiresAt,
+    this.actionType,
   });
 
   final String questId;
@@ -38,6 +39,10 @@ class QuestModel {
 
   final bool completed;
 
+  /// Action category used to map to room item rewards.
+  /// Values: 'agent_work' | 'market_news' | 'feed_post' | 'prediction' | 'plaza_visit'
+  final String? actionType;
+
   // ── Computed ────────────────────────────────────────────────────────────────
 
   bool get isComplete => progress >= target;
@@ -56,6 +61,7 @@ class QuestModel {
       progress: data['progress'] as int? ?? 0,
       target: data['target'] as int? ?? 1,
       completed: data['completed'] as bool? ?? false,
+      actionType: data['actionType'] as String?,
     );
   }
 
@@ -71,6 +77,7 @@ class QuestModel {
         'progress': progress,
         'target': target,
         'completed': completed,
+        if (actionType != null) 'actionType': actionType,
       };
 
   // ── copyWith ─────────────────────────────────────────────────────────────────
@@ -85,6 +92,7 @@ class QuestModel {
     int? progress,
     int? target,
     bool? completed,
+    String? actionType,
   }) =>
       QuestModel(
         questId: questId ?? this.questId,
@@ -96,5 +104,6 @@ class QuestModel {
         progress: progress ?? this.progress,
         target: target ?? this.target,
         completed: completed ?? this.completed,
+        actionType: actionType ?? this.actionType,
       );
 }

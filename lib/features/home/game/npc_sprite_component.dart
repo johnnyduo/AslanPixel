@@ -25,12 +25,14 @@ enum NpcDirection { south, north, east, west }
 ///
 /// Features:
 ///   - 4-direction facing via [setDirection] (hot-swaps the active sprite).
-///   - Idle bob: ±2 px vertical oscillation over a 1.5 s period.
+///   - Idle bob: ±2 px vertical oscillation over a 1.5 s period (only when not walking).
+///   - Walk animation: per-direction 4-frame sprite animation via [startWalking] / [stopWalking].
 ///   - Name label rendered below the sprite.
 ///
 /// [spriteWidth] and [spriteHeight] default to 48 × 48 logical pixels.
 /// The anchor is [Anchor.center].
-class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGame> {
+class NpcSpriteComponent extends PositionComponent
+    with HasGameReference<FlameGame> {
   NpcSpriteComponent({
     required this.npcName,
     required Vector2 position,
@@ -55,6 +57,9 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
   // Per-direction sprite cache — populated lazily in onLoad.
   final Map<NpcDirection, Sprite?> _sprites = {};
 
+  // Per-direction walk animation cache — populated lazily in onLoad.
+  final Map<NpcDirection, SpriteAnimation?> _walkAnimations = {};
+
   late NpcDirection _direction;
   Sprite? _currentSprite;
 
@@ -64,8 +69,12 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
   static const double _bobAmplitude = 2.0; // pixels
   double _bobOffset = 0;
 
+  // Walk state
+  bool _isWalking = false;
+
   // Sub-components
   SpriteComponent? _spriteComponent;
+  SpriteAnimationComponent? _walkComponent;
   TextComponent? _labelComponent;
 
   // ---------------------------------------------------------------------------
@@ -78,7 +87,7 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
 
     _direction = initialDirection;
 
-    // Pre-load all available directional sprites and the idle fallback.
+    // Pre-load all available directional sprites, idle fallback, and walk frames.
     await _preloadSprites();
 
     _currentSprite = _sprites[_direction] ?? _sprites[NpcDirection.south];
@@ -91,6 +100,19 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
       position: Vector2.zero(),
     );
     await add(_spriteComponent!);
+
+    // Walk animation sub-component — created if any walk animation was loaded.
+    final firstWalkAnim = _firstAvailableWalkAnimation();
+    if (firstWalkAnim != null) {
+      _walkComponent = SpriteAnimationComponent(
+        animation: firstWalkAnim,
+        size: Vector2(spriteWidth, spriteHeight),
+        position: Vector2.zero(),
+        playing: false,
+      );
+      _walkComponent!.opacity = 0.0;
+      await add(_walkComponent!);
+    }
 
     // Name label below the sprite.
     _labelComponent = TextComponent(
@@ -116,12 +138,14 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
   }
 
   // ---------------------------------------------------------------------------
-  // Update — idle bob animation
+  // Update — idle bob animation (only when not walking)
   // ---------------------------------------------------------------------------
 
   @override
   void update(double dt) {
     super.update(dt);
+
+    if (_isWalking) return;
 
     _bobTimer += dt;
     if (_bobTimer > _bobPeriod) {
@@ -158,6 +182,30 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
   /// The currently active facing direction.
   NpcDirection get direction => _direction;
 
+  /// Start walking in [direction]: shows walk animation if available, otherwise
+  /// keeps the static directional sprite visible.
+  void startWalking(NpcDirection direction) {
+    _isWalking = true;
+    setDirection(direction);
+
+    final walkAnim = _walkAnimations[direction];
+    if (walkAnim != null && _walkComponent != null) {
+      _walkComponent!.animation = walkAnim;
+      _walkComponent!.opacity = 1.0;
+      _walkComponent!.playing = true;
+      _spriteComponent!.opacity = 0.0;
+    }
+    // If no walk animation for this direction, keep static sprite visible.
+  }
+
+  /// Stop walking: hides walk animation and restores static sprite.
+  void stopWalking() {
+    _isWalking = false;
+    _walkComponent?.opacity = 0.0;
+    _walkComponent?.playing = false;
+    _spriteComponent!.opacity = 1.0;
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -174,14 +222,12 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
       }
     }
 
-    // If no directional sprites were loaded (e.g. npc_merchant, npc_sysbot,
-    // npc_pixelcat which only have `_idle.png`), fall back to the idle sprite
-    // and apply it to every direction slot.
+    // If no directional sprites were loaded (e.g. npc with only `_idle.png`),
+    // fall back to the idle sprite and apply it to every direction slot.
     if (_sprites.values.every((s) => s == null)) {
       final idlePath = 'assets/sprites/npcs/${npcName}_idle.png';
       try {
-        final idleSprite =
-            await Sprite.load(idlePath, images: game.images);
+        final idleSprite = await Sprite.load(idlePath, images: game.images);
         for (final dir in NpcDirection.values) {
           _sprites[dir] = idleSprite;
         }
@@ -189,6 +235,35 @@ class NpcSpriteComponent extends PositionComponent with HasGameReference<FlameGa
         // No sprite found at all — component will render blank (no crash).
       }
     }
+
+    // Attempt to load walk frame animations (4 frames per direction).
+    for (final dir in NpcDirection.values) {
+      final frames = <Sprite>[];
+      for (var i = 1; i <= 4; i++) {
+        final path =
+            'assets/sprites/npcs/${npcName}_${dir.name}_walk$i.png';
+        try {
+          final frame = await Sprite.load(path, images: game.images);
+          frames.add(frame);
+        } catch (_) {
+          // Frame not found — break out; require all 4 to form a valid animation.
+          break;
+        }
+      }
+      if (frames.length == 4) {
+        _walkAnimations[dir] =
+            SpriteAnimation.spriteList(frames, stepTime: 1 / 8);
+      }
+    }
+  }
+
+  /// Returns the first non-null walk animation, or null if none were loaded.
+  SpriteAnimation? _firstAvailableWalkAnimation() {
+    for (final dir in NpcDirection.values) {
+      final anim = _walkAnimations[dir];
+      if (anim != null) return anim;
+    }
+    return null;
   }
 
   /// Converts a snake_case NPC identifier to a human-readable display name.

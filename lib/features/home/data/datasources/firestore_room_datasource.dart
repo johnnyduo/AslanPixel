@@ -101,4 +101,33 @@ class FirestoreRoomDatasource implements RoomRepository {
       });
     });
   }
+
+  @override
+  Future<void> unlockItem(String uid, String itemId) async {
+    final ref = _doc(uid);
+
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) return;
+
+      final data = snap.data() ?? {};
+      final currentItems = List<Map<String, dynamic>>.from(
+        (data['items'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>(),
+      );
+
+      final index = currentItems.indexWhere((m) => m['itemId'] == itemId);
+      if (index == -1) return;
+
+      currentItems[index] = {
+        ...currentItems[index],
+        'isUnlocked': true,
+      };
+
+      txn.update(ref, {
+        'items': currentItems,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
 }

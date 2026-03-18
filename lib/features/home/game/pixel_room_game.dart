@@ -172,10 +172,9 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     // ------------------------------------------------------------------
     // Layer 2: NPC sprites
     //
-    // Three NPCs at fixed positions in the room canvas:
+    // Two NPCs at fixed positions in the room canvas:
     //   - Banker  → top-left area  (near the desk furniture zone)
     //   - Trader  → centre of room
-    //   - Champion→ bottom-right area
     //
     // Sprite identifiers match assets/sprites/npcs/npc_{name}_{dir}.png
     // ------------------------------------------------------------------
@@ -188,11 +187,6 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
       _NpcConfig(
         name: 'npc_trader',
         position: Vector2(_canvasWidth * 0.50, _canvasHeight * 0.52),
-        direction: NpcDirection.south,
-      ),
-      _NpcConfig(
-        name: 'npc_champion',
-        position: Vector2(_canvasWidth * 0.78, _canvasHeight * 0.68),
         direction: NpcDirection.south,
       ),
     ];

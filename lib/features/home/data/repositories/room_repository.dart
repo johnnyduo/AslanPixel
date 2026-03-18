@@ -17,4 +17,9 @@ abstract class RoomRepository {
 
   /// Removes the item with [itemId] from the room.
   Future<void> removeItem(String uid, String itemId);
+
+  /// Sets [isUnlocked] to true on the item with [itemId] in [uid]'s room.
+  ///
+  /// No-ops silently if the item does not exist.
+  Future<void> unlockItem(String uid, String itemId);
 }

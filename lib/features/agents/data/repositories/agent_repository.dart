@@ -13,4 +13,6 @@ abstract class AgentRepository {
   );
 
   Future<void> levelUpAgent(String uid, String agentId);
+
+  Future<void> clearActiveTask(String uid, String agentId);
 }

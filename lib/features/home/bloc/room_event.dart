@@ -24,3 +24,14 @@ class RoomItemRemoved extends RoomEvent {
   final String uid;
   final String itemId;
 }
+
+/// Request to unlock the room item [itemId] for [uid].
+///
+/// If the item does not yet exist in the room it is placed at the default
+/// position (slotX: 0, slotY: 0) and marked as unlocked.
+/// If it already exists but is locked, its [isUnlocked] flag is set to true.
+class RoomItemUnlocked extends RoomEvent {
+  const RoomItemUnlocked({required this.uid, required this.itemId});
+  final String uid;
+  final String itemId;
+}

@@ -40,3 +40,17 @@ class PixelWorldError extends PixelWorldState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Emitted when an agent's AI-generated dialogue line is ready to display.
+class PixelWorldDialogueLoaded extends PixelWorldState {
+  const PixelWorldDialogueLoaded({
+    required this.agentType,
+    required this.text,
+  });
+
+  final AgentType agentType;
+  final String text;
+
+  @override
+  List<Object?> get props => [agentType, text];
+}

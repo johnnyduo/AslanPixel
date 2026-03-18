@@ -17,4 +17,7 @@ abstract class QuestRepository {
   ///   - Adds coins/xp to economy.
   ///   - Removes quest from the active collection.
   Future<void> claimQuestReward(String uid, String questId);
+
+  /// Ensures daily quests exist for [uid], generating them if needed.
+  Future<void> ensureDailyQuestsExist(String uid);
 }

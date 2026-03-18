@@ -45,6 +45,15 @@ class FirestoreAgentDatasource implements AgentRepository {
   }
 
   @override
+  Future<void> clearActiveTask(String uid, String agentId) async {
+    await _agentsCollection(uid).doc(agentId).update({
+      'activeTaskId': FieldValue.delete(),
+      'taskCompletesAt': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
   Future<void> levelUpAgent(String uid, String agentId) async {
     final docRef = _agentsCollection(uid).doc(agentId);
     await _firestore.runTransaction((transaction) async {

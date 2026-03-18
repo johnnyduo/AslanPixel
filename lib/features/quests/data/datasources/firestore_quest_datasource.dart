@@ -104,6 +104,10 @@ class FirestoreQuestDatasource implements QuestRepository {
   }
 
   @override
+  Future<void> ensureDailyQuestsExist(String uid) =>
+      generateDailyQuestsIfNeeded(uid);
+
+  @override
   Future<void> claimQuestReward(String uid, String questId) async {
     final docRef = _activeCol(uid).doc(questId);
     final economyRef = _firestore

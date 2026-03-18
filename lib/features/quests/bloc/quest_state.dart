@@ -37,3 +37,20 @@ class QuestError extends QuestState {
   @override
   List<Object?> get props => [message];
 }
+
+/// A quest reward was successfully claimed.
+///
+/// [unlockedItemId] is non-null when the quest's [actionType] maps to a room
+/// decoration item via [kQuestRoomRewards].
+class QuestRewardClaimedSuccess extends QuestState {
+  const QuestRewardClaimedSuccess({
+    required this.questId,
+    this.unlockedItemId,
+  });
+
+  final String questId;
+  final String? unlockedItemId;
+
+  @override
+  List<Object?> get props => [questId, unlockedItemId];
+}

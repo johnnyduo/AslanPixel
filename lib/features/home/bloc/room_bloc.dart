@@ -15,6 +15,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<RoomLoadRequested>(_onLoadRequested);
     on<RoomItemPlaced>(_onItemPlaced);
     on<RoomItemRemoved>(_onItemRemoved);
+    on<RoomItemUnlocked>(_onItemUnlocked);
   }
 
   final RoomRepository _repository;
@@ -66,6 +67,40 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   ) async {
     try {
       await _repository.removeItem(event.uid, event.itemId);
+    } catch (e) {
+      emit(RoomError(e.toString()));
+    }
+  }
+
+  Future<void> _onItemUnlocked(
+    RoomItemUnlocked event,
+    Emitter<RoomState> emit,
+  ) async {
+    try {
+      final current = state;
+      if (current is! RoomLoaded) return;
+
+      final existingIndex = current.room.items
+          .indexWhere((i) => i.itemId == event.itemId);
+
+      if (existingIndex == -1) {
+        // Item does not exist yet — place it at the default slot.
+        await _repository.placeItem(
+          event.uid,
+          RoomItem(
+            itemId: event.itemId,
+            type: RoomItemType.decoration,
+            assetKey: event.itemId,
+            slotX: 0,
+            slotY: 0,
+            isUnlocked: true,
+          ),
+        );
+      } else if (!current.room.items[existingIndex].isUnlocked) {
+        // Item exists but is locked — unlock it.
+        await _repository.unlockItem(event.uid, event.itemId);
+      }
+      // If already unlocked, nothing to do.
     } catch (e) {
       emit(RoomError(e.toString()));
     }

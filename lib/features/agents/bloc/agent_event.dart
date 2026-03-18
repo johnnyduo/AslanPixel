@@ -28,3 +28,18 @@ class AgentStatusUpdated extends AgentEvent {
   @override
   List<Object?> get props => [agentId, status];
 }
+
+class AgentTaskCompleted extends AgentEvent {
+  const AgentTaskCompleted({
+    required this.uid,
+    required this.agentId,
+    required this.coinsEarned,
+  });
+
+  final String uid;
+  final String agentId;
+  final int coinsEarned;
+
+  @override
+  List<Object?> get props => [uid, agentId, coinsEarned];
+}

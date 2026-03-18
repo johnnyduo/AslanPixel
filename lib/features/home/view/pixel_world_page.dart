@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
+import 'package:aslan_pixel/data/services/cached_ai_service.dart';
+import 'package:aslan_pixel/data/services/gemini_ai_service.dart';
+import 'package:aslan_pixel/features/agents/bloc/agent_bloc.dart';
 import 'package:aslan_pixel/features/agents/bloc/task_bloc.dart';
+import 'package:aslan_pixel/features/agents/data/datasources/firestore_agent_datasource.dart';
 import 'package:aslan_pixel/features/agents/data/datasources/firestore_agent_task_datasource.dart';
 import 'package:aslan_pixel/features/agents/data/models/agent_model.dart'
     hide AgentStatus;
+import 'package:aslan_pixel/features/agents/view/agent_dialogue_bubble.dart';
 import 'package:aslan_pixel/features/agents/view/task_assignment_sheet.dart';
 import 'package:aslan_pixel/features/home/bloc/pixel_world_bloc.dart';
 import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
@@ -79,11 +84,57 @@ class PixelWorldPage extends StatefulWidget {
   State<PixelWorldPage> createState() => _PixelWorldPageState();
 }
 
-class _PixelWorldPageState extends State<PixelWorldPage> {
+class _PixelWorldPageState extends State<PixelWorldPage>
+    with WidgetsBindingObserver {
+  late final TaskBloc _taskBloc;
+  late final AgentBloc _agentBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _taskBloc = TaskBloc(repository: FirestoreAgentTaskDatasource());
+    _agentBloc = AgentBloc(
+      repository: FirestoreAgentDatasource(),
+    );
+
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isNotEmpty) {
+      _taskBloc.add(TaskWatchStarted(uid));
+      _agentBloc.add(AgentWatchStarted(uid));
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      if (uid.isNotEmpty) {
+        _taskBloc.add(TasksSettleRequested(uid: uid));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _taskBloc.close();
+    _agentBloc.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<PixelWorldBloc>(
-      create: (_) => PixelWorldBloc()..add(const PixelWorldStarted()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<PixelWorldBloc>(
+          create: (_) => PixelWorldBloc(
+            aiService: CachedAiService(GeminiAiService()),
+          )..add(const PixelWorldStarted()),
+        ),
+        BlocProvider<TaskBloc>.value(value: _taskBloc),
+        BlocProvider<AgentBloc>.value(value: _agentBloc),
+      ],
       child: const _PixelWorldView(),
     );
   }
@@ -102,6 +153,10 @@ class _PixelWorldView extends StatefulWidget {
 
 class _PixelWorldViewState extends State<_PixelWorldView> {
   PixelRoomGame? _game;
+
+  // Dialogue state
+  String? _dialogueText;
+  AgentType? _dialogueAgentType;
 
   void _handleAgentTap(BuildContext context, AgentType agentType) {
     context.read<PixelWorldBloc>().add(PixelWorldAgentTapped(agentType));
@@ -130,66 +185,109 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _colorNavy,
-      body: BlocConsumer<PixelWorldBloc, PixelWorldState>(
-        listener: (context, state) {
-          if (state is PixelWorldLoaded && _game == null) {
-            setState(() {
-              _game = PixelRoomGame(
-                agentStatuses: state.agentStatuses,
-                onAgentTapped: (type) => _handleAgentTap(context, type),
-              );
-            });
-          } else if (state is PixelWorldLoaded && _game != null) {
-            _game!.updateAgentStatuses(state.agentStatuses);
-          }
-        },
-        builder: (context, state) {
-          return Stack(
-            children: [
-              // ---- Game area ----
-              if (_game != null)
-                GameWidget<PixelRoomGame>(game: _game!)
-              else
-                const SizedBox.expand(),
+    return MultiBlocListener(
+      listeners: [
+        // ---- PixelWorldBloc listener ----
+        BlocListener<PixelWorldBloc, PixelWorldState>(
+          listener: (context, state) {
+            if (state is PixelWorldLoaded && _game == null) {
+              setState(() {
+                _game = PixelRoomGame(
+                  agentStatuses: state.agentStatuses,
+                  onAgentTapped: (type) => _handleAgentTap(context, type),
+                );
+              });
+            } else if (state is PixelWorldLoaded && _game != null) {
+              _game!.updateAgentStatuses(state.agentStatuses);
+            } else if (state is PixelWorldDialogueLoaded) {
+              setState(() {
+                _dialogueText = state.text;
+                _dialogueAgentType = state.agentType;
+              });
+            }
+          },
+        ),
+        // ---- TaskBloc listener — settle → AgentTaskCompleted ----
+        BlocListener<TaskBloc, TaskState>(
+          listener: (context, state) {
+            if (state is TaskSettledSuccess) {
+              final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+              if (uid.isEmpty) return;
+              for (final task in state.settledTasks) {
+                context.read<AgentBloc>().add(
+                      AgentTaskCompleted(
+                        uid: uid,
+                        agentId: task.agentId,
+                        coinsEarned: task.actualReward ?? 0,
+                      ),
+                    );
+              }
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: _colorNavy,
+        body: BlocBuilder<PixelWorldBloc, PixelWorldState>(
+          builder: (context, state) {
+            return Stack(
+              children: [
+                // ---- Game area ----
+                if (_game != null)
+                  GameWidget<PixelRoomGame>(game: _game!)
+                else
+                  const SizedBox.expand(),
 
-              // ---- Loading overlay ----
-              if (state is PixelWorldLoading)
-                const Center(
-                  child: CircularProgressIndicator(
-                    color: _colorNeonGreen,
-                    strokeWidth: 3,
-                  ),
-                ),
-
-              // ---- Error overlay ----
-              if (state is PixelWorldError)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      state.message,
-                      style: const TextStyle(color: Colors.redAccent),
-                      textAlign: TextAlign.center,
+                // ---- Loading overlay ----
+                if (state is PixelWorldLoading)
+                  const Center(
+                    child: CircularProgressIndicator(
+                      color: _colorNeonGreen,
+                      strokeWidth: 3,
                     ),
                   ),
-                ),
 
-              // ---- Agent status chips ----
-              if (state is PixelWorldLoaded)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: MediaQuery.of(context).padding.bottom + 12,
-                  child: _AgentStatusBar(
-                    agentStatuses: state.agentStatuses,
-                    onChipTap: (type) => _handleAgentTap(context, type),
+                // ---- Error overlay ----
+                if (state is PixelWorldError)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        state.message,
+                        style: const TextStyle(color: Colors.redAccent),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ),
-                ),
-            ],
-          );
-        },
+
+                // ---- Agent status chips ----
+                if (state is PixelWorldLoaded)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: MediaQuery.of(context).padding.bottom + 12,
+                    child: _AgentStatusBar(
+                      agentStatuses: state.agentStatuses,
+                      onChipTap: (type) => _handleAgentTap(context, type),
+                    ),
+                  ),
+
+                // ---- AI Dialogue bubble ----
+                if (_dialogueText != null && _dialogueAgentType != null)
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: MediaQuery.of(context).padding.bottom + 100,
+                    child: AgentDialogueBubble(
+                      key: ValueKey('$_dialogueAgentType:$_dialogueText'),
+                      text: _dialogueText!,
+                      agentType: _dialogueAgentType!,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -258,9 +356,9 @@ class _AgentChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         decoration: BoxDecoration(
-          color: chipColor.withAlpha(30),
+          color: chipColor.withValues(alpha: 30 / 255),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: chipColor.withAlpha(120), width: 1),
+          border: Border.all(color: chipColor.withValues(alpha: 120 / 255), width: 1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -337,7 +435,7 @@ class _AgentDetailSheet extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: chipColor.withAlpha(60),
+                  backgroundColor: chipColor.withValues(alpha: 60 / 255),
                   child: Icon(
                     _statusIcon(agentStatus),
                     color: chipColor,

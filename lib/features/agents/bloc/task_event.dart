@@ -45,3 +45,12 @@ class TasksSettled extends TaskEvent {
   @override
   List<Object?> get props => [uid];
 }
+
+class TasksSettleRequested extends TaskEvent {
+  const TasksSettleRequested({required this.uid});
+
+  final String uid;
+
+  @override
+  List<Object?> get props => [uid];
+}

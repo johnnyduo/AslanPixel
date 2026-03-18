@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:aslan_pixel/core/utils/local_notification_service.dart';
 import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
 import 'package:aslan_pixel/features/quests/data/repositories/quest_repository.dart';
+import 'package:aslan_pixel/features/quests/engine/quest_room_rewards.dart';
 
 part 'quest_event.dart';
 part 'quest_state.dart';
@@ -36,6 +38,13 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
 
     emit(const QuestLoading());
 
+    // Auto-generate daily quests before starting the stream.
+    try {
+      await _repository.ensureDailyQuestsExist(event.uid);
+    } catch (_) {
+      // Non-fatal — proceed to watch even if generation fails.
+    }
+
     await _questSub?.cancel();
     await emit.forEach<List<QuestModel>>(
       _repository.watchActiveQuests(event.uid),
@@ -64,8 +73,39 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
     QuestRewardClaimed event,
     Emitter<QuestState> emit,
   ) async {
+    // Capture the quest's actionType and reward from the current loaded state
+    // before claiming (the document is deleted by claimQuestReward).
+    String? actionType;
+    String questTitle = '';
+    int rewardCoins = 0;
+    final current = state;
+    if (current is QuestLoaded) {
+      final match = current.quests
+          .where((q) => q.questId == event.questId)
+          .toList();
+      if (match.isNotEmpty) {
+        actionType = match.first.actionType;
+        questTitle = match.first.objectiveTh.isNotEmpty
+            ? match.first.objectiveTh
+            : match.first.objective;
+        rewardCoins = (match.first.reward['coins'] as num?)?.toInt() ?? 0;
+      }
+    }
+
     try {
       await _repository.claimQuestReward(event.uid, event.questId);
+      if (questTitle.isNotEmpty) {
+        unawaited(LocalNotificationService.instance.showQuestComplete(
+          questTitle,
+          rewardCoins,
+        ));
+      }
+      final unlockedItemId =
+          actionType != null ? kQuestRoomRewards[actionType] : null;
+      emit(QuestRewardClaimedSuccess(
+        questId: event.questId,
+        unlockedItemId: unlockedItemId,
+      ));
     } catch (e) {
       emit(QuestError(e.toString()));
     }

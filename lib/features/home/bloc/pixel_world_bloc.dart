@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
+import 'package:aslan_pixel/data/services/ai_service.dart';
 import 'package:aslan_pixel/features/home/bloc/agent_status.dart';
 import 'package:aslan_pixel/features/home/bloc/pixel_world_event.dart';
 import 'package:aslan_pixel/features/home/bloc/pixel_world_state.dart';
@@ -19,11 +20,18 @@ const _defaultStatuses = {
 
 /// BLoC that manages the lifecycle and state of the pixel world room.
 class PixelWorldBloc extends Bloc<PixelWorldEvent, PixelWorldState> {
-  PixelWorldBloc() : super(const PixelWorldInitial()) {
+  PixelWorldBloc({required AIService aiService})
+      : _aiService = aiService,
+        super(const PixelWorldInitial()) {
     on<PixelWorldStarted>(_onStarted);
     on<PixelWorldAgentTapped>(_onAgentTapped);
     on<PixelWorldRoomLoaded>(_onRoomLoaded);
   }
+
+  final AIService _aiService;
+
+  // Keep track of last known statuses so we can pass context to AI.
+  Map<AgentType, AgentStatus> _lastStatuses = Map.unmodifiable(_defaultStatuses);
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -40,12 +48,23 @@ class PixelWorldBloc extends Bloc<PixelWorldEvent, PixelWorldState> {
     emit(const PixelWorldLoaded(_defaultStatuses));
   }
 
-  void _onAgentTapped(
+  Future<void> _onAgentTapped(
     PixelWorldAgentTapped event,
     Emitter<PixelWorldState> emit,
-  ) {
-    // Phase 3: dispatch mission or open detail sheet from here.
-    // For now we simply keep current state and let the UI handle the tap.
+  ) async {
+    final agentStatus =
+        _lastStatuses[event.agentType] ?? AgentStatus.idle;
+
+    final dialogue = await _aiService.generateAgentDialogue(
+      agentType: event.agentType,
+      agentStatus: agentStatus.name,
+      context: agentStatus.label,
+    );
+
+    emit(PixelWorldDialogueLoaded(
+      agentType: event.agentType,
+      text: dialogue,
+    ));
   }
 
   void _onRoomLoaded(
@@ -67,7 +86,9 @@ class PixelWorldBloc extends Bloc<PixelWorldEvent, PixelWorldState> {
       parsed.putIfAbsent(type, () => AgentStatus.idle);
     }
 
-    emit(PixelWorldLoaded(Map.unmodifiable(parsed)));
+    final immutable = Map<AgentType, AgentStatus>.unmodifiable(parsed);
+    _lastStatuses = immutable;
+    emit(PixelWorldLoaded(immutable));
   }
 
   // ---------------------------------------------------------------------------

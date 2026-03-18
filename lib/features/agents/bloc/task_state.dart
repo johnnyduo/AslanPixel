@@ -36,3 +36,12 @@ class TaskError extends TaskState {
   @override
   List<Object?> get props => [message];
 }
+
+class TaskSettledSuccess extends TaskState {
+  const TaskSettledSuccess(this.settledTasks);
+
+  final List<AgentTask> settledTasks;
+
+  @override
+  List<Object?> get props => [settledTasks];
+}

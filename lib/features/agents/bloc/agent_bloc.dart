@@ -15,6 +15,7 @@ class AgentBloc extends Bloc<AgentEvent, AgentState> {
         super(const AgentInitial()) {
     on<AgentWatchStarted>(_onWatchStarted);
     on<AgentStatusUpdated>(_onStatusUpdated);
+    on<AgentTaskCompleted>(_onTaskCompleted);
   }
 
   final AgentRepository _repository;
@@ -48,6 +49,38 @@ class AgentBloc extends Bloc<AgentEvent, AgentState> {
 
     try {
       await _repository.updateAgentStatus(uid, event.agentId, event.status);
+    } catch (e) {
+      emit(AgentError(e.toString()));
+    }
+  }
+
+  Future<void> _onTaskCompleted(
+    AgentTaskCompleted event,
+    Emitter<AgentState> emit,
+  ) async {
+    try {
+      await _repository.updateAgentStatus(
+        event.uid,
+        event.agentId,
+        AgentStatus.returning,
+      );
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      await _repository.updateAgentStatus(
+        event.uid,
+        event.agentId,
+        AgentStatus.celebrating,
+      );
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      await _repository.updateAgentStatus(
+        event.uid,
+        event.agentId,
+        AgentStatus.idle,
+      );
+      await _repository.clearActiveTask(event.uid, event.agentId);
     } catch (e) {
       emit(AgentError(e.toString()));
     }

@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:aslan_pixel/features/home/bloc/room_bloc.dart';
+import 'package:aslan_pixel/features/home/bloc/room_event.dart';
 import 'package:aslan_pixel/features/quests/bloc/quest_bloc.dart';
 import 'package:aslan_pixel/features/quests/data/datasources/firestore_quest_datasource.dart';
 import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
@@ -76,7 +78,20 @@ class _QuestView extends StatelessWidget {
             child: _QuestTabBar(),
           ),
         ),
-        body: BlocBuilder<QuestBloc, QuestState>(
+        body: BlocConsumer<QuestBloc, QuestState>(
+          listener: (context, state) {
+            if (state is QuestRewardClaimedSuccess &&
+                state.unlockedItemId != null) {
+              final currentUid =
+                  FirebaseAuth.instance.currentUser?.uid ?? uid;
+              context.read<RoomBloc>().add(
+                    RoomItemUnlocked(
+                      uid: currentUid,
+                      itemId: state.unlockedItemId!,
+                    ),
+                  );
+            }
+          },
           builder: (context, state) {
             if (state is QuestLoading) {
               return const Center(
@@ -105,8 +120,16 @@ class _QuestView extends StatelessWidget {
                   state.quests.where((q) => q.type == 'weekly').toList();
               return TabBarView(
                 children: [
-                  _QuestList(quests: daily, uid: uid, emptyLabel: 'ยังไม่มี Quest ประจำวัน'),
-                  _QuestList(quests: weekly, uid: uid, emptyLabel: 'ยังไม่มี Quest ประจำสัปดาห์'),
+                  _QuestList(
+                    quests: daily,
+                    uid: uid,
+                    emptyLabel: 'ยังไม่มี Quest ประจำวัน',
+                  ),
+                  _QuestList(
+                    quests: weekly,
+                    uid: uid,
+                    emptyLabel: 'ยังไม่มี Quest ประจำสัปดาห์',
+                  ),
                 ],
               );
             }
