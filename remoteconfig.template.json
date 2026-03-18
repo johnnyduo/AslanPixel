@@ -1,0 +1,60 @@
+{
+  "parameters": {
+    "pixel_world_enabled": {
+      "defaultValue": {"value": "true"},
+      "description": "Enable/disable Pixel World feature"
+    },
+    "social_feed_enabled": {
+      "defaultValue": {"value": "true"},
+      "description": "Enable/disable Social Feed feature"
+    },
+    "broker_connect_enabled": {
+      "defaultValue": {"value": "false"},
+      "description": "Enable/disable real broker connections"
+    },
+    "plaza_enabled": {
+      "defaultValue": {"value": "true"},
+      "description": "Enable/disable Plaza feature"
+    },
+    "pixel_editor_enabled": {
+      "defaultValue": {"value": "true"},
+      "description": "Enable/disable Pixel Art Editor"
+    },
+    "ai_insights_enabled": {
+      "defaultValue": {"value": "true"},
+      "description": "Enable/disable AI insights"
+    },
+    "min_app_version": {
+      "defaultValue": {"value": "1.0.0"},
+      "description": "Minimum required app version"
+    },
+    "sprite_version": {
+      "defaultValue": {"value": "v1"},
+      "description": "Sprite asset version path prefix in Firebase Storage"
+    },
+    "plaza_presence_ttl_minutes": {
+      "defaultValue": {"value": "5"},
+      "description": "Plaza presence TTL in minutes"
+    },
+    "ai_cache_ttl_hours": {
+      "defaultValue": {"value": "6"},
+      "description": "AI insight cache TTL in hours"
+    },
+    "max_agents_per_user": {
+      "defaultValue": {"value": "5"},
+      "description": "Maximum agent slots per user"
+    },
+    "leaderboard_top_n": {
+      "defaultValue": {"value": "100"},
+      "description": "Number of entries in leaderboard"
+    },
+    "announcement_active": {
+      "defaultValue": {"value": "false"},
+      "description": "Show System Bot NPC in plaza with announcement"
+    },
+    "announcement_text": {
+      "defaultValue": {"value": ""},
+      "description": "Announcement text shown by System Bot NPC"
+    }
+  }
+}

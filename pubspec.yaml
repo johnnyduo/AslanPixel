@@ -108,5 +108,14 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/sprites/
+    - assets/sprites/agents/
+    - assets/sprites/avatars/
+    - assets/sprites/npcs/
+    - assets/sprites/room_items/furniture/
+    - assets/sprites/room_items/decorations/
+    - assets/sprites/room_items/technology/
+    - assets/sprites/room_items/special/
+    - assets/sprites/effects/
+    - assets/sprites/ui/
     - assets/tiles/
     - assets/audio/
