@@ -1,0 +1,26 @@
+{
+  "name": "aslan-pixel-functions",
+  "version": "1.0.0",
+  "description": "Aslan Pixel Cloud Functions",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "deploy": "npm run build && firebase deploy --only functions",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "lint": "tslint --project tsconfig.json"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "private": true
+}
