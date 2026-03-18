@@ -8,6 +8,7 @@ import 'package:aslan_pixel/core/utils/local_notification_service.dart';
 import 'package:aslan_pixel/features/agents/data/repositories/agent_task_repository.dart';
 import 'package:aslan_pixel/features/agents/engine/agent_task_model.dart';
 import 'package:aslan_pixel/features/agents/engine/idle_task_engine.dart';
+import 'package:aslan_pixel/features/agents/engine/reward_summary.dart';
 
 part 'task_event.dart';
 part 'task_state.dart';
@@ -73,7 +74,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     try {
       final now = DateTime.now();
-      final settled = IdleTaskEngine.settleTasks(current.tasks, now);
+      final result = IdleTaskEngine.settleTasks(
+        current.tasks,
+        now,
+        streakDays: event.streakDays,
+      );
+      final settled = result.tasks;
+      final summary = result.summary;
 
       // Persist each newly settled task to Firestore.
       final toSettle = settled.where(
@@ -94,7 +101,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final newlySettled =
           settled.where((t) => t.isSettled && t.actualReward != null).toList();
       if (newlySettled.isNotEmpty) {
-        emit(TaskSettledSuccess(newlySettled));
+        emit(TaskSettledSuccess(newlySettled, summary: summary));
       }
       emit(TaskLoaded(settled));
     } catch (e) {
@@ -114,9 +121,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     } else {
       // Fetch tasks from repository if stream hasn't loaded yet.
       try {
-        tasks = await _repository
-            .watchPendingTasks(event.uid)
-            .first;
+        tasks = await _repository.watchPendingTasks(event.uid).first;
       } catch (e) {
         emit(TaskError(e.toString()));
         return;
@@ -125,7 +130,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     try {
       final now = DateTime.now();
-      final settled = IdleTaskEngine.settleTasks(tasks, now);
+      final result = IdleTaskEngine.settleTasks(
+        tasks,
+        now,
+        streakDays: event.streakDays,
+      );
+      final settled = result.tasks;
+      final summary = result.summary;
 
       final toSettle = settled.where(
         (t) =>
@@ -144,7 +155,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
       final newlySettled = toSettle.toList();
       if (newlySettled.isNotEmpty) {
-        emit(TaskSettledSuccess(newlySettled));
+        emit(TaskSettledSuccess(newlySettled, summary: summary));
       }
       emit(TaskLoaded(settled));
     } catch (e) {

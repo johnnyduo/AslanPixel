@@ -1,5 +1,9 @@
 import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/agents/engine/agent_task_model.dart';
+import 'package:aslan_pixel/features/agents/engine/reward_summary.dart';
+
+/// Maximum number of agents a player may have on their team.
+const int kMaxTeamSize = 8;
 
 /// Pure Dart idle-task engine — no Firebase, no Flutter dependencies.
 ///
@@ -20,6 +24,33 @@ class IdleTaskEngine {
     TaskTier.advanced: 200,
     TaskTier.elite: 800,
   };
+
+  /// XP awarded per tier on settlement (flat, before any multipliers).
+  static const Map<TaskTier, int> tierXpReward = {
+    TaskTier.basic: 10,
+    TaskTier.standard: 35,
+    TaskTier.advanced: 120,
+    TaskTier.elite: 500,
+  };
+
+  /// Streak multiplier applied to coin rewards.
+  ///
+  /// Each consecutive day the user collects rewards adds 0.1× to the
+  /// multiplier, capped at 2.0× on day 10.
+  ///
+  /// Examples:
+  ///   day 0  → 1.0×
+  ///   day 1  → 1.1×
+  ///   day 5  → 1.5×
+  ///   day 10 → 2.0×  (maximum)
+  static double streakMultiplier(int streakDays) {
+    return 1.0 + (streakDays.clamp(0, 10) * 0.1);
+  }
+
+  /// Returns true when [streakDays] is a reward-milestone day (3, 7 or 10).
+  static bool isStreakMilestone(int streakDays) {
+    return streakDays == 3 || streakDays == 7 || streakDays == 10;
+  }
 
   /// Creates a new [AgentTask] for an agent.
   ///
@@ -54,16 +85,50 @@ class IdleTaskEngine {
 
   /// Lazy settlement: call on app open with all pending tasks.
   ///
-  /// Returns a list of tasks where any completed-but-unsettled task has
-  /// [AgentTask.isSettled] set to `true` and [AgentTask.actualReward] filled in.
-  static List<AgentTask> settleTasks(List<AgentTask> tasks, DateTime now) {
-    return tasks.map((task) {
+  /// Returns the updated task list AND a [RewardSummary] describing totals
+  /// across all newly-settled tasks, applying the [streakDays] multiplier.
+  ///
+  /// The raw task list (without summary) is available at
+  /// [RewardSummary] fields; the updated list is the first element of the
+  /// returned record.
+  static ({List<AgentTask> tasks, RewardSummary summary}) settleTasks(
+    List<AgentTask> tasks,
+    DateTime now, {
+    int streakDays = 0,
+  }) {
+    final mult = streakMultiplier(streakDays);
+    var totalCoins = 0;
+    var totalXp = 0;
+    var settledCount = 0;
+
+    final updated = tasks.map((task) {
       if (task.isSettled || !now.isAfter(task.completesAt)) return task;
-      final multiplier = 1.0 + (_getAgentLevelFromTask(task) * 0.05);
-      final reward = (task.baseReward * multiplier).round();
+      final lvlMult = 1.0 + (_getAgentLevelFromTask(task) * 0.05);
+      final reward = ((task.baseReward * lvlMult) * mult).round();
+      final xp = tierXpReward[task.tier] ?? task.xpReward;
+      totalCoins += reward;
+      totalXp += xp;
+      settledCount++;
       return task.copyWith(isSettled: true, actualReward: reward);
     }).toList();
+
+    final summary = RewardSummary(
+      totalCoins: totalCoins,
+      totalXp: totalXp,
+      settledCount: settledCount,
+      streakBonus: mult,
+      isStreakMilestone: isStreakMilestone(streakDays),
+    );
+
+    return (tasks: updated, summary: summary);
   }
+
+  // Legacy helper kept for callers that only need the task list.
+  static List<AgentTask> settleTasksOnly(
+    List<AgentTask> tasks,
+    DateTime now,
+  ) =>
+      settleTasks(tasks, now).tasks;
 
   /// Returns the [TaskType]s available for a given [AgentType].
   static List<TaskType> availableTaskTypes(AgentType agentType) {

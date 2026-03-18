@@ -46,11 +46,15 @@ class QuestRewardClaimedSuccess extends QuestState {
   const QuestRewardClaimedSuccess({
     required this.questId,
     this.unlockedItemId,
+    this.coinsEarned = 0,
   });
 
   final String questId;
   final String? unlockedItemId;
 
+  /// Coins awarded for this quest — used to show [FloatingRewardText].
+  final int coinsEarned;
+
   @override
-  List<Object?> get props => [questId, unlockedItemId];
+  List<Object?> get props => [questId, unlockedItemId, coinsEarned];
 }

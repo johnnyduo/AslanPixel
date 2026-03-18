@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:aslan_pixel/core/utils/globals.dart';
+import 'package:aslan_pixel/shared/widgets/notification_banner.dart';
 
 /// Singleton service that wraps Firebase Cloud Messaging setup.
 ///
@@ -29,10 +30,19 @@ class FcmService {
       Globals.fcmToken = token;
     }
 
-    // Handle messages that arrive while the app is in the foreground
+    // Handle messages that arrive while the app is in the foreground.
+    // We use WidgetsBinding.instance.addPostFrameCallback so the overlay
+    // insert happens in a safe frame — this also sidesteps the
+    // use_build_context_synchronously lint for the stream listener context.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('[FCM] Foreground message: ${message.notification?.title}');
-      // TODO: Phase production — show in-app notification banner
+      final title = message.notification?.title ?? '';
+      final body = message.notification?.body ?? '';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = Globals.navigatorKey.currentContext;
+        if (ctx == null) return;
+        NotificationBanner.show(ctx, title: title, body: body);
+      });
     });
 
     // Handle notification tap when app was in background / terminated

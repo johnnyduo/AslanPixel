@@ -38,19 +38,25 @@ class TaskCreated extends TaskEvent {
 }
 
 class TasksSettled extends TaskEvent {
-  const TasksSettled(this.uid);
+  const TasksSettled(this.uid, {this.streakDays = 0});
 
   final String uid;
 
+  /// Consecutive reward-collection days, used for streak multiplier.
+  final int streakDays;
+
   @override
-  List<Object?> get props => [uid];
+  List<Object?> get props => [uid, streakDays];
 }
 
 class TasksSettleRequested extends TaskEvent {
-  const TasksSettleRequested({required this.uid});
+  const TasksSettleRequested({required this.uid, this.streakDays = 0});
 
   final String uid;
 
+  /// Consecutive reward-collection days, used for streak multiplier.
+  final int streakDays;
+
   @override
-  List<Object?> get props => [uid];
+  List<Object?> get props => [uid, streakDays];
 }

@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:aslan_pixel/core/enums/privacy_mode.dart';
 import 'package:aslan_pixel/features/auth/data/models/user_model.dart';
+import 'package:aslan_pixel/features/follows/view/follow_button.dart';
+import 'package:aslan_pixel/features/inventory/bloc/economy_bloc.dart';
 import 'package:aslan_pixel/features/profile/bloc/profile_bloc.dart';
 import 'package:aslan_pixel/features/profile/data/datasources/firestore_profile_datasource.dart';
 import 'package:aslan_pixel/features/profile/data/models/badge_model.dart';
@@ -19,38 +21,59 @@ const Color _textWhite = Color(0xFFE8F4F8);
 const Color _textSecondary = Color(0xFFa8c4e0);
 
 /// Profile tab — shows avatar, stats, privacy settings, and earned badges.
+///
+/// When [profileUid] is provided the page displays that user's public profile
+/// (with a FollowButton). When omitted it defaults to the currently signed-in
+/// user's own profile.
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({super.key, this.profileUid});
 
   static const String routeName = '/profile';
+
+  /// UID of the profile to display. Defaults to the signed-in user when null.
+  final String? profileUid;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // ── Colour constants ───────────────────────────────────────────────────────
   late final ProfileBloc _bloc;
+  late final EconomyBloc _economyBloc;
+  late final String _currentUid;
 
   @override
   void initState() {
     super.initState();
+    _currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final targetUid = widget.profileUid ?? _currentUid;
     _bloc = ProfileBloc(FirestoreProfileDatasource())
-      ..add(ProfileLoadRequested(
-        FirebaseAuth.instance.currentUser?.uid ?? '',
-      ));
+      ..add(ProfileLoadRequested(targetUid));
+
+    // Only stream our own economy; public profiles don't expose balance.
+    _economyBloc = EconomyBloc();
+    if (targetUid == _currentUid && _currentUid.isNotEmpty) {
+      _economyBloc.add(EconomyWatchStarted(_currentUid));
+    }
   }
 
   @override
   void dispose() {
     _bloc.close();
+    _economyBloc.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _bloc,
+    final targetUid = widget.profileUid ?? _currentUid;
+    final isSelf = targetUid == _currentUid;
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _bloc),
+        BlocProvider.value(value: _economyBloc),
+      ],
       child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is ProfileSignedOut) {
@@ -86,9 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 16),
                       OutlinedButton(
                         onPressed: () => context.read<ProfileBloc>().add(
-                              ProfileLoadRequested(
-                                FirebaseAuth.instance.currentUser?.uid ?? '',
-                              ),
+                              ProfileLoadRequested(targetUid),
                             ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: _neonGreen),
@@ -107,7 +128,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   : (state as ProfileUpdating).user;
               final List<BadgeModel> badges =
                   state is ProfileLoaded ? state.badges : const [];
-              return _ProfileContent(user: user, badges: badges);
+              return _ProfileContent(
+                user: user,
+                badges: badges,
+                currentUid: _currentUid,
+                profileUid: targetUid,
+                isSelf: isSelf,
+              );
             }
             return const Scaffold(backgroundColor: _navy);
           },
@@ -120,10 +147,19 @@ class _ProfilePageState extends State<ProfilePage> {
 // ── Main content ──────────────────────────────────────────────────────────────
 
 class _ProfileContent extends StatelessWidget {
-  const _ProfileContent({required this.user, required this.badges});
+  const _ProfileContent({
+    required this.user,
+    required this.badges,
+    required this.currentUid,
+    required this.profileUid,
+    required this.isSelf,
+  });
 
   final UserModel user;
   final List<BadgeModel> badges;
+  final String currentUid;
+  final String profileUid;
+  final bool isSelf;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +168,12 @@ class _ProfileContent extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(context),
-          SliverToBoxAdapter(child: _buildStatRow()),
+          SliverToBoxAdapter(child: _buildStatRow(context)),
+          // Follow button — only shown when viewing another user's profile.
+          if (!isSelf)
+            SliverToBoxAdapter(
+              child: _buildFollowSection(),
+            ),
           SliverToBoxAdapter(child: _buildPrivacySection(context)),
           SliverToBoxAdapter(child: _buildBadgesSection()),
           SliverToBoxAdapter(child: _buildActionButtons(context)),
@@ -197,64 +238,148 @@ class _ProfileContent extends StatelessWidget {
 
   // ── Stat Row ──────────────────────────────────────────────────────────────
 
-  Widget _buildStatRow() {
+  Widget _buildStatRow(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _StatChip(label: 'Lv 1', icon: Icons.star_rounded, color: _gold),
-              const SizedBox(width: 12),
-              _StatChip(
-                label: '0 Quests',
-                icon: Icons.assignment_turned_in_outlined,
-                color: _neonGreen,
-              ),
-              const SizedBox(width: 12),
-              _StatChip(
-                label: '0 Following',
-                icon: Icons.people_outline,
-                color: Color(0xFF00d9ff),
-              ),
-            ],
+          BlocBuilder<EconomyBloc, EconomyState>(
+            builder: (context, econState) {
+              final level =
+                  econState is EconomyLoaded ? econState.level : 1;
+              return Row(
+                children: [
+                  _StatChip(
+                    label: 'Lv $level',
+                    icon: Icons.star_rounded,
+                    color: _gold,
+                  ),
+                  const SizedBox(width: 12),
+                  _StatChip(
+                    label: '0 Quests',
+                    icon: Icons.assignment_turned_in_outlined,
+                    color: _neonGreen,
+                  ),
+                  const SizedBox(width: 12),
+                  _StatChip(
+                    label: isSelf ? 'โปรไฟล์ฉัน' : 'สาธารณะ',
+                    icon: isSelf ? Icons.person : Icons.people_outline,
+                    color: const Color(0xFF00d9ff),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
-          // Coin balance with animated counter
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _gold.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.account_balance_wallet_outlined,
-                    color: _gold, size: 18),
-                const SizedBox(width: 8),
-                const Text(
-                  'ยอดเหรียญ',
-                  style: TextStyle(
-                    color: _textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+          // XP progress bar — only on own profile
+          if (isSelf)
+            BlocBuilder<EconomyBloc, EconomyState>(
+              builder: (context, econState) {
+                final xp =
+                    econState is EconomyLoaded ? econState.xp : 0;
+                final level =
+                    econState is EconomyLoaded ? econState.level : 1;
+                final xpProgress = (xp % 1000) / 1000.0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'XP: $xp',
+                            style: const TextStyle(
+                              color: _textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'Lv $level → Lv ${level + 1}',
+                            style: const TextStyle(
+                              color: _textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: xpProgress,
+                          minHeight: 6,
+                          backgroundColor:
+                              _surface.withValues(alpha: 0.8),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            _neonGreen,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const Spacer(),
-                // TODO: replace 0 with coins from EconomyBloc when wired
-                AnimatedCoinCounter(
-                  toAmount: 0,
-                  fromAmount: 0,
-                  fontSize: 15,
-                  showIcon: true,
-                ),
-              ],
+                );
+              },
             ),
-          ),
+          // Coin balance with animated counter — only on own profile
+          if (isSelf)
+            BlocBuilder<EconomyBloc, EconomyState>(
+              builder: (context, econState) {
+                final coins =
+                    econState is EconomyLoaded ? econState.coins : 0;
+                final prevCoins = econState is EconomyLoaded ? coins : 0;
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: _gold.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_outlined,
+                          color: _gold, size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'ยอดเหรียญ',
+                        style: TextStyle(
+                          color: _textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      AnimatedCoinCounter(
+                        toAmount: coins,
+                        fromAmount: prevCoins,
+                        fontSize: 15,
+                        showIcon: true,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
+      ),
+    );
+  }
+
+  // ── Follow Section ────────────────────────────────────────────────────────
+
+  Widget _buildFollowSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Center(
+        child: FollowButton(
+          uid: currentUid,
+          targetUid: profileUid,
+        ),
       ),
     );
   }
@@ -262,6 +387,9 @@ class _ProfileContent extends StatelessWidget {
   // ── Privacy Section ───────────────────────────────────────────────────────
 
   Widget _buildPrivacySection(BuildContext context) {
+    // Only the profile owner can change privacy settings.
+    if (!isSelf) return const SizedBox.shrink();
+
     return _SectionCard(
       title: 'ความเป็นส่วนตัว',
       child: DropdownButton<PrivacyMode>(
@@ -318,6 +446,8 @@ class _ProfileContent extends StatelessWidget {
   // ── Action Buttons ────────────────────────────────────────────────────────
 
   Widget _buildActionButtons(BuildContext context) {
+    if (!isSelf) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(

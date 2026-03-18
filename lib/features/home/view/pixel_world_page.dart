@@ -21,6 +21,8 @@ import 'package:aslan_pixel/features/home/bloc/room_state.dart';
 import 'package:aslan_pixel/features/home/data/datasources/firestore_room_datasource.dart';
 import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
 import 'package:aslan_pixel/features/home/view/room_item_picker.dart';
+import 'package:aslan_pixel/shared/widgets/ready_to_collect_badge.dart';
+import 'package:aslan_pixel/shared/widgets/reward_popup.dart';
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -217,12 +219,13 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
             }
           },
         ),
-        // ---- TaskBloc listener — settle → AgentTaskCompleted ----
+        // ---- TaskBloc listener — settle → AgentTaskCompleted + RewardPopup ----
         BlocListener<TaskBloc, TaskState>(
           listener: (context, state) {
             if (state is TaskSettledSuccess) {
               final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
               if (uid.isEmpty) return;
+
               for (final task in state.settledTasks) {
                 context.read<AgentBloc>().add(
                       AgentTaskCompleted(
@@ -231,6 +234,34 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
                         coinsEarned: task.actualReward ?? 0,
                       ),
                     );
+              }
+
+              if (state.settledTasks.isNotEmpty) {
+                final summary = state.summary;
+                final totalCoins = summary?.totalCoins ??
+                    state.settledTasks.fold<int>(
+                      0,
+                      (sum, t) => sum + (t.actualReward ?? 0),
+                    );
+                final totalXp = summary?.totalXp ??
+                    state.settledTasks.fold<int>(
+                      0,
+                      (sum, t) => sum + t.xpReward,
+                    );
+                // streakDays is not stored on the state — use 0 as default;
+                // the calling site (TasksSettleRequested) may carry it.
+                const streakDays = 0;
+
+                showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  barrierColor: Colors.black54,
+                  builder: (_) => RewardPopup(
+                    coins: totalCoins,
+                    xp: totalXp,
+                    streakDays: streakDays,
+                  ),
+                );
               }
             }
           },
@@ -302,6 +333,37 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
                       agentType: _dialogueAgentType!,
                     ),
                   ),
+
+                // ---- Ready to collect badge ----
+                // Shows when TaskLoaded has ≥1 complete task.
+                BlocBuilder<TaskBloc, TaskState>(
+                  builder: (context, taskState) {
+                    final readyCount = taskState is TaskLoaded
+                        ? taskState.tasks
+                            .where((t) => t.isComplete)
+                            .length
+                        : 0;
+                    if (readyCount == 0) return const SizedBox.shrink();
+                    return Positioned(
+                      top: MediaQuery.of(context).padding.top + 12,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: ReadyToCollectBadge(
+                          count: readyCount,
+                          onTap: () {
+                            final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+                            if (uid.isNotEmpty) {
+                              context.read<TaskBloc>().add(
+                                    TasksSettleRequested(uid: uid),
+                                  );
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
                 // ---- Customize Room FAB ----
                 Positioned(

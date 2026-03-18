@@ -105,6 +105,7 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
       emit(QuestRewardClaimedSuccess(
         questId: event.questId,
         unlockedItemId: unlockedItemId,
+        coinsEarned: rewardCoins,
       ));
     } catch (e) {
       emit(QuestError(e.toString()));

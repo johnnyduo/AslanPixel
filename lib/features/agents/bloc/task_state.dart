@@ -38,10 +38,14 @@ class TaskError extends TaskState {
 }
 
 class TaskSettledSuccess extends TaskState {
-  const TaskSettledSuccess(this.settledTasks);
+  const TaskSettledSuccess(this.settledTasks, {this.summary});
 
   final List<AgentTask> settledTasks;
 
+  /// Aggregated reward totals for the settlement pass.
+  /// May be null when settlement is triggered by legacy callers.
+  final RewardSummary? summary;
+
   @override
-  List<Object?> get props => [settledTasks];
+  List<Object?> get props => [settledTasks, summary];
 }

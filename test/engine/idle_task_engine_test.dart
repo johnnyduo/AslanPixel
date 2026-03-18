@@ -142,23 +142,23 @@ void main() {
     test('already settled task is not modified', () {
       final task = pending(completed: true, settled: true);
       final result = IdleTaskEngine.settleTasks([task], now);
-      expect(result.first.isSettled, isTrue);
-      expect(result.first.actualReward, 11);
+      expect(result.tasks.first.isSettled, isTrue);
+      expect(result.tasks.first.actualReward, 11);
     });
 
     test('incomplete task (completesAt in future) is not settled', () {
       final task = pending(completed: false);
       final result = IdleTaskEngine.settleTasks([task], now);
-      expect(result.first.isSettled, isFalse);
-      expect(result.first.actualReward, isNull);
+      expect(result.tasks.first.isSettled, isFalse);
+      expect(result.tasks.first.actualReward, isNull);
     });
 
     test('completed unsettled task gets settled with actualReward', () {
       final task = pending(completed: true, settled: false);
       final result = IdleTaskEngine.settleTasks([task], now);
-      expect(result.first.isSettled, isTrue);
-      expect(result.first.actualReward, isNotNull);
-      expect(result.first.actualReward, greaterThan(0));
+      expect(result.tasks.first.isSettled, isTrue);
+      expect(result.tasks.first.actualReward, isNotNull);
+      expect(result.tasks.first.actualReward, greaterThan(0));
     });
 
     test('returns same list length', () {
@@ -167,11 +167,11 @@ void main() {
         pending(completed: false),
         pending(completed: true, settled: true),
       ];
-      expect(IdleTaskEngine.settleTasks(tasks, now).length, 3);
+      expect(IdleTaskEngine.settleTasks(tasks, now).tasks.length, 3);
     });
 
     test('empty list returns empty', () {
-      expect(IdleTaskEngine.settleTasks([], now), isEmpty);
+      expect(IdleTaskEngine.settleTasks([], now).tasks, isEmpty);
     });
 
     test('only completed unsettled tasks are modified', () {
@@ -180,8 +180,8 @@ void main() {
         pending(completed: false), // should NOT settle
       ];
       final result = IdleTaskEngine.settleTasks(tasks, now);
-      expect(result[0].isSettled, isTrue);
-      expect(result[1].isSettled, isFalse);
+      expect(result.tasks[0].isSettled, isTrue);
+      expect(result.tasks[1].isSettled, isFalse);
     });
   });
 

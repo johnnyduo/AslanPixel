@@ -7,6 +7,10 @@ import 'package:aslan_pixel/features/agents/data/models/agent_model.dart';
 import 'package:aslan_pixel/features/agents/engine/agent_task_model.dart';
 import 'package:aslan_pixel/features/agents/engine/idle_task_engine.dart';
 
+// Re-export so UI files can import the limit from here if desired.
+export 'package:aslan_pixel/features/agents/engine/idle_task_engine.dart'
+    show kMaxTeamSize;
+
 // ── Palette ────────────────────────────────────────────────────────────────
 const _kBackground = Color(0xFF0f2040);
 const _kSurface = Color(0xFF162040);
@@ -20,6 +24,9 @@ const _kGold = Color(0xFFf5c518);
 
 /// Modal bottom sheet for assigning an idle task to [agent].
 ///
+/// Pass [currentTeamSize] to enforce the [kMaxTeamSize] = 8 cap.
+/// When [currentTeamSize] >= [kMaxTeamSize] the assign button is disabled.
+///
 /// Usage:
 /// ```dart
 /// showModalBottomSheet(
@@ -30,6 +37,7 @@ const _kGold = Color(0xFFf5c518);
 ///     uid: uid,
 ///     agent: agent,
 ///     bloc: taskBloc,
+///     currentTeamSize: agents.length,
 ///   ),
 /// );
 /// ```
@@ -39,11 +47,16 @@ class TaskAssignmentSheet extends StatefulWidget {
     required this.uid,
     required this.agent,
     required this.bloc,
+    this.currentTeamSize = 0,
   });
 
   final String uid;
   final AgentModel agent;
   final TaskBloc bloc;
+
+  /// Number of agents currently on the team.
+  /// Assign is disabled when this reaches [kMaxTeamSize].
+  final int currentTeamSize;
 
   @override
   State<TaskAssignmentSheet> createState() => _TaskAssignmentSheetState();
@@ -70,7 +83,10 @@ class _TaskAssignmentSheetState extends State<TaskAssignmentSheet> {
 
   int get _xpPreview => (_rewardPreview * 0.5).round();
 
+  bool get _canAssign => widget.currentTeamSize < kMaxTeamSize;
+
   void _dispatch() {
+    if (!_canAssign) return;
     widget.bloc.add(
       TaskCreated(
         uid: widget.uid,
@@ -102,7 +118,8 @@ class _TaskAssignmentSheetState extends State<TaskAssignmentSheet> {
           xpPreview: _xpPreview,
           onTypeChanged: (type) => setState(() => _selectedType = type),
           onTierChanged: (tier) => setState(() => _selectedTier = tier),
-          onAssign: _dispatch,
+          onAssign: _canAssign ? _dispatch : null,
+          teamFull: !_canAssign,
         ),
       ),
     );
@@ -121,6 +138,7 @@ class _SheetBody extends StatelessWidget {
     required this.onTypeChanged,
     required this.onTierChanged,
     required this.onAssign,
+    this.teamFull = false,
   });
 
   final ScrollController scrollController;
@@ -132,7 +150,12 @@ class _SheetBody extends StatelessWidget {
   final int xpPreview;
   final ValueChanged<TaskType> onTypeChanged;
   final ValueChanged<TaskTier> onTierChanged;
-  final VoidCallback onAssign;
+
+  /// Null when team is full — button will be disabled.
+  final VoidCallback? onAssign;
+
+  /// True when [kMaxTeamSize] has been reached.
+  final bool teamFull;
 
   @override
   Widget build(BuildContext context) {
@@ -228,27 +251,45 @@ class _SheetBody extends StatelessWidget {
               20,
               MediaQuery.of(context).padding.bottom + 16,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: onAssign,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kNeonGreen,
-                  foregroundColor: const Color(0xFF0a1628),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (teamFull)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'ทีมเต็มแล้ว (สูงสุด $kMaxTeamSize คน)',
+                      style: const TextStyle(
+                        color: _kTextDisabled,
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'มอบหมาย',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: onAssign,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          teamFull ? _kTextDisabled : _kNeonGreen,
+                      foregroundColor: const Color(0xFF0a1628),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'มอบหมาย',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],

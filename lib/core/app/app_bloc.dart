@@ -11,6 +11,11 @@ import '../config/constant.dart';
 import '../enums/auth_status.dart';
 import '../utils/crash_reporter.dart';
 import '../utils/globals.dart';
+import '../../features/agents/bloc/agent_bloc.dart';
+import '../../features/agents/data/datasources/firestore_agent_datasource.dart';
+import '../../features/inventory/bloc/economy_bloc.dart';
+import '../../features/quests/bloc/quest_bloc.dart';
+import '../../features/quests/data/datasources/firestore_quest_datasource.dart';
 
 class AppBloc {
   /// Subscription for Firebase auth state changes — must be cancelled to prevent memory leak
@@ -93,11 +98,37 @@ class AppBloc {
     );
   }
 
-  /// Stub: preload caches for faster UX on home page.
-  /// Will be populated in Phase 2 when data services are implemented.
-  preloadCaches() async {
-    // TODO: Phase 2 — preload pixel world state, portfolio data, social feed
-    debugPrint('[AppBloc] preloadCaches — stub (Phase 1)');
+  // Holds the fire-and-forget BLoC instances used for pre-warming streams.
+  // They are closed when the app terminates via [dispose].
+  AgentBloc? _preloadAgentBloc;
+  QuestBloc? _preloadQuestBloc;
+  EconomyBloc? _preloadEconomyBloc;
+
+  /// Preload caches to warm up Firestore listeners before the user lands on
+  /// the home screen. All streams are fire-and-forget — they must not block
+  /// app startup.
+  Future<void> preloadCaches() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      debugPrint('[AppBloc] preloadCaches — skipped (no signed-in user)');
+      return;
+    }
+
+    // 1. AgentBloc — begin watching agents stream.
+    _preloadAgentBloc = AgentBloc(
+      repository: FirestoreAgentDatasource(),
+    )..add(AgentWatchStarted(uid));
+
+    // 2. QuestBloc — begin watching quests + auto-generate daily quests.
+    _preloadQuestBloc = QuestBloc(
+      repository: FirestoreQuestDatasource(),
+    )..add(QuestWatchStarted(uid));
+
+    // 3. EconomyBloc — begin watching live coin/XP balance.
+    _preloadEconomyBloc = EconomyBloc()
+      ..add(EconomyWatchStarted(uid));
+
+    debugPrint('[AppBloc] preloadCaches — started streams for uid: $uid');
   }
 
   void _navigateToSignIn() {
@@ -134,6 +165,12 @@ class AppBloc {
   Future<void> dispose() async {
     await _authStateSubscription?.cancel();
     _authStateSubscription = null;
+    await _preloadAgentBloc?.close();
+    await _preloadQuestBloc?.close();
+    await _preloadEconomyBloc?.close();
+    _preloadAgentBloc = null;
+    _preloadQuestBloc = null;
+    _preloadEconomyBloc = null;
   }
 }
 

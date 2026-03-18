@@ -8,6 +8,8 @@ import 'package:aslan_pixel/features/quests/bloc/quest_bloc.dart';
 import 'package:aslan_pixel/features/quests/data/datasources/firestore_quest_datasource.dart';
 import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
 import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
+import 'package:aslan_pixel/shared/widgets/confetti_overlay.dart';
+import 'package:aslan_pixel/shared/widgets/floating_reward_text.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const _kNavy = Color(0xFF0A1628);
@@ -81,16 +83,24 @@ class _QuestView extends StatelessWidget {
         ),
         body: BlocConsumer<QuestBloc, QuestState>(
           listener: (context, state) {
-            if (state is QuestRewardClaimedSuccess &&
-                state.unlockedItemId != null) {
-              final currentUid =
-                  FirebaseAuth.instance.currentUser?.uid ?? uid;
-              context.read<RoomBloc>().add(
-                    RoomItemUnlocked(
-                      uid: currentUid,
-                      itemId: state.unlockedItemId!,
-                    ),
-                  );
+            if (state is QuestRewardClaimedSuccess) {
+              // Confetti burst on every successful claim.
+              ConfettiOverlay.burst(context);
+              // Floating coin reward text.
+              if (state.coinsEarned > 0) {
+                FloatingRewardText.show(context, state.coinsEarned);
+              }
+              // Unlock room item when applicable.
+              if (state.unlockedItemId != null) {
+                final currentUid =
+                    FirebaseAuth.instance.currentUser?.uid ?? uid;
+                context.read<RoomBloc>().add(
+                      RoomItemUnlocked(
+                        uid: currentUid,
+                        itemId: state.unlockedItemId!,
+                      ),
+                    );
+              }
             }
           },
           builder: (context, state) {

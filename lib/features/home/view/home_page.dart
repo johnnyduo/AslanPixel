@@ -1,6 +1,16 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:aslan_pixel/features/home/view/prediction_card.dart';
 import 'package:aslan_pixel/features/home/view/market_ticker_tile.dart';
+import 'package:aslan_pixel/features/inventory/bloc/economy_bloc.dart';
+import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:aslan_pixel/shared/widgets/daily_streak_widget.dart';
+import 'package:aslan_pixel/shared/widgets/streak_warning_banner.dart';
+import 'package:aslan_pixel/shared/widgets/xp_progress_bar.dart';
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -19,34 +29,75 @@ const Color _red = Color(0xFFFF4757);
 // HomePage
 // ---------------------------------------------------------------------------
 
-/// Home dashboard — Phase 2D stub (static/mock data, no BLoC yet).
-class HomePage extends StatelessWidget {
+/// Home dashboard — live coin balance via EconomyBloc.
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final EconomyBloc _economyBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _economyBloc = EconomyBloc();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      _economyBloc.add(EconomyWatchStarted(uid));
+    }
+  }
+
+  @override
+  void dispose() {
+    _economyBloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _navy,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          const SliverSafeArea(
-            sliver: SliverList(
-              delegate: SliverChildListDelegate.fixed([
-                _WelcomeBanner(),
-                SizedBox(height: 8),
-                _AgentStatusRow(),
-                SizedBox(height: 8),
-                _PredictionSection(),
-                SizedBox(height: 8),
-                _MarketSummarySection(),
-                SizedBox(height: 8),
-                _RankingTeaser(),
-                SizedBox(height: 24),
-              ]),
+    return BlocProvider.value(
+      value: _economyBloc,
+      child: Scaffold(
+        backgroundColor: _navy,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverSafeArea(
+              sliver: SliverList(
+                delegate: SliverChildListDelegate.fixed([
+                  const _WelcomeBanner(),
+                  // ── Streak warning + streak widget (from SharedPreferences) ─
+                  const _StreakSection(),
+                  // ── XP progress bar ──────────────────────────────────────
+                  BlocBuilder<EconomyBloc, EconomyState>(
+                    builder: (context, econState) {
+                      if (econState is! EconomyLoaded) {
+                        return const SizedBox(height: 8);
+                      }
+                      return XpProgressBar(
+                        level: econState.level,
+                        currentXp: econState.xp % EconomyLoaded.xpForNextLevel,
+                        maxXp: EconomyLoaded.xpForNextLevel,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  const _AgentStatusRow(),
+                  const SizedBox(height: 8),
+                  const _PredictionSection(),
+                  const SizedBox(height: 8),
+                  const _MarketSummarySection(),
+                  const SizedBox(height: 8),
+                  const _RankingTeaser(),
+                  const SizedBox(height: 24),
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -116,12 +167,45 @@ class _WelcomeBanner extends StatelessWidget {
                 ),
               ),
             ),
+            // Live coin balance + level badge
             Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Icon(
-                Icons.auto_awesome,
-                color: _neonGreen.withValues(alpha: 0.6),
-                size: 28,
+              child: BlocBuilder<EconomyBloc, EconomyState>(
+                builder: (context, state) {
+                  final coins = state is EconomyLoaded ? state.coins : 0;
+                  final level = state is EconomyLoaded ? state.level : 1;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      AnimatedCoinCounter(
+                        toAmount: coins,
+                        fontSize: 14,
+                        showIcon: true,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _gold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _gold.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          'Lv $level',
+                          style: const TextStyle(
+                            color: _gold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -433,6 +517,48 @@ class _RankingTeaser extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _StreakSection
+// ---------------------------------------------------------------------------
+
+/// Reads the login streak from [SharedPreferences] and renders
+/// [StreakWarningBanner] + [DailyStreakWidget].
+///
+/// Uses `login_streak_days` (int) and `last_login_date` (String YYYY-MM-DD).
+class _StreakSection extends StatefulWidget {
+  const _StreakSection();
+
+  @override
+  State<_StreakSection> createState() => _StreakSectionState();
+}
+
+class _StreakSectionState extends State<_StreakSection> {
+  int _streakDays = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStreak();
+  }
+
+  Future<void> _loadStreak() async {
+    final prefs = await SharedPreferences.getInstance();
+    final days = prefs.getInt('login_streak_days') ?? 0;
+    if (mounted) setState(() => _streakDays = days);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        StreakWarningBanner(streakDays: _streakDays),
+        DailyStreakWidget(streakDays: _streakDays),
+      ],
     );
   }
 }
