@@ -4,6 +4,7 @@ import 'package:page_transition/page_transition.dart';
 import '../../features/auth/view/sign_in_page.dart';
 import '../../features/auth/view/sign_up_page.dart';
 import '../../features/home/view/main_tabs_page.dart';
+import '../../features/onboarding/view/onboarding_page.dart';
 import '../utils/crash_reporter.dart';
 
 // TODO: add ProfilePage when implemented
@@ -41,6 +42,8 @@ class RouteGenerator {
             return gotoRightToLeftPage(const SignUpPage());
           case MainTabsPage.routeName:
             return gotoPage(const MainTabsPage());
+          case OnboardingPage.routeName:
+            return gotoPage(const OnboardingPage());
           // TODO: ProfilePage.routeName → '/profile'
           default:
             return _errorRoute();
@@ -56,6 +59,8 @@ class RouteGenerator {
               return gotoPage(MainTabsPage(tabIndex: args));
             }
             return gotoPage(const MainTabsPage());
+          case OnboardingPage.routeName:
+            return gotoPage(const OnboardingPage());
           default:
             return _errorRoute();
         }
