@@ -1,8 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
+import 'package:aslan_pixel/features/agents/bloc/task_bloc.dart';
+import 'package:aslan_pixel/features/agents/data/datasources/firestore_agent_task_datasource.dart';
+import 'package:aslan_pixel/features/agents/data/models/agent_model.dart'
+    hide AgentStatus;
+import 'package:aslan_pixel/features/agents/view/task_assignment_sheet.dart';
 import 'package:aslan_pixel/features/home/bloc/pixel_world_bloc.dart';
 import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
 
@@ -377,10 +383,29 @@ class _AgentDetailSheet extends StatelessWidget {
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Phase 3'),
-                      duration: Duration(seconds: 2),
+                  final uid =
+                      FirebaseAuth.instance.currentUser?.uid ?? '';
+                  // Convert home AgentStatus → agent_model AgentStatus
+                  // using the enum name as a stable string bridge.
+                  final agentModelStatus =
+                      AgentStatusValue.fromString(agentStatus.name);
+                  final agent = AgentModel(
+                    agentId: agentType.value,
+                    type: agentType,
+                    level: 1,
+                    xp: 0,
+                    status: agentModelStatus,
+                  );
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => TaskAssignmentSheet(
+                      uid: uid,
+                      agent: agent,
+                      bloc: TaskBloc(
+                        repository: FirestoreAgentTaskDatasource(),
+                      ),
                     ),
                   );
                 },

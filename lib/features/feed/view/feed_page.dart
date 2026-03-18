@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -102,7 +103,7 @@ class _FeedView extends StatelessWidget {
         onPost: (content, contentTh) {
           context.read<FeedBloc>().add(
                 FeedPostCreated(
-                  authorUid: 'anonymous',
+                  authorUid: FirebaseAuth.instance.currentUser?.uid ?? 'anonymous',
                   content: content,
                   contentTh: contentTh.isEmpty ? null : contentTh,
                 ),

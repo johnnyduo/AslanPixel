@@ -81,9 +81,6 @@ class FinancePage extends StatelessWidget {
 class _PredictionsTab extends StatelessWidget {
   const _PredictionsTab();
 
-  // Temporary anonymous UID placeholder — replace with auth bloc value.
-  static const String _anonUid = 'anonymous';
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider<PredictionBloc>(
@@ -143,7 +140,7 @@ class _PredictionsTab extends StatelessWidget {
             itemCount: events.length,
             itemBuilder: (_, i) => PredictionEventCard(
               event: events[i],
-              uid: _anonUid,
+              uid: FirebaseAuth.instance.currentUser?.uid ?? 'anonymous',
               bloc: bloc,
             ),
           );
