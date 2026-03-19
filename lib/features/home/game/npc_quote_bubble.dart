@@ -39,7 +39,7 @@ class NpcQuoteBubble extends PositionComponent {
           // tail stays centred on the NPC horizontally.
           position: Vector2(
             npcPosition.x.clamp(_maxBubbleWidth / 2 + 20, 400 - _maxBubbleWidth / 2 - 20),
-            (npcPosition.y - _yOffset).clamp(_estimatedHeight + 20, 710 - _estimatedHeight),
+            (npcPosition.y - _yOffset).clamp(_estimatedHeight + 20, 800 - _estimatedHeight),
           ),
           anchor: Anchor.bottomCenter,
           // Size is determined after layout; use a generous initial size.

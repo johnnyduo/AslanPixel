@@ -44,14 +44,14 @@ Color _agentColor(AgentType type) {
 // ---------------------------------------------------------------------------
 
 const double _canvasWidth = 400;
-const double _canvasHeight = 710; // Match 9:16 portrait room background
+const double _canvasHeight = 800; // Match 1:2 portrait room background (1024×2048)
 
-/// Quadrant centre positions for each agent (in the room area).
+/// Quadrant centre positions for each agent.
 final _agentPositions = <AgentType, Vector2>{
-  AgentType.analyst: Vector2(80, 160),
-  AgentType.scout: Vector2(320, 160),
-  AgentType.risk: Vector2(80, 560),
-  AgentType.social: Vector2(320, 560),
+  AgentType.analyst: Vector2(80, 200),
+  AgentType.scout: Vector2(320, 200),
+  AgentType.risk: Vector2(80, 600),
+  AgentType.social: Vector2(320, 600),
 };
 
 // ---------------------------------------------------------------------------
@@ -260,20 +260,20 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     // Sprite identifiers match assets/sprites/npcs/npc_{name}_{dir}.png
     // Missing assets are handled gracefully inside NpcSpriteComponent.
     // ------------------------------------------------------------------
-    // NPCs spread across the full 400×710 canvas.
-    // Top section (room art 0-400): desks, shelves, furniture area
-    // Bottom section (navy floor 400-650): open walking area
+    // NPCs spread across the full 400×800 canvas.
+    // Top half (0-400): room furniture area
+    // Bottom half (400-750): open floor / extended room area
     final npcConfigs = [
-      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  230), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 280), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 250), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_merchant',       position: Vector2(200, 450), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_sysbot',         position: Vector2(320, 180), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 500), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(130, 350), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 420), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_oracle',         position: Vector2(200, 180), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_intern',         position: Vector2(300, 530), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  250), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 300), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 270), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_merchant',       position: Vector2(200, 500), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_sysbot',         position: Vector2(320, 200), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 550), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(130, 380), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 480), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_oracle',         position: Vector2(200, 220), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_intern',         position: Vector2(300, 580), direction: NpcDirection.south),
     ];
 
     for (final cfg in npcConfigs) {
