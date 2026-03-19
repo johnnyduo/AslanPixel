@@ -52,9 +52,18 @@ class RoomBackgroundComponent extends PositionComponent
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       final sprite = Sprite(frame.image);
+      // Cover the entire visible area — scale to fill width,
+      // let height extend beyond if needed (no stretch distortion).
+      final imgW = frame.image.width.toDouble();
+      final imgH = frame.image.height.toDouble();
+      final scale = size.x / imgW;
+      final scaledH = imgH * scale;
+      // Use whichever is taller: scaled image or requested room size
+      final finalH = scaledH > size.y ? scaledH : size.y;
+
       _bgSprite = SpriteComponent(
         sprite: sprite,
-        size: size,
+        size: Vector2(size.x, finalH),
         position: Vector2.zero(),
         anchor: Anchor.topLeft,
       );

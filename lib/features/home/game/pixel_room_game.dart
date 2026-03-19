@@ -214,20 +214,22 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    // Scale to fill screen width — room stretches to cover, no side bars.
-    if (size.x > 0) {
-      final zoom = size.x / _canvasWidth;
-      camera.viewfinder.zoom = zoom;
-    }
+    if (size.x <= 0 || size.y <= 0) return;
+
+    // Fill screen: zoom so the 400px-wide world covers the full screen width.
+    // Height adjusts proportionally — no stretch, no black bars.
+    final zoom = size.x / _canvasWidth;
+    camera.viewfinder.zoom = zoom;
+
+    // Center camera so top of room aligns with top of screen.
+    camera.viewfinder.position = Vector2(_canvasWidth / 2, size.y / zoom / 2);
   }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Center the camera on the room.
-    camera.viewfinder.anchor = Anchor.topCenter;
-    camera.viewfinder.position = Vector2(_canvasWidth / 2, 0);
+    camera.viewfinder.anchor = Anchor.center;
 
     // ------------------------------------------------------------------
     // Layer 1: Room background (replaces plain RectangleComponent fill)
