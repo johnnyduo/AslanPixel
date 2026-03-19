@@ -17,9 +17,9 @@ enum RoomType { starter, office, penthouse }
 
 /// A Flame component that renders a Gemini-generated room background PNG.
 ///
-/// Asset path: `assets/sprites/room_backgrounds/room_{type}.png`
-///
-/// Falls back gracefully if the asset is missing (no crash, renders blank).
+/// Uses **cover** scaling: the image fills the entire room area without
+/// distortion. If the aspect ratios differ, the image is cropped (not
+/// stretched) — just like CSS `background-size: cover`.
 class RoomBackgroundComponent extends PositionComponent
     with HasGameReference<FlameGame> {
   RoomBackgroundComponent({
@@ -30,10 +30,6 @@ class RoomBackgroundComponent extends PositionComponent
   final RoomType roomType;
 
   SpriteComponent? _bgSprite;
-
-  // ---------------------------------------------------------------------------
-  // Lifecycle
-  // ---------------------------------------------------------------------------
 
   @override
   Future<void> onLoad() async {
@@ -51,20 +47,27 @@ class RoomBackgroundComponent extends PositionComponent
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
-      final sprite = Sprite(frame.image);
-      // Cover the entire visible area — scale to fill width,
-      // let height extend beyond if needed (no stretch distortion).
+
       final imgW = frame.image.width.toDouble();
       final imgH = frame.image.height.toDouble();
-      final scale = size.x / imgW;
-      final scaledH = imgH * scale;
-      // Use whichever is taller: scaled image or requested room size
-      final finalH = scaledH > size.y ? scaledH : size.y;
+
+      // Cover: scale so the image completely covers the target area.
+      // Pick the LARGER scale factor so nothing is uncovered.
+      final scaleX = size.x / imgW;
+      final scaleY = size.y / imgH;
+      final coverScale = scaleX > scaleY ? scaleX : scaleY;
+
+      final renderW = imgW * coverScale;
+      final renderH = imgH * coverScale;
+
+      // Center the oversized dimension (crop equally from both sides).
+      final offsetX = (size.x - renderW) / 2;
+      final offsetY = (size.y - renderH) / 2;
 
       _bgSprite = SpriteComponent(
-        sprite: sprite,
-        size: Vector2(size.x, finalH),
-        position: Vector2.zero(),
+        sprite: Sprite(frame.image),
+        size: Vector2(renderW, renderH),
+        position: Vector2(offsetX, offsetY),
         anchor: Anchor.topLeft,
       );
       await add(_bgSprite!);
