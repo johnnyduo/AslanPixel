@@ -109,7 +109,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _next(BuildContext context) {
-    if (_currentPage < 2) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 380),
         curve: Curves.easeInOutCubic,
@@ -182,7 +182,7 @@ class _OnboardingView extends StatelessWidget {
                   children: [
                     _ProgressDots(currentPage: currentPage, colors: colors),
                     const Spacer(),
-                    if (currentPage < 2)
+                    if (currentPage < 4)
                       GestureDetector(
                         onTap: () => onSkip(context),
                         child: Padding(
@@ -211,6 +211,8 @@ class _OnboardingView extends StatelessWidget {
                   children: const [
                     _IntroStep(),
                     _AvatarStep(),
+                    _MarketFocusStep(),
+                    _RiskStyleStep(),
                     _UsernameStep(),
                   ],
                 ),
@@ -222,11 +224,13 @@ class _OnboardingView extends StatelessWidget {
                 child: BlocBuilder<OnboardingBloc, OnboardingState>(
                   builder: (context, state) {
                     final isSubmitting = state is OnboardingSubmitting;
-                    final label = currentPage == 0
-                        ? 'เริ่มต้น'
-                        : currentPage == 1
-                            ? 'เลือกแล้ว!'
-                            : 'เข้าสู่โลก';
+                    final label = switch (currentPage) {
+                      0 => 'เริ่มต้น',
+                      1 => 'เลือกแล้ว!',
+                      2 => 'ถัดไป',
+                      3 => 'ถัดไป',
+                      _ => 'เข้าสู่โลก',
+                    };
                     return SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -290,7 +294,7 @@ class _ProgressDots extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (index) {
+      children: List.generate(5, (index) {
         final isActive = index == currentPage;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 280),
@@ -722,7 +726,269 @@ class _AvatarImage extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Step 3: Username Input
+// Step 3: Market Focus
+// ---------------------------------------------------------------------------
+
+class _MarketFocusStep extends StatelessWidget {
+  const _MarketFocusStep();
+
+  static const _options = [
+    ('crypto', Icons.currency_bitcoin_rounded, 'คริปโต'),
+    ('fx', Icons.swap_horiz_rounded, 'อัตราแลกเปลี่ยน'),
+    ('stocks', Icons.show_chart_rounded, 'หุ้น'),
+    ('mixed', Icons.public_rounded, 'ทุกตลาด'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'คุณสนใจตลาดแบบไหน?',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'เลือกตลาดที่คุณอยากติดตาม',
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: BlocBuilder<OnboardingBloc, OnboardingState>(
+              builder: (context, state) {
+                final selected =
+                    state is OnboardingInProgress ? state.marketFocus : null;
+
+                return GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: _options.map((opt) {
+                    final (id, icon, label) = opt;
+                    final isSelected = selected == id;
+
+                    return GestureDetector(
+                      onTap: () => context
+                          .read<OnboardingBloc>()
+                          .add(OnboardingMarketFocusSelected(id)),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: isSelected
+                              ? colors.primary.withValues(alpha: 0.08)
+                              : colors.surface,
+                          border: Border.all(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.border,
+                            width: isSelected ? 2.0 : 1.0,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: colors.primary
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 16,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              icon,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.textSecondary,
+                              size: 40,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 4: Risk Style
+// ---------------------------------------------------------------------------
+
+class _RiskStyleStep extends StatelessWidget {
+  const _RiskStyleStep();
+
+  static const _options = [
+    ('calm', Icons.self_improvement_rounded, 'สุขุม', 'เน้นมั่นคง ความเสี่ยงต่ำ'),
+    ('balanced', Icons.balance_rounded, 'สมดุล', 'เติบโตพอดี ความเสี่ยงปานกลาง'),
+    ('bold', Icons.local_fire_department_rounded, 'กล้าหาญ', 'ผลตอบแทนสูง ความเสี่ยงสูง'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'สไตล์การลงทุนของคุณ?',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'เราจะปรับ Agent ให้เข้ากับคุณ',
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: BlocBuilder<OnboardingBloc, OnboardingState>(
+              builder: (context, state) {
+                final selected =
+                    state is OnboardingInProgress ? state.riskStyle : null;
+
+                return Column(
+                  children: _options.map((opt) {
+                    final (id, icon, label, subtitle) = opt;
+                    final isSelected = selected == id;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: GestureDetector(
+                        onTap: () => context
+                            .read<OnboardingBloc>()
+                            .add(OnboardingRiskStyleSelected(id)),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: isSelected
+                                ? colors.primary.withValues(alpha: 0.08)
+                                : colors.surface,
+                            border: Border.all(
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.border,
+                              width: isSelected ? 2.0 : 1.0,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: colors.primary
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 16,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                icon,
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.textSecondary,
+                                size: 36,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      label,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? colors.primary
+                                            : colors.textPrimary,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subtitle,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? colors.primary
+                                                .withValues(alpha: 0.7)
+                                            : colors.textSecondary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: colors.primary,
+                                  size: 24,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 5: Username Input
 // ---------------------------------------------------------------------------
 
 class _UsernameStep extends StatefulWidget {

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:aslan_pixel/core/utils/analytics_service.dart';
 
 part 'onboarding_event.dart';
 part 'onboarding_state.dart';
@@ -68,6 +72,11 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       emit(const OnboardingDone());
+      unawaited(AnalyticsService.logOnboardingComplete(
+        avatarId: progress.avatarId ?? '',
+        marketFocus: progress.marketFocus ?? '',
+        riskStyle: progress.riskStyle ?? '',
+      ));
     } catch (e) {
       emit(OnboardingError(e.toString()));
     }
