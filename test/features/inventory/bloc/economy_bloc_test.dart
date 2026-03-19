@@ -98,6 +98,8 @@ void main() {
       expect: () => [
         isA<EconomyLoading>(),
         isA<EconomyLoaded>().having((s) => s.coins, 'coins', 100),
+        // Level-up from 1 → 2 triggers EconomyLevelUp before EconomyLoaded.
+        isA<EconomyLevelUp>(),
         isA<EconomyLoaded>().having((s) => s.coins, 'coins', 200),
       ],
     );

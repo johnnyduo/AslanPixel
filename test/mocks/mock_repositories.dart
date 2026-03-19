@@ -10,6 +10,10 @@ import 'package:aslan_pixel/features/finance/data/repositories/ai_insight_reposi
 import 'package:aslan_pixel/features/notifications/data/repositories/notification_repository.dart';
 import 'package:aslan_pixel/features/profile/data/repositories/profile_repository.dart';
 import 'package:aslan_pixel/data/services/ai_service.dart';
+import 'package:aslan_pixel/features/home/data/repositories/room_repository.dart';
+import 'package:aslan_pixel/features/inventory/data/repositories/economy_repository.dart';
+import 'package:aslan_pixel/features/follows/data/repositories/follow_repository.dart';
+import 'package:aslan_pixel/features/world/data/repositories/plaza_repository.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 class MockAgentRepository extends Mock implements AgentRepository {}
@@ -21,3 +25,7 @@ class MockAiInsightRepository extends Mock implements AiInsightRepository {}
 class MockNotificationRepository extends Mock implements NotificationRepository {}
 class MockProfileRepository extends Mock implements ProfileRepository {}
 class MockAiService extends Mock implements AIService {}
+class MockRoomRepository extends Mock implements RoomRepository {}
+class MockEconomyRepository extends Mock implements EconomyRepository {}
+class MockFollowRepository extends Mock implements FollowRepository {}
+class MockPlazaRepository extends Mock implements PlazaRepository {}
