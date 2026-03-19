@@ -14,6 +14,7 @@ import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:aslan_pixel/shared/widgets/daily_streak_widget.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 import 'package:aslan_pixel/shared/widgets/streak_warning_banner.dart';
 import 'package:aslan_pixel/shared/widgets/xp_progress_bar.dart';
 
@@ -301,10 +302,10 @@ class _AgentChip extends StatelessWidget {
               color: agent.color.withValues(alpha: 0.18),
               border: Border.all(color: agent.color, width: 1.5),
             ),
-            child: Icon(
-              Icons.smart_toy_outlined,
-              color: agent.color,
+            child: PixelIcon(
+              PixelIcon.sword,
               size: 15,
+              color: agent.color,
             ),
           ),
           const SizedBox(height: 6),
@@ -531,10 +532,10 @@ class _RankingTeaserState extends State<_RankingTeaser> {
                               width: 1.5,
                             ),
                           ),
-                          child: const Icon(
-                            Icons.emoji_events_outlined,
-                            color: _gold,
+                          child: const PixelIcon(
+                            PixelIcon.trophy,
                             size: 26,
+                            color: _gold,
                           ),
                         ),
                         const SizedBox(width: 16),

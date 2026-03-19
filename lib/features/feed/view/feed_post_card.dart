@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aslan_pixel/features/feed/bloc/feed_bloc.dart';
 import 'package:aslan_pixel/features/feed/data/models/feed_post_model.dart';
 import 'package:aslan_pixel/features/feed/utils/post_text_parser.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 // ── Colour constants ──────────────────────────────────────────────────────────
 const Color _neonGreen = Color(0xFF00F5A0);
@@ -266,8 +267,8 @@ class _HeartButtonState extends State<_HeartButton>
         scale: _scale,
         child: Row(
           children: [
-            Icon(
-              _liked ? Icons.favorite : Icons.favorite_border,
+            PixelIcon(
+              PixelIcon.heart,
               size: 16,
               color: _liked ? Colors.redAccent : _gold,
             ),

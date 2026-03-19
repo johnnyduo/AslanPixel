@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const _kNavy = Color(0xFF0a1628);
@@ -247,10 +248,10 @@ class _RewardCard extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: _kGold.withValues(alpha: 0.4), width: 2),
             ),
-            child: const Icon(
-              Icons.emoji_events_rounded,
-              color: _kGold,
+            child: const PixelIcon(
+              PixelIcon.trophy,
               size: 40,
+              color: _kGold,
             ),
           ),
           const SizedBox(height: 16),

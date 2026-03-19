@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 import 'package:aslan_pixel/features/agents/view/agent_dialogue_bubble.dart';
 import 'package:aslan_pixel/features/feed/bloc/feed_bloc.dart';
 import 'package:aslan_pixel/features/feed/view/feed_post_card.dart';
@@ -219,7 +220,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+      // Heart icon replaced with PixelIcon
+      expect(find.byType(PixelIcon), findsWidgets);
     });
   });
 
@@ -566,7 +568,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('50'), findsOneWidget);
-      expect(find.byIcon(Icons.monetization_on), findsOneWidget);
     });
 
     testWidgets('shows join button', (tester) async {

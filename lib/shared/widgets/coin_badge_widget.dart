@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 /// Compact coin amount display — gold icon + bold amount text.
 class CoinBadgeWidget extends StatelessWidget {
@@ -18,10 +19,10 @@ class CoinBadgeWidget extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.monetization_on,
-          color: _gold,
+        PixelIcon(
+          PixelIcon.coin,
           size: fontSize + 2,
+          color: _gold,
         ),
         const SizedBox(width: 3),
         Text(

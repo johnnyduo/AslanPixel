@@ -10,6 +10,7 @@ import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
 import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
 import 'package:aslan_pixel/shared/widgets/confetti_overlay.dart';
 import 'package:aslan_pixel/shared/widgets/floating_reward_text.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const _kNavy = Color(0xFF0A1628);
@@ -209,10 +210,10 @@ class _QuestList extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.assignment_outlined,
-                color: _kTextSecondary.withValues(alpha: 0.5),
+              PixelIcon(
+                PixelIcon.quest,
                 size: 48,
+                color: _kTextSecondary.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(

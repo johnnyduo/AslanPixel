@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 /// Animated coin counter that smoothly transitions from [fromAmount] to [toAmount].
 ///
@@ -36,10 +37,10 @@ class AnimatedCoinCounter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showIcon) ...[
-              Icon(
-                Icons.monetization_on_rounded,
-                color: _gold,
+              PixelIcon(
+                PixelIcon.coin,
                 size: fontSize + 2,
+                color: _gold,
               ),
               const SizedBox(width: 4),
             ],

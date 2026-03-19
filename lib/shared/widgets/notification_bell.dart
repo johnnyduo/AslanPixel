@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:aslan_pixel/features/notifications/data/datasources/firestore_notification_datasource.dart';
 import 'package:aslan_pixel/features/notifications/data/models/notification_model.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 /// AppBar action that shows a bell icon with an unread-count badge.
 ///
@@ -26,11 +27,11 @@ class NotificationBell extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             IconButton(
-              icon: const Icon(
-                Icons.notifications_outlined,
+              icon: const PixelIcon(
+                PixelIcon.bell,
                 size: 24,
+                color: Color(0xFFe8f4ff),
               ),
-              color: const Color(0xFFe8f4ff),
               onPressed: () =>
                   Navigator.of(context).pushNamed(_routeName),
               tooltip: 'การแจ้งเตือน',

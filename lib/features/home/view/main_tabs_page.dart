@@ -4,6 +4,7 @@ import 'package:aslan_pixel/features/feed/view/feed_page.dart';
 import 'package:aslan_pixel/features/finance/view/finance_page.dart';
 import 'package:aslan_pixel/features/home/view/pixel_world_page.dart';
 import 'package:aslan_pixel/features/profile/view/profile_page.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 /// Main Tabs page — Phase 5C: Profile tab is live.
 class MainTabsPage extends StatefulWidget {
@@ -28,12 +29,12 @@ class _MainTabsPageState extends State<MainTabsPage> {
 
   static const _tabLabels = ['Home', 'Pixel', 'Portfolio', 'Social', 'Profile'];
 
-  static const _tabIcons = [
-    Icons.home_outlined,
-    Icons.grid_on_outlined,
-    Icons.show_chart_outlined,
-    Icons.people_outline,
-    Icons.person_outline,
+  static const _tabPixelIcons = [
+    PixelIcon.home,
+    PixelIcon.world,
+    PixelIcon.chart,
+    PixelIcon.social,
+    PixelIcon.profile,
   ];
 
   static final _pages = [
@@ -46,6 +47,9 @@ class _MainTabsPageState extends State<MainTabsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedColor = const Color(0xFF00F5A0);
+    final unselectedColor = const Color(0xFFE8F4F8).withValues(alpha: 0.5);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A1628),
       extendBody: true,
@@ -60,14 +64,18 @@ class _MainTabsPageState extends State<MainTabsPage> {
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
           backgroundColor: const Color(0xFF0A1628).withValues(alpha: 0.95),
-          selectedItemColor: const Color(0xFF00F5A0),
-          unselectedItemColor: const Color(0xFFE8F4F8).withValues(alpha: 0.5),
+          selectedItemColor: selectedColor,
+          unselectedItemColor: unselectedColor,
           selectedFontSize: 11,
           unselectedFontSize: 11,
           items: List.generate(
             _tabLabels.length,
             (i) => BottomNavigationBarItem(
-              icon: Icon(_tabIcons[i]),
+              icon: PixelIcon(
+                _tabPixelIcons[i],
+                size: 24,
+                color: _currentIndex == i ? selectedColor : unselectedColor,
+              ),
               label: _tabLabels[i],
             ),
           ),

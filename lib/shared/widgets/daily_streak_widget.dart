@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 // ── Palette constants ────────────────────────────────────────────────────────
 const _kGold = Color(0xFFF5C518);
@@ -163,12 +164,12 @@ class _DailyStreakWidgetState extends State<DailyStreakWidget>
                     // ── Header row ───────────────────────────────────────
                     Row(
                       children: [
-                        // Pulsing fire emoji
+                        // Pulsing fire pixel icon
                         Transform.scale(
                           scale: _fireScale.value,
-                          child: const Text(
-                            '🔥',
-                            style: TextStyle(fontSize: 28),
+                          child: const PixelIcon(
+                            PixelIcon.fire,
+                            size: 28,
                           ),
                         ),
                         const SizedBox(width: 10),

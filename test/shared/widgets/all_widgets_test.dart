@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aslan_pixel/core/config/app_colors.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 import 'package:aslan_pixel/shared/widgets/animated_coin_counter.dart';
 import 'package:aslan_pixel/shared/widgets/coin_badge_widget.dart';
 import 'package:aslan_pixel/shared/widgets/empty_state_widget.dart';
@@ -73,7 +74,8 @@ void main() {
         buildTestWidget(const AnimatedCoinCounter(toAmount: 100)),
       );
       await tester.pump();
-      expect(find.byIcon(Icons.monetization_on_rounded), findsOneWidget);
+      // Coin icon replaced with PixelIcon
+      expect(find.byType(PixelIcon), findsOneWidget);
     });
 
     testWidgets('hides icon when showIcon is false', (tester) async {
@@ -83,7 +85,8 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byIcon(Icons.monetization_on_rounded), findsNothing);
+      // When showIcon is false, no coin PixelIcon should render
+      expect(find.byType(PixelIcon), findsNothing);
     });
 
     testWidgets('shows target amount after animation completes', (tester) async {
@@ -133,7 +136,8 @@ void main() {
         buildTestWidget(const CoinBadgeWidget(amount: 99)),
       );
       await tester.pump();
-      expect(find.byIcon(Icons.monetization_on), findsOneWidget);
+      // Coin icon replaced with PixelIcon
+      expect(find.byType(PixelIcon), findsWidgets);
     });
 
     testWidgets('shows formatted coin amount', (tester) async {
@@ -1120,7 +1124,8 @@ void main() {
         tester,
         const RewardPopup(coins: 100, xp: 50),
       );
-      expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+      // Trophy icon replaced with PixelIcon
+      expect(find.byType(PixelIcon), findsWidgets);
       await disposeReward(tester);
     });
 

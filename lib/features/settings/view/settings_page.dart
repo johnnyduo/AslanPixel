@@ -7,6 +7,7 @@ import 'package:aslan_pixel/features/settings/view/account_deletion_page.dart';
 import 'package:aslan_pixel/features/settings/view/legal_page.dart';
 import 'package:aslan_pixel/features/settings/view/notification_settings_page.dart';
 import 'package:aslan_pixel/main.dart';
+import 'package:aslan_pixel/shared/widgets/pixel_icon.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const _kNavy = Color(0xFF0A1628);
@@ -57,6 +58,7 @@ class SettingsPage extends StatelessWidget {
           _SettingsTile(
             icon: Icons.notifications_outlined,
             iconColor: _kNeonGreen,
+            iconWidget: const PixelIcon(PixelIcon.bell, size: 18, color: _kNeonGreen),
             label: 'ตั้งค่าการแจ้งเตือน',
             trailing: const Icon(
               Icons.chevron_right,
@@ -489,6 +491,7 @@ class _PrivacyPolicyRow extends StatelessWidget {
     return _SettingsTile(
       icon: Icons.shield_outlined,
       iconColor: const Color(0xFF7B2FFF),
+      iconWidget: const PixelIcon(PixelIcon.shield, size: 18, color: Color(0xFF7B2FFF)),
       label: 'นโยบายความเป็นส่วนตัว',
       trailing: const Icon(
         Icons.chevron_right,
@@ -586,6 +589,7 @@ class _SettingsTile extends StatelessWidget {
     this.labelColor = _kTextPrimary,
     this.trailing,
     this.onTap,
+    this.iconWidget,
   });
 
   final IconData icon;
@@ -594,6 +598,10 @@ class _SettingsTile extends StatelessWidget {
   final Color labelColor;
   final Widget? trailing;
   final VoidCallback? onTap;
+
+  /// Optional custom widget to display instead of [Icon]. When provided,
+  /// [icon] is ignored (but still required for API compat).
+  final Widget? iconWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +625,9 @@ class _SettingsTile extends StatelessWidget {
                 color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, color: iconColor, size: 18),
+              child: Center(
+                child: iconWidget ?? Icon(icon, color: iconColor, size: 18),
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
