@@ -60,7 +60,14 @@ class FirestorePredictionDatasource implements PredictionRepository {
   }) async {
     final eventRef = _events.doc(eventId);
     final economyRef =
-        _db.collection('users').doc(uid).collection('economy').doc('coins');
+        _db.collection('users').doc(uid).collection('economy').doc('balance');
+    final txLogRef = _db
+        .collection('users')
+        .doc(uid)
+        .collection('economy')
+        .doc('balance')
+        .collection('transactions')
+        .doc();
     final entryId = _db.collection('_').doc().id; // generate unique ID
 
     final userEntryRef = _userEntries(uid).doc(entryId);
@@ -76,19 +83,30 @@ class FirestorePredictionDatasource implements PredictionRepository {
         throw Exception('Event is no longer open for entries.');
       }
 
-      // (b) Deduct coins
+      // (b) Deduct coins from the canonical economy balance document
       final economySnap = await txn.get(economyRef);
       final currentCoins = economySnap.exists
-          ? ((economySnap.data()!['balance'] as num?)?.toInt() ?? 0)
+          ? ((economySnap.data()?['coins'] as num?)?.toInt() ?? 0)
           : 0;
       if (currentCoins < coinStaked) {
         throw Exception('Insufficient coins. Have $currentCoins, need $coinStaked.');
       }
       txn.set(
         economyRef,
-        {'balance': currentCoins - coinStaked},
+        {
+          'coins': FieldValue.increment(-coinStaked),
+          'lastUpdated': FieldValue.serverTimestamp(),
+        },
         SetOptions(merge: true),
       );
+
+      // (b2) Log the transaction
+      txn.set(txLogRef, {
+        'type': 'debit',
+        'amount': coinStaked,
+        'reason': 'prediction_entry:$eventId',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
       // (c) Write the user entry document
       final now = DateTime.now();

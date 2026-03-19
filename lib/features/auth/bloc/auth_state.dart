@@ -42,3 +42,33 @@ class AuthFailure extends AuthState {
 class AuthSignedOut extends AuthState {
   const AuthSignedOut();
 }
+
+/// Email verification has been sent.
+class AuthEmailVerificationSent extends AuthState {
+  const AuthEmailVerificationSent();
+}
+
+/// User's account has been deleted.
+class AuthAccountDeleted extends AuthState {
+  const AuthAccountDeleted();
+}
+
+/// Guest account has been linked to email credentials.
+class AuthGuestLinked extends AuthState {
+  const AuthGuestLinked({required this.user});
+
+  final UserModel user;
+
+  @override
+  List<Object?> get props => [user.uid];
+}
+
+/// Email verification check result.
+class AuthEmailVerificationChecked extends AuthState {
+  const AuthEmailVerificationChecked({required this.isVerified});
+
+  final bool isVerified;
+
+  @override
+  List<Object?> get props => [isVerified];
+}

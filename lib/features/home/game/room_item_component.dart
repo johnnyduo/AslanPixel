@@ -1,13 +1,15 @@
+import 'dart:ui' as ui;
 import 'dart:ui' show Offset;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart'
     show Canvas, Color, Colors, FontWeight, Paint, PaintingStyle, Rect, Shadow, TextStyle;
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:aslan_pixel/features/home/data/models/room_item_model.dart';
 
 // ---------------------------------------------------------------------------
-// Color constants — item type palette
+// Color constants — item type palette (used only for Canvas fallback)
 // ---------------------------------------------------------------------------
 
 const _colorGold = Color(0xFFF5C518);
@@ -18,17 +20,42 @@ const _colorBrown = Color(0xFF8B5E3C);
 const _colorDarkSurface = Color(0xFF0F2040);
 
 // ---------------------------------------------------------------------------
+// Asset subdirectory mapping
+// ---------------------------------------------------------------------------
+
+/// Maps a [RoomItemType] to its subdirectory under `assets/sprites/room_items/`.
+String _subdirForType(RoomItemType type) {
+  switch (type) {
+    case RoomItemType.furniture:
+      return 'furniture';
+    case RoomItemType.decoration:
+      return 'decorations';
+    case RoomItemType.plant:
+      return 'decorations';
+    case RoomItemType.chest:
+      return 'furniture';
+    case RoomItemType.floor:
+      return 'furniture';
+  }
+}
+
+/// All subdirectories to search when the item type doesn't yield a match.
+const _allSubdirs = ['furniture', 'decorations', 'technology', 'special'];
+
+// ---------------------------------------------------------------------------
 // RoomItemComponent
 // ---------------------------------------------------------------------------
 
-/// A Flame [PositionComponent] that renders a placed [RoomItem] as a
-/// coloured pixel-art shape on the room canvas.
+/// A Flame [PositionComponent] that renders a placed [RoomItem].
 ///
-/// No external PNG assets are required — shapes are drawn with Canvas
-/// primitives so the feature works immediately even without art assets.
+/// Loads a PNG sprite from `assets/sprites/room_items/{subdir}/{assetKey}.png`
+/// using Flutter's [rootBundle] + [ui.instantiateImageCodec] pattern (same as
+/// NpcSpriteComponent and PixelAgentComponent).
+///
+/// Falls back to Canvas shape drawing if the PNG asset doesn't exist.
 ///
 /// Positioned at `item.slotX * 48, item.slotY * 48` in room-local space.
-/// Anchor is [Anchor.center]; size is 32 × 32.
+/// Anchor is [Anchor.center]; size is 48 x 48.
 class RoomItemComponent extends PositionComponent {
   RoomItemComponent({required this.item})
       : super(
@@ -36,16 +63,18 @@ class RoomItemComponent extends PositionComponent {
             item.slotX * 48.0,
             item.slotY * 48.0,
           ),
-          size: Vector2.all(32),
+          size: Vector2.all(48),
           anchor: Anchor.center,
         );
 
   final RoomItem item;
 
-  // Cached paints (allocated once in onLoad, not per frame).
-  late Paint _fillPaint;
-  late Paint _borderPaint;
-  late TextComponent _label;
+  /// Whether a PNG sprite was successfully loaded.
+  bool _hasSprite = false;
+
+  // Cached paints for Canvas fallback (allocated in onLoad if needed).
+  Paint? _fillPaint;
+  Paint? _borderPaint;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -55,19 +84,23 @@ class RoomItemComponent extends PositionComponent {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    final palette = _paletteFor(item.itemId);
+    // Attempt to load PNG sprite.
+    _hasSprite = await _tryLoadSprite();
 
-    _fillPaint = Paint()
-      ..color = palette.fill
-      ..style = PaintingStyle.fill;
+    // If no sprite, initialise Canvas fallback paints.
+    if (!_hasSprite) {
+      final palette = _paletteFor(item.itemId);
+      _fillPaint = Paint()
+        ..color = palette.fill
+        ..style = PaintingStyle.fill;
+      _borderPaint = Paint()
+        ..color = palette.border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+    }
 
-    _borderPaint = Paint()
-      ..color = palette.border
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    // Name label rendered below the shape.
-    _label = TextComponent(
+    // Name label rendered below the item.
+    final label = TextComponent(
       text: _displayName(item.itemId),
       position: Vector2(size.x / 2, size.y + 4),
       anchor: Anchor.topCenter,
@@ -86,21 +119,84 @@ class RoomItemComponent extends PositionComponent {
         ),
       ),
     );
-    await add(_label);
+    await add(label);
   }
 
   // ---------------------------------------------------------------------------
-  // Render
+  // Sprite loading
+  // ---------------------------------------------------------------------------
+
+  /// Attempts to load a PNG sprite for this item. Returns true on success.
+  ///
+  /// Search order:
+  ///   1. `{subdir for item.type}/{assetKey}.png`
+  ///   2. All subdirectories (`furniture`, `decorations`, `technology`, `special`)
+  Future<bool> _tryLoadSprite() async {
+    final assetKey = item.assetKey.isNotEmpty ? item.assetKey : item.itemId;
+
+    // Try the type-specific subdirectory first.
+    final primaryDir = _subdirForType(item.type);
+    final primaryPath = 'assets/sprites/room_items/$primaryDir/$assetKey.png';
+    final sprite = await _loadSpriteFromPath(primaryPath);
+    if (sprite != null) {
+      await _addSpriteComponent(sprite);
+      return true;
+    }
+
+    // Fall back: search all subdirectories.
+    for (final dir in _allSubdirs) {
+      if (dir == primaryDir) continue; // Already tried.
+      final path = 'assets/sprites/room_items/$dir/$assetKey.png';
+      final s = await _loadSpriteFromPath(path);
+      if (s != null) {
+        await _addSpriteComponent(s);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Loads a [Sprite] from Flutter's asset bundle using the
+  /// [rootBundle] + [ui.instantiateImageCodec] pattern.
+  /// Returns null if the asset does not exist or fails to decode.
+  Future<Sprite?> _loadSpriteFromPath(String path) async {
+    try {
+      final data = await rootBundle.load(path);
+      final bytes = data.buffer.asUint8List();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      return Sprite(frame.image);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Adds a [SpriteComponent] child sized to fill this component.
+  Future<void> _addSpriteComponent(Sprite sprite) async {
+    final comp = SpriteComponent(
+      sprite: sprite,
+      size: Vector2(size.x, size.y),
+      anchor: Anchor.topLeft,
+      position: Vector2.zero(),
+    );
+    await add(comp);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render — Canvas fallback (only used when no PNG sprite is loaded)
   // ---------------------------------------------------------------------------
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    _drawShape(canvas);
+    if (!_hasSprite) {
+      _drawShape(canvas);
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // Private helpers
+  // Canvas fallback drawing
   // ---------------------------------------------------------------------------
 
   void _drawShape(Canvas canvas) {
@@ -109,11 +205,9 @@ class RoomItemComponent extends PositionComponent {
 
     switch (_shapeFor(item.itemId)) {
       case _ItemShape.goldDesk:
-        // Gold rectangle — desk symbol (horizontal line across middle)
         final rect = Rect.fromLTWH(2, 4, w - 4, h - 8);
-        canvas.drawRect(rect, _fillPaint);
-        canvas.drawRect(rect, _borderPaint);
-        // Desk surface line
+        canvas.drawRect(rect, _fillPaint!);
+        canvas.drawRect(rect, _borderPaint!);
         final surfacePaint = Paint()
           ..color = _colorDarkSurface
           ..strokeWidth = 1.5
@@ -125,11 +219,9 @@ class RoomItemComponent extends PositionComponent {
         );
 
       case _ItemShape.cyanMonitor:
-        // Cyan rectangle — monitor with screen lines
         final body = Rect.fromLTWH(3, 3, w - 6, h - 10);
-        canvas.drawRect(body, _fillPaint);
-        canvas.drawRect(body, _borderPaint);
-        // Screen scanlines
+        canvas.drawRect(body, _fillPaint!);
+        canvas.drawRect(body, _borderPaint!);
         final linePaint = Paint()
           ..color = _colorDarkSurface.withValues(alpha: 0.7)
           ..strokeWidth = 1.0
@@ -137,7 +229,6 @@ class RoomItemComponent extends PositionComponent {
         for (var y = 7.0; y < h - 10; y += 3) {
           canvas.drawLine(Offset(5, y), Offset(w - 5, y), linePaint);
         }
-        // Stand
         final standPaint = Paint()
           ..color = _colorCyan
           ..strokeWidth = 2.0
@@ -154,45 +245,37 @@ class RoomItemComponent extends PositionComponent {
         );
 
       case _ItemShape.greenBoard:
-        // Green rectangle — bulletin board with grid lines
         final board = Rect.fromLTWH(2, 2, w - 4, h - 4);
-        canvas.drawRect(board, _fillPaint);
-        canvas.drawRect(board, _borderPaint);
-        // Grid lines
+        canvas.drawRect(board, _fillPaint!);
+        canvas.drawRect(board, _borderPaint!);
         final gridPaint = Paint()
           ..color = _colorDarkSurface.withValues(alpha: 0.5)
           ..strokeWidth = 0.8
           ..style = PaintingStyle.stroke;
-        // Vertical
         for (var x = 6.0; x < w - 4; x += 5) {
           canvas.drawLine(Offset(x, 4), Offset(x, h - 4), gridPaint);
         }
-        // Horizontal
         for (var y = 6.0; y < h - 4; y += 5) {
           canvas.drawLine(Offset(4, y), Offset(w - 4, y), gridPaint);
         }
 
       case _ItemShape.purpleCircle:
-        // Purple circle — crystal ball with glow halo
         final center = Offset(w / 2, h / 2);
         final glowPaint = Paint()
           ..color = _colorPurple.withValues(alpha: 0.3)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(center, (w / 2) - 1, glowPaint);
-        canvas.drawCircle(center, (w / 2) - 4, _fillPaint);
-        canvas.drawCircle(center, (w / 2) - 4, _borderPaint);
-        // Shine dot
+        canvas.drawCircle(center, (w / 2) - 4, _fillPaint!);
+        canvas.drawCircle(center, (w / 2) - 4, _borderPaint!);
         final shinePaint = Paint()
           ..color = Colors.white.withValues(alpha: 0.5)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(Offset(w * 0.38, h * 0.35), 2.5, shinePaint);
 
       case _ItemShape.brownMat:
-        // Brown/gold small rectangle — door mat
         final mat = Rect.fromLTWH(1, h * 0.35, w - 2, h * 0.3);
-        canvas.drawRect(mat, _fillPaint);
-        canvas.drawRect(mat, _borderPaint);
-        // Weave lines
+        canvas.drawRect(mat, _fillPaint!);
+        canvas.drawRect(mat, _borderPaint!);
         final weavePaint = Paint()
           ..color = _colorGold.withValues(alpha: 0.6)
           ..strokeWidth = 0.8
@@ -206,10 +289,9 @@ class RoomItemComponent extends PositionComponent {
         }
 
       case _ItemShape.generic:
-        // Default: solid rect with a small icon indicator
         final rect = Rect.fromLTWH(3, 3, w - 6, h - 6);
-        canvas.drawRect(rect, _fillPaint);
-        canvas.drawRect(rect, _borderPaint);
+        canvas.drawRect(rect, _fillPaint!);
+        canvas.drawRect(rect, _borderPaint!);
     }
   }
 
@@ -284,7 +366,7 @@ class RoomItemComponent extends PositionComponent {
 
   /// Converts a snake_case item id into a short human-readable label.
   ///
-  /// Example: `"desk_upgrade_01"` → `"Desk Up."`, `"plant_01"` → `"Plant 01"`.
+  /// Example: `"desk_upgrade_01"` -> `"Desk Up."`, `"plant_01"` -> `"Plant 01"`.
   static String _displayName(String itemId) {
     final parts = itemId.split('_');
     if (parts.isEmpty) return itemId;

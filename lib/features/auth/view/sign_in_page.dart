@@ -320,7 +320,30 @@ class _SignInPageState extends State<SignInPage> {
             ),
           ],
 
-          SizedBox(height: 3.h),
+          SizedBox(height: 2.h),
+
+          // Guest sign-in link
+          Center(
+            child: GestureDetector(
+              onTap: isLoading
+                  ? null
+                  : () => context
+                      .read<AuthBloc>()
+                      .add(const AuthSignInAsGuestRequested()),
+              child: Text(
+                'เข้าใช้แบบผู้เยี่ยมชม',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.underline,
+                  decorationColor: colors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+
+          SizedBox(height: 2.h),
           _buildSignUpLink(colors),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 0.5.h),
         ],

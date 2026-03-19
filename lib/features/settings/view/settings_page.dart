@@ -1,6 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:aslan_pixel/features/settings/view/account_deletion_page.dart';
+import 'package:aslan_pixel/features/settings/view/legal_page.dart';
 import 'package:aslan_pixel/features/settings/view/notification_settings_page.dart';
 import 'package:aslan_pixel/main.dart';
 
@@ -64,10 +68,13 @@ class SettingsPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const _SectionHeader(label: 'บัญชี'),
+          const _GuestUpgradeRow(),
           const _SignOutRow(),
+          const _DeleteAccountRow(),
           const SizedBox(height: 8),
-          const _SectionHeader(label: 'ข้อมูล'),
+          const _SectionHeader(label: 'กฎหมายและข้อมูล'),
           const _PrivacyPolicyRow(),
+          const _TermsOfServiceRow(),
           const _VersionRow(),
           const SizedBox(height: 32),
         ],
@@ -236,6 +243,220 @@ class _LanguageSegmentedButton extends StatelessWidget {
   }
 }
 
+// ── _GuestUpgradeRow ─────────────────────────────────────────────────────────
+
+/// Shows "อัปเกรดบัญชี" only if the current user is anonymous (guest).
+/// Taps open a bottom sheet to collect email + password for linking.
+class _GuestUpgradeRow extends StatelessWidget {
+  const _GuestUpgradeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !user.isAnonymous) {
+      return const SizedBox.shrink();
+    }
+    return _SettingsTile(
+      icon: Icons.upgrade_rounded,
+      iconColor: _kNeonGreen,
+      label: 'อัปเกรดบัญชี',
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: _kTextSecondary,
+        size: 20,
+      ),
+      onTap: () => _showUpgradeSheet(context),
+    );
+  }
+
+  void _showUpgradeSheet(BuildContext context) {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _kSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'อัปเกรดบัญชีผู้เยี่ยมชม',
+                style: TextStyle(
+                  color: _kTextPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'เชื่อมต่ออีเมลและรหัสผ่านเพื่อรักษาข้อมูลทั้งหมดของคุณ',
+                style: TextStyle(color: _kTextSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: _kTextPrimary),
+                decoration: InputDecoration(
+                  hintText: 'อีเมล',
+                  hintStyle: const TextStyle(color: _kTextSecondary),
+                  filled: true,
+                  fillColor: _kNavy,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _kBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _kBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide:
+                        const BorderSide(color: _kNeonGreen, width: 1.5),
+                  ),
+                  prefixIcon: const Icon(Icons.alternate_email_rounded,
+                      color: _kTextSecondary, size: 20),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                style: const TextStyle(color: _kTextPrimary),
+                decoration: InputDecoration(
+                  hintText: 'รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)',
+                  hintStyle: const TextStyle(color: _kTextSecondary),
+                  filled: true,
+                  fillColor: _kNavy,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _kBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _kBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide:
+                        const BorderSide(color: _kNeonGreen, width: 1.5),
+                  ),
+                  prefixIcon: const Icon(Icons.lock_outline_rounded,
+                      color: _kTextSecondary, size: 20),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => _linkAccount(
+                  context,
+                  emailController.text.trim(),
+                  passwordController.text.trim(),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kNeonGreen,
+                  foregroundColor: _kNavy,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'อัปเกรดบัญชี',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _linkAccount(
+      BuildContext context, String email, String password) async {
+    if (email.isEmpty ||
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      _showSnackBar(context, 'กรุณากรอกอีเมลให้ถูกต้อง', isError: true);
+      return;
+    }
+    if (password.length < 8) {
+      _showSnackBar(context, 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
+          isError: true);
+      return;
+    }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || !user.isAnonymous) return;
+
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.linkWithCredential(credential);
+
+      // Update Firestore user doc with new email and provider.
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'email': email,
+        'provider': 'email',
+        'lastLoginAt': FieldValue.serverTimestamp(),
+      });
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // close sheet
+        _showSnackBar(context, 'อัปเกรดบัญชีสำเร็จ!');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (context.mounted) {
+        final msg = e.code == 'email-already-in-use'
+            ? 'อีเมลนี้ถูกใช้งานแล้ว'
+            : e.code == 'credential-already-in-use'
+                ? 'ข้อมูลรับรองนี้ถูกใช้กับบัญชีอื่นแล้ว'
+                : 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        _showSnackBar(context, msg, isError: true);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showSnackBar(context, 'เกิดข้อผิดพลาด กรุณาลองใหม่', isError: true);
+      }
+    }
+  }
+
+  void _showSnackBar(BuildContext context, String message,
+      {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? _kErrorRed : _kNeonGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+  }
+}
+
 // ── _SignOutRow ───────────────────────────────────────────────────────────────
 
 class _SignOutRow extends StatelessWidget {
@@ -265,15 +486,62 @@ class _PrivacyPolicyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _SettingsTile(
+    return _SettingsTile(
       icon: Icons.shield_outlined,
-      iconColor: Color(0xFF7B2FFF),
+      iconColor: const Color(0xFF7B2FFF),
       label: 'นโยบายความเป็นส่วนตัว',
-      trailing: Icon(
+      trailing: const Icon(
         Icons.chevron_right,
         color: _kTextSecondary,
         size: 20,
       ),
+      onTap: () => Navigator.of(context)
+          .pushNamed(LegalPage.privacyPolicyRouteName),
+    );
+  }
+}
+
+// ── _TermsOfServiceRow ────────────────────────────────────────────────────────
+
+class _TermsOfServiceRow extends StatelessWidget {
+  const _TermsOfServiceRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsTile(
+      icon: Icons.description_outlined,
+      iconColor: const Color(0xFF4FC3F7),
+      label: 'ข้อกำหนดการใช้งาน',
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: _kTextSecondary,
+        size: 20,
+      ),
+      onTap: () => Navigator.of(context)
+          .pushNamed(LegalPage.termsOfServiceRouteName),
+    );
+  }
+}
+
+// ── _DeleteAccountRow ─────────────────────────────────────────────────────────
+
+class _DeleteAccountRow extends StatelessWidget {
+  const _DeleteAccountRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsTile(
+      icon: Icons.person_remove_outlined,
+      iconColor: _kErrorRed,
+      label: 'ลบบัญชี',
+      labelColor: _kErrorRed,
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: _kTextSecondary,
+        size: 20,
+      ),
+      onTap: () => Navigator.of(context)
+          .pushNamed(AccountDeletionPage.routeName),
     );
   }
 }
@@ -285,17 +553,25 @@ class _VersionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _SettingsTile(
-      icon: Icons.info_outline,
-      iconColor: _kTextSecondary,
-      label: 'เวอร์ชัน',
-      trailing: Text(
-        '1.0.0',
-        style: TextStyle(
-          color: _kTextSecondary,
-          fontSize: 13,
-        ),
-      ),
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final version = snapshot.hasData
+            ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+            : '...';
+        return _SettingsTile(
+          icon: Icons.info_outline,
+          iconColor: _kTextSecondary,
+          label: 'เวอร์ชัน',
+          trailing: Text(
+            version,
+            style: const TextStyle(
+              color: _kTextSecondary,
+              fontSize: 13,
+            ),
+          ),
+        );
+      },
     );
   }
 }

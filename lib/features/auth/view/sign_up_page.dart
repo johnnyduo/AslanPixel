@@ -1,18 +1,19 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:sizer/sizer.dart';
 
 import 'package:aslan_pixel/core/config/app_colors.dart';
+import 'package:aslan_pixel/features/auth/bloc/auth_bloc.dart';
+import 'package:aslan_pixel/features/settings/view/legal_page.dart';
 
 /// Sign-up page — creates a new Firebase Auth account with email + password
-/// then initialises a Firestore user document.
+/// then initialises a Firestore user document and sends email verification.
 ///
-/// Intentionally uses a lightweight local state machine rather than the full
-/// [AuthBloc] to keep the registration path simple; the resulting [User] is
-/// still surfaced through [FirebaseAuth.authStateChanges] so [AuthBloc]
-/// will pick it up automatically.
+/// Uses [AuthBloc] so the resulting [UserModel] is handled consistently
+/// across all auth flows (Firestore sync, economy init, FCM token).
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -26,23 +27,27 @@ class _SignUpPageState extends State<SignUpPage> {
   final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
+  bool _obscureConfirmPassword = true;
+  bool _agreedToTerms = false;
 
   @override
   void dispose() {
     _displayNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   // ── Validation + submission ──────────────────────────────────────────────────
 
-  Future<void> _submit() async {
+  void _submit() {
     final displayName = _displayNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
     if (displayName.isEmpty) {
       _showError('กรุณากรอกชื่อแสดง');
@@ -57,33 +62,23 @@ class _SignUpPageState extends State<SignUpPage> {
       _showError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
       return;
     }
-
-    setState(() => _isLoading = true);
-    TextInput.finishAutofillContext();
-
-    try {
-      final credential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Update Firebase Auth profile with the chosen display name.
-      await credential.user?.updateDisplayName(displayName);
-
-      if (!mounted) return;
-      // Navigate to home — authStateChanges will propagate the new user.
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil('/home', (route) => false);
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      _showError(_mapFirebaseError(e.code));
-    } catch (e) {
-      if (!mounted) return;
-      _showError('เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (password != confirmPassword) {
+      _showError('รหัสผ่านไม่ตรงกัน');
+      return;
     }
+    if (!_agreedToTerms) {
+      _showError('กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว');
+      return;
+    }
+
+    TextInput.finishAutofillContext();
+    context.read<AuthBloc>().add(
+          AuthSignUpWithEmailRequested(
+            email: email,
+            password: password,
+            displayName: displayName,
+          ),
+        );
   }
 
   void _showError(String message) {
@@ -101,19 +96,19 @@ class _SignUpPageState extends State<SignUpPage> {
       );
   }
 
-  String _mapFirebaseError(String code) {
-    switch (code) {
-      case 'email-already-in-use':
-        return 'อีเมลนี้ถูกใช้งานแล้ว';
-      case 'invalid-email':
-        return 'รูปแบบอีเมลไม่ถูกต้อง';
-      case 'weak-password':
-        return 'รหัสผ่านไม่ปลอดภัยพอ กรุณาใช้อย่างน้อย 8 ตัวอักษร';
-      case 'network-request-failed':
-        return 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต';
-      default:
-        return 'เกิดข้อผิดพลาด กรุณาลองใหม่';
-    }
+  void _showSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.of(context).primary,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
   }
 
   // ── Build ───────────────────────────────────────────────────────────────────
@@ -128,121 +123,161 @@ class _SignUpPageState extends State<SignUpPage> {
       statusBarBrightness: Brightness.light,
     ));
 
-    return Scaffold(
-      backgroundColor: colors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: colors.textPrimary, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'สมัครสมาชิก',
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontSize: 14.sp,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header text
-                  Text(
-                    'สร้างบัญชีใหม่',
-                    style: TextStyle(
-                      color: colors.primary,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  SizedBox(height: 0.5.h),
-                  Text(
-                    'กรอกข้อมูลเพื่อเริ่มต้นใช้งาน Aslan Pixel',
-                    style: TextStyle(
-                        color: colors.textSecondary, fontSize: 11.sp),
-                  ),
-                  SizedBox(height: 3.h),
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          _showSuccess('ตรวจสอบอีเมลของคุณเพื่อยืนยันบัญชี');
+          Navigator.of(context)
+              .pushNamedAndRemoveUntil('/home', (route) => false);
+        } else if (state is AuthFailure) {
+          _showError(state.message);
+        }
+      },
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
 
-                  // Display name
-                  _buildTextField(
-                    controller: _displayNameController,
-                    hint: 'ชื่อแสดง',
-                    icon: Icons.person_outline_rounded,
-                    autofillHints: const [AutofillHints.name],
-                    colors: colors,
-                    enabled: !_isLoading,
-                  ),
-                  SizedBox(height: 1.5.h),
-
-                  // Email
-                  AutofillGroup(
-                    child: Column(
-                      children: [
-                        _buildTextField(
-                          controller: _emailController,
-                          hint: 'อีเมล',
-                          icon: Icons.alternate_email_rounded,
-                          keyboardType: TextInputType.emailAddress,
-                          autofillHints: const [
-                            AutofillHints.newUsername,
-                            AutofillHints.email,
-                          ],
-                          colors: colors,
-                          enabled: !_isLoading,
-                        ),
-                        SizedBox(height: 1.5.h),
-                        _buildTextField(
-                          controller: _passwordController,
-                          hint: 'รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)',
-                          icon: Icons.lock_outline_rounded,
-                          obscureText: _obscurePassword,
-                          autofillHints: const [AutofillHints.newPassword],
-                          colors: colors,
-                          enabled: !_isLoading,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: colors.textDisabled,
-                              size: 20,
-                            ),
-                            onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 3.h),
-
-                  // Submit button
-                  _buildSignUpButton(colors),
-                  SizedBox(height: 2.5.h),
-
-                  // Back to sign in
-                  _buildSignInLink(colors),
-                  SizedBox(
-                      height:
-                          MediaQuery.of(context).padding.bottom + 1.h),
-                ],
+        return Scaffold(
+          backgroundColor: colors.scaffoldBackground,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
+                  color: colors.textPrimary, size: 20),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              'สมัครสมาชิก',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          if (_isLoading) _buildLoadingOverlay(colors),
-        ],
-      ),
+          body: Stack(
+            children: [
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header text
+                      Text(
+                        'สร้างบัญชีใหม่',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      SizedBox(height: 0.5.h),
+                      Text(
+                        'กรอกข้อมูลเพื่อเริ่มต้นใช้งาน Aslan Pixel',
+                        style: TextStyle(
+                            color: colors.textSecondary, fontSize: 11.sp),
+                      ),
+                      SizedBox(height: 3.h),
+
+                      // Display name
+                      _buildTextField(
+                        controller: _displayNameController,
+                        hint: 'ชื่อแสดง',
+                        icon: Icons.person_outline_rounded,
+                        autofillHints: const [AutofillHints.name],
+                        colors: colors,
+                        enabled: !isLoading,
+                      ),
+                      SizedBox(height: 1.5.h),
+
+                      // Email + Password + Confirm Password
+                      AutofillGroup(
+                        child: Column(
+                          children: [
+                            _buildTextField(
+                              controller: _emailController,
+                              hint: 'อีเมล',
+                              icon: Icons.alternate_email_rounded,
+                              keyboardType: TextInputType.emailAddress,
+                              autofillHints: const [
+                                AutofillHints.newUsername,
+                                AutofillHints.email,
+                              ],
+                              colors: colors,
+                              enabled: !isLoading,
+                            ),
+                            SizedBox(height: 1.5.h),
+                            _buildTextField(
+                              controller: _passwordController,
+                              hint: 'รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)',
+                              icon: Icons.lock_outline_rounded,
+                              obscureText: _obscurePassword,
+                              autofillHints: const [AutofillHints.newPassword],
+                              colors: colors,
+                              enabled: !isLoading,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: colors.textDisabled,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                            ),
+                            SizedBox(height: 1.5.h),
+                            _buildTextField(
+                              controller: _confirmPasswordController,
+                              hint: 'ยืนยันรหัสผ่าน',
+                              icon: Icons.lock_outline_rounded,
+                              obscureText: _obscureConfirmPassword,
+                              colors: colors,
+                              enabled: !isLoading,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirmPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: colors.textDisabled,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(() =>
+                                    _obscureConfirmPassword =
+                                        !_obscureConfirmPassword),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+
+                      // Terms & Privacy checkbox
+                      _buildTermsCheckbox(colors),
+                      SizedBox(height: 2.h),
+
+                      // Submit button
+                      _buildSignUpButton(colors, isLoading),
+                      SizedBox(height: 2.5.h),
+
+                      // Back to sign in
+                      _buildSignInLink(colors),
+                      SizedBox(
+                          height:
+                              MediaQuery.of(context).padding.bottom + 1.h),
+                    ],
+                  ),
+                ),
+              ),
+              if (isLoading) _buildLoadingOverlay(colors),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -296,11 +331,75 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _buildSignUpButton(AppColorScheme colors) {
+  Widget _buildTermsCheckbox(AppColorScheme colors) {
+    return GestureDetector(
+      onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: _agreedToTerms,
+              onChanged: (v) =>
+                  setState(() => _agreedToTerms = v ?? false),
+              activeColor: colors.primary,
+              checkColor: colors.textOnPrimary,
+              side: BorderSide(color: colors.textDisabled),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 11.sp,
+                  height: 1.4,
+                ),
+                children: [
+                  const TextSpan(text: 'ฉันยอมรับ '),
+                  TextSpan(
+                    text: 'ข้อกำหนดการใช้งาน',
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => Navigator.of(context)
+                          .pushNamed(LegalPage.termsOfServiceRouteName),
+                  ),
+                  const TextSpan(text: ' และ '),
+                  TextSpan(
+                    text: 'นโยบายความเป็นส่วนตัว',
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => Navigator.of(context)
+                          .pushNamed(LegalPage.privacyPolicyRouteName),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSignUpButton(AppColorScheme colors, bool isLoading) {
     return SizedBox(
       height: 6.h,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _submit,
+        onPressed: isLoading ? null : _submit,
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.primary,
           foregroundColor: colors.textOnPrimary,

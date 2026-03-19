@@ -16,6 +16,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
 
 
 // ---------------------------------------------------------------------------
@@ -27,25 +28,34 @@ import 'package:flame/components.dart';
 ///
 /// Position the component with [npcPosition] — the bubble will place itself
 /// [_yOffset] pixels above the NPC centre.
-class NpcQuoteBubble extends PositionComponent {
+class NpcQuoteBubble extends PositionComponent
+    with HasGameReference<FlameGame> {
   NpcQuoteBubble({
     required String text,
     required Vector2 npcPosition,
     double displaySeconds = 3.0,
   })  : _text = text,
+        _npcPosition = npcPosition.clone(),
         _displaySeconds = displaySeconds,
         super(
-          // Anchor is top-centre; we shift x by half the bubble width so the
-          // tail stays centred on the NPC horizontally.
-          position: Vector2(
-            npcPosition.x.clamp(_maxBubbleWidth / 2 + 20, 400 - _maxBubbleWidth / 2 - 20),
-            (npcPosition.y - _yOffset).clamp(_estimatedHeight + 20, 800 - _estimatedHeight),
-          ),
+          position: npcPosition.clone(),
           anchor: Anchor.bottomCenter,
-          // Size is determined after layout; use a generous initial size.
           size: Vector2(_maxBubbleWidth + _horizontalPadding * 2,
               _estimatedHeight),
         );
+
+  final Vector2 _npcPosition;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    // Clamp bubble to actual game bounds — prevents overflow off-screen.
+    final gameW = game.size.x;
+    final bubbleHalfW = (_maxBubbleWidth + _horizontalPadding * 2) / 2;
+    final clampedX = _npcPosition.x.clamp(bubbleHalfW + 8, gameW - bubbleHalfW - 8);
+    final clampedY = (_npcPosition.y - _yOffset).clamp(_estimatedHeight + 8, game.size.y - 20);
+    position = Vector2(clampedX, clampedY);
+  }
 
   final String _text;
   final double _displaySeconds;

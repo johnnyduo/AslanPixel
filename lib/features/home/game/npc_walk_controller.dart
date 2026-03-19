@@ -197,7 +197,8 @@ class NpcWalkController extends Component with HasGameReference<FlameGame> {
 
     final minX = _margin;
     final maxX = _canvasWidth - _margin;
-    final minY = _margin;
+    // NPCs should stay in the lower portion (below furniture area at top)
+    final minY = _canvasHeight * 0.35;
     final maxY = _canvasHeight - _margin;
 
     _target = Vector2(

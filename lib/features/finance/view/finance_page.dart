@@ -303,14 +303,51 @@ class _MarketTab extends StatelessWidget {
           }),
 
           // Disclaimer footer
-          const SizedBox(height: 8),
-          Text(
-            'ข้อมูลเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน',
-            style: TextStyle(
-              color: _textWhite.withValues(alpha: 0.3),
-              fontSize: 10,
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5C518).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFFF5C518).withValues(alpha: 0.2),
+              ),
             ),
-            textAlign: TextAlign.center,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: const Color(0xFFF5C518).withValues(alpha: 0.7),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ข้อจำกัดความรับผิดชอบ',
+                      style: TextStyle(
+                        color: const Color(0xFFF5C518).withValues(alpha: 0.8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'ข้อมูลนี้มีไว้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำในการลงทุน\n'
+                  'เหรียญในแอปเป็นสกุลเงินเสมือน ไม่มีมูลค่าเป็นเงินจริง',
+                  style: TextStyle(
+                    color: _textWhite.withValues(alpha: 0.4),
+                    fontSize: 10,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
         ],

@@ -126,17 +126,25 @@ class PixelAgentComponent extends PositionComponent
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
-      final img = frame.image;
+      final sheetImg = frame.image;
 
       // Agent sprites are sprite sheets (e.g. 64×16 = 4 frames of 16×16).
-      // Extract just the first frame for display.
-      final frameH = img.height.toDouble();
+      // Crop the first frame using PictureRecorder.
+      final frameH = sheetImg.height;
       final frameW = frameH; // Each frame is square (16×16)
-      final sprite = Sprite(
-        img,
-        srcPosition: Vector2.zero(),
-        srcSize: Vector2(frameW, frameH),
+
+      final recorder = ui.PictureRecorder();
+      final cropCanvas = ui.Canvas(recorder);
+      cropCanvas.drawImageRect(
+        sheetImg,
+        ui.Rect.fromLTWH(0, 0, frameW.toDouble(), frameH.toDouble()),
+        ui.Rect.fromLTWH(0, 0, frameW.toDouble(), frameH.toDouble()),
+        ui.Paint(),
       );
+      final picture = recorder.endRecording();
+      final croppedImg = await picture.toImage(frameW, frameH);
+
+      final sprite = Sprite(croppedImg);
 
       if (_spriteComp != null) {
         _spriteComp!.sprite = sprite;

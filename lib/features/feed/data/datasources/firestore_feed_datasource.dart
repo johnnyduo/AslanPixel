@@ -60,6 +60,11 @@ class FirestoreFeedDatasource implements FeedRepository {
   }
 
   @override
+  Future<void> deletePost(String postId) async {
+    await _collection.doc(postId).delete();
+  }
+
+  @override
   Future<void> addReaction(String postId, String emoji, String uid) async {
     final docRef = _collection.doc(postId);
     await _firestore.runTransaction((transaction) async {

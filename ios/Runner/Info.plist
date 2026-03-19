@@ -4,6 +4,14 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Aslan Pixel ต้องการเข้าถึงกล้องเพื่อถ่ายภาพสำหรับโปรไฟล์หรืองานพิกเซลอาร์ต</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aslan Pixel ต้องการเข้าถึงคลังรูปภาพเพื่อเลือกรูปสำหรับโปรไฟล์หรืองานพิกเซลอาร์ต</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aslan Pixel ต้องการบันทึกงานพิกเซลอาร์ตของคุณลงในคลังรูปภาพ</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Aslan Pixel ใช้ข้อมูลนี้เพื่อปรับปรุงประสบการณ์การใช้งานและแสดงเนื้อหาที่เกี่ยวข้อง</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

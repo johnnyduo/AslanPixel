@@ -28,6 +28,8 @@ import 'package:aslan_pixel/features/pixel_art/view/pixel_art_gallery_page.dart'
 import 'package:aslan_pixel/features/profile/view/edit_profile_page.dart';
 import 'package:aslan_pixel/features/profile/view/profile_page.dart';
 import 'package:aslan_pixel/features/quests/view/quest_page.dart';
+import 'package:aslan_pixel/features/settings/view/account_deletion_page.dart';
+import 'package:aslan_pixel/features/settings/view/legal_page.dart';
 import 'package:aslan_pixel/features/settings/view/notification_settings_page.dart';
 import 'package:aslan_pixel/features/settings/view/settings_page.dart';
 import 'package:aslan_pixel/features/agents/view/agent_shop_page.dart';
@@ -101,6 +103,12 @@ class RouteGenerator {
             return gotoRightToLeftPage(const AgentShopPage());
           case RoomThemeShopPage.routeName:
             return gotoRightToLeftPage(const RoomThemeShopPage());
+          case AccountDeletionPage.routeName:
+            return gotoRightToLeftPage(const AccountDeletionPage());
+          case LegalPage.privacyPolicyRouteName:
+            return gotoRightToLeftPage(LegalPage.privacyPolicy());
+          case LegalPage.termsOfServiceRouteName:
+            return gotoRightToLeftPage(LegalPage.termsOfService());
           // Routes below require arguments — return error route when args are
           // missing so the app surfaces a meaningful fallback instead of an
           // unhandled exception from a null-argument dereference.
@@ -157,6 +165,12 @@ class RouteGenerator {
             return gotoRightToLeftPage(const AgentShopPage());
           case RoomThemeShopPage.routeName:
             return gotoRightToLeftPage(const RoomThemeShopPage());
+          case AccountDeletionPage.routeName:
+            return gotoRightToLeftPage(const AccountDeletionPage());
+          case LegalPage.privacyPolicyRouteName:
+            return gotoRightToLeftPage(LegalPage.privacyPolicy());
+          case LegalPage.termsOfServiceRouteName:
+            return gotoRightToLeftPage(LegalPage.termsOfService());
           case FriendRoomPage.routeName:
             if (args is Map<String, String>) {
               return gotoRightToLeftPage(

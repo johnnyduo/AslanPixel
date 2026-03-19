@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../../core/enums/agent_type.dart';
-import '../../../inventory/data/repositories/economy_repository.dart';
-import '../models/agent_model.dart';
-import '../repositories/agent_repository.dart';
+import 'package:aslan_pixel/core/enums/agent_type.dart';
+import 'package:aslan_pixel/features/agents/data/models/agent_model.dart';
+import 'package:aslan_pixel/features/agents/data/repositories/agent_repository.dart';
+import 'package:aslan_pixel/features/inventory/data/repositories/economy_repository.dart';
 
 class FirestoreAgentDatasource implements AgentRepository {
   FirestoreAgentDatasource({FirebaseFirestore? firestore})

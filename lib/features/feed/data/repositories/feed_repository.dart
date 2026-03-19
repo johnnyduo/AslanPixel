@@ -22,4 +22,7 @@ abstract class FeedRepository {
     int limit = 20,
     DateTime? startAfter,
   });
+
+  /// Deletes the post with [postId]. Only the post author should call this.
+  Future<void> deletePost(String postId);
 }

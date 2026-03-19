@@ -12,8 +12,9 @@ import 'package:aslan_pixel/features/auth/data/models/user_model.dart';
 import 'package:aslan_pixel/features/auth/data/repositories/auth_repository.dart';
 
 /// Firebase-backed implementation of [AuthRepository].
-/// Handles Google Sign-In, Apple Sign-In, email/password auth,
-/// and keeps a Firestore user document in sync after every sign-in.
+/// Handles Google Sign-In, Apple Sign-In, email/password auth, guest auth,
+/// email verification, account deletion, and guest-to-email linking.
+/// Keeps a Firestore user document in sync after every sign-in.
 class FirebaseAuthDatasource implements AuthRepository {
   FirebaseAuthDatasource({
     FirebaseAuth? firebaseAuth,
@@ -42,7 +43,10 @@ class FirebaseAuthDatasource implements AuthRepository {
       final credential = GoogleAuthProvider.credential(idToken: idToken);
 
       final userCredential = await _auth.signInWithCredential(credential);
-      return await _syncAndBuildUserModel(userCredential);
+      return await _syncAndBuildUserModel(
+        userCredential,
+        provider: 'google',
+      );
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) return null;
       debugPrint('[FirebaseAuthDatasource] Google sign-in error: $e');
@@ -85,6 +89,7 @@ class FirebaseAuthDatasource implements AuthRepository {
       return await _syncAndBuildUserModel(
         userCredential,
         overrideDisplayName: fullName,
+        provider: 'apple',
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return null; // user cancelled
@@ -104,7 +109,61 @@ class FirebaseAuthDatasource implements AuthRepository {
       email: email,
       password: password,
     );
-    return await _syncAndBuildUserModel(userCredential);
+    return await _syncAndBuildUserModel(
+      userCredential,
+      provider: 'email',
+    );
+  }
+
+  @override
+  Future<UserModel?> signUpWithEmail(
+      String email, String password, String displayName) async {
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    // Update Firebase Auth profile with the chosen display name.
+    await userCredential.user?.updateDisplayName(displayName);
+
+    // Send email verification automatically after sign-up.
+    await userCredential.user?.sendEmailVerification();
+
+    return await _syncAndBuildUserModel(
+      userCredential,
+      overrideDisplayName: displayName,
+      provider: 'email',
+    );
+  }
+
+  @override
+  Future<UserModel?> signInAsGuest() async {
+    final userCredential = await _auth.signInAnonymously();
+    return await _syncAndBuildUserModel(
+      userCredential,
+      overrideDisplayName: 'ผู้เยี่ยมชม',
+      provider: 'anonymous',
+    );
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('ไม่มีผู้ใช้ที่ลงชื่อเข้าใช้อยู่');
+    await user.sendEmailVerification();
+  }
+
+  @override
+  Future<bool> isEmailVerified() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    await user.reload();
+    return _auth.currentUser?.emailVerified ?? false;
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   @override
@@ -113,6 +172,60 @@ class FirebaseAuthDatasource implements AuthRepository {
       GoogleSignIn.instance.signOut(),
       _auth.signOut(),
     ]);
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('ไม่มีผู้ใช้ที่ลงชื่อเข้าใช้อยู่');
+
+    final uid = user.uid;
+
+    // Delete Firestore user data first (economy sub-collections, then user doc).
+    final userRef = _firestore.collection('users').doc(uid);
+
+    // Delete economy/balance sub-document.
+    try {
+      await userRef.collection('economy').doc('balance').delete();
+    } catch (_) {
+      // Ignore if sub-doc doesn't exist.
+    }
+
+    // Delete the user document itself.
+    try {
+      await userRef.delete();
+    } catch (_) {
+      // Ignore if doc doesn't exist.
+    }
+
+    // Delete the Firebase Auth account.
+    await user.delete();
+  }
+
+  @override
+  Future<UserModel?> linkGuestToEmail(String email, String password) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('ไม่มีผู้ใช้ที่ลงชื่อเข้าใช้อยู่');
+    if (!user.isAnonymous) {
+      throw Exception('บัญชีนี้ไม่ใช่บัญชีผู้เยี่ยมชม');
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: password,
+    );
+
+    final userCredential = await user.linkWithCredential(credential);
+
+    // Update Firestore user doc with new email and provider.
+    final uid = user.uid;
+    await _firestore.collection('users').doc(uid).update({
+      'email': email,
+      'provider': 'email',
+      'lastLoginAt': FieldValue.serverTimestamp(),
+    });
+
+    return await _fetchOrBuildUserModel(userCredential.user ?? user);
   }
 
   @override
@@ -135,12 +248,18 @@ class FirebaseAuthDatasource implements AuthRepository {
     );
   }
 
+  @override
+  bool get isGuest => _auth.currentUser?.isAnonymous ?? false;
+
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   /// Writes / merges the user document to Firestore and returns a [UserModel].
+  /// Also initialises the economy balance document for new users via a
+  /// Firestore transaction (coins/xp writes ONLY via transactions).
   Future<UserModel?> _syncAndBuildUserModel(
     UserCredential credential, {
     String? overrideDisplayName,
+    String provider = 'email',
   }) async {
     final firebaseUser = credential.user;
     if (firebaseUser == null) return null;
@@ -162,6 +281,8 @@ class FirebaseAuthDatasource implements AuthRepository {
     final Map<String, dynamic> data = {
       'email': email,
       'photoUrl': firebaseUser.photoURL,
+      'provider': provider,
+      'lastLoginAt': FieldValue.serverTimestamp(),
       if (displayName != null && displayName.isNotEmpty)
         'displayName': displayName,
     };
@@ -177,6 +298,18 @@ class FirebaseAuthDatasource implements AuthRepository {
         'privacyMode': 'public',
         'onboardingComplete': false,
         'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Initialise economy balance via Firestore transaction (rule: economy
+      // writes ONLY via transactions).
+      final balanceRef = ref.collection('economy').doc('balance');
+      await _firestore.runTransaction((txn) async {
+        txn.set(balanceRef, {
+          'coins': 100,
+          'xp': 0,
+          'streakDays': 0,
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        });
       });
     } else {
       // Existing user: merge changes without overwriting protected fields.

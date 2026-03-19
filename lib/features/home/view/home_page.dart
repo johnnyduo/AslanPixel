@@ -2,6 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:aslan_pixel/features/finance/view/crypto_page.dart';
+import 'package:aslan_pixel/features/finance/view/finance_page.dart';
+import 'package:aslan_pixel/features/home/bloc/ranking_bloc.dart';
+import 'package:aslan_pixel/features/home/data/datasources/firestore_ranking_datasource.dart';
+import 'package:aslan_pixel/features/home/view/leaderboard_page.dart';
 import 'package:aslan_pixel/features/home/view/prediction_card.dart';
 import 'package:aslan_pixel/features/home/view/market_ticker_tile.dart';
 import 'package:aslan_pixel/features/inventory/bloc/economy_bloc.dart';
@@ -353,7 +358,7 @@ class _PredictionSection extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, FinancePage.routeName),
                 child: const Text(
                   'ดูทั้งหมด',
                   style: TextStyle(
@@ -398,8 +403,8 @@ class _MarketSummarySection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             'Market Snapshot',
             style: TextStyle(
               color: _textWhite,
@@ -407,23 +412,32 @@ class _MarketSummarySection extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 12),
-          MarketTickerTile(
-            symbol: 'BTC/USD',
-            changePercent: 2.4,
-            price: '\$67,240',
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, CryptoPage.routeName),
+            child: const MarketTickerTile(
+              symbol: 'BTC/USD',
+              changePercent: 2.4,
+              price: '\$67,240',
+            ),
           ),
-          SizedBox(height: 8),
-          MarketTickerTile(
-            symbol: 'ETH/USD',
-            changePercent: -1.1,
-            price: '\$3,480',
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, CryptoPage.routeName),
+            child: const MarketTickerTile(
+              symbol: 'ETH/USD',
+              changePercent: -1.1,
+              price: '\$3,480',
+            ),
           ),
-          SizedBox(height: 8),
-          MarketTickerTile(
-            symbol: 'SET',
-            changePercent: 0.3,
-            price: '1,342.5',
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, CryptoPage.routeName),
+            child: const MarketTickerTile(
+              symbol: 'SET',
+              changePercent: 0.3,
+              price: '1,342.5',
+            ),
           ),
         ],
       ),
@@ -435,89 +449,177 @@ class _MarketSummarySection extends StatelessWidget {
 // _RankingTeaser
 // ---------------------------------------------------------------------------
 
-class _RankingTeaser extends StatelessWidget {
+class _RankingTeaser extends StatefulWidget {
   const _RankingTeaser();
 
   @override
+  State<_RankingTeaser> createState() => _RankingTeaserState();
+}
+
+class _RankingTeaserState extends State<_RankingTeaser> {
+  late final RankingBloc _rankingBloc;
+  String? _uid;
+
+  @override
+  void initState() {
+    super.initState();
+    _rankingBloc = RankingBloc(FirestoreRankingDatasource());
+    _uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_uid != null && _uid!.isNotEmpty) {
+      _rankingBloc.add(RankingWatchStarted(uid: _uid!, period: 'weekly'));
+    }
+  }
+
+  @override
+  void dispose() {
+    _rankingBloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'อันดับของคุณ',
-            style: TextStyle(
-              color: _textWhite,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _gold.withValues(alpha: 0.2),
-                width: 1,
+    return BlocProvider.value(
+      value: _rankingBloc,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'อันดับของคุณ',
+              style: TextStyle(
+                color: _textWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Trophy icon
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _gold.withValues(alpha: 0.12),
-                    border: Border.all(color: _gold.withValues(alpha: 0.35), width: 1.5),
-                  ),
-                  child: const Icon(
-                    Icons.emoji_events_outlined,
-                    color: _gold,
-                    size: 26,
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () {
+                if (_uid != null && _uid!.isNotEmpty) {
+                  Navigator.pushNamed(
+                    context,
+                    LeaderboardPage.routeName,
+                    arguments: _uid,
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _gold.withValues(alpha: 0.2),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'อันดับ #--',
-                        style: TextStyle(
-                          color: _textWhite,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                padding: const EdgeInsets.all(16),
+                child: BlocBuilder<RankingBloc, RankingState>(
+                  builder: (context, state) {
+                    return Row(
+                      children: [
+                        // Trophy icon
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _gold.withValues(alpha: 0.12),
+                            border: Border.all(
+                              color: _gold.withValues(alpha: 0.35),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.emoji_events_outlined,
+                            color: _gold,
+                            size: 26,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'เริ่มทำ Quest เพื่อขึ้นอันดับ',
-                        style: TextStyle(
-                          color: _textWhite.withValues(alpha: 0.5),
-                          fontSize: 12,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildRankText(state),
+                              const SizedBox(height: 4),
+                              Text(
+                                _buildSubtitle(state),
+                                style: TextStyle(
+                                  color: _textWhite.withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: _textWhite.withValues(alpha: 0.3),
+                          size: 22,
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: _textWhite.withValues(alpha: 0.3),
-                  size: 22,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildRankText(RankingState state) {
+    if (state is RankingLoading || state is RankingInitial) {
+      // Shimmer-style loading placeholder
+      return Container(
+        width: 100,
+        height: 22,
+        decoration: BoxDecoration(
+          color: _textWhite.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+    if (state is RankingLoaded) {
+      final rankText = state.myRank != null
+          ? 'อันดับ #${state.myRank}'
+          : 'ยังไม่ติดอันดับ';
+      return Text(
+        rankText,
+        style: const TextStyle(
+          color: _textWhite,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
+      );
+    }
+    // RankingError or unknown
+    return const Text(
+      'อันดับ #--',
+      style: TextStyle(
+        color: _textWhite,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  String _buildSubtitle(RankingState state) {
+    if (state is RankingLoaded) {
+      if (state.myRank != null) {
+        return 'ประจำสัปดาห์ · Top ${state.entries.length}';
+      }
+      return 'เริ่มทำ Quest เพื่อขึ้นอันดับ';
+    }
+    if (state is RankingError) {
+      return 'ไม่สามารถโหลดอันดับได้';
+    }
+    return 'กำลังโหลด...';
   }
 }
 

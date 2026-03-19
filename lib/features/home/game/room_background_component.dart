@@ -39,16 +39,20 @@ class RoomBackgroundComponent extends PositionComponent
 
       final imgW = frame.image.width.toDouble();
       final imgH = frame.image.height.toDouble();
-      final aspect = imgH / imgW; // 1.0 for 1024×1024
 
-      // Fit width: image fills canvas width exactly, height scales proportionally.
-      final renderW = size.x;
-      final renderH = size.x * aspect;
+      // BoxFit.cover: scale to fill entire canvas, center-crop the overflow.
+      final scaleX = size.x / imgW;
+      final scaleY = size.y / imgH;
+      final scale = scaleX > scaleY ? scaleX : scaleY; // larger = cover
+      final renderW = imgW * scale;
+      final renderH = imgH * scale;
+      final offsetX = (size.x - renderW) / 2;
+      final offsetY = (size.y - renderH) / 2;
 
       await add(SpriteComponent(
         sprite: Sprite(frame.image),
         size: Vector2(renderW, renderH),
-        position: Vector2.zero(),
+        position: Vector2(offsetX, offsetY),
         anchor: Anchor.topLeft,
       ));
     } catch (_) {

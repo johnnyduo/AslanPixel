@@ -80,6 +80,22 @@ class FirestorePixelArtDatasource implements PixelArtRepository {
     }
   }
 
+  @override
+  Future<void> deleteCanvas(String ownerUid, String canvasId) async {
+    // Delete the Firestore document.
+    await _col.doc(canvasId).delete();
+
+    // Attempt to delete the Storage file (ignore if it doesn't exist).
+    try {
+      final ref = _storage
+          .ref()
+          .child('pixel_art/$ownerUid/$canvasId.png');
+      await ref.delete();
+    } catch (_) {
+      // Storage file may not exist if the canvas was never exported.
+    }
+  }
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
   Uint8List _encodePng(PixelCanvasModel canvas) {

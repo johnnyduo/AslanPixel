@@ -18,4 +18,7 @@ abstract class PixelArtRepository {
   /// Renders the canvas as a PNG, uploads to Firebase Storage,
   /// and returns the public download URL (or null on failure).
   Future<String?> exportAndUpload(PixelCanvasModel canvas);
+
+  /// Deletes the canvas document from Firestore and its PNG from Storage.
+  Future<void> deleteCanvas(String ownerUid, String canvasId);
 }
