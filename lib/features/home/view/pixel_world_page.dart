@@ -285,16 +285,14 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
           },
         ),
       ],
-      child: Scaffold(
-        backgroundColor: _colorNavy,
-        extendBodyBehindAppBar: true,
-        extendBody: true,
-        body: BlocBuilder<PixelWorldBloc, PixelWorldState>(
+      child: Container(
+        color: _colorNavy,
+        child: BlocBuilder<PixelWorldBloc, PixelWorldState>(
           builder: (context, state) {
             return Stack(
               fit: StackFit.expand,
               children: [
-                // ---- Game area (full screen, no padding) ----
+                // ---- Game area (full screen, edge to edge) ----
                 if (_game != null)
                   Positioned.fill(
                     child: GameWidget<PixelRoomGame>(game: _game!),
