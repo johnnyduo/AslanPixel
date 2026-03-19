@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/enums/agent_type.dart';
+import '../../../inventory/data/repositories/economy_repository.dart';
 import '../models/agent_model.dart';
 import '../repositories/agent_repository.dart';
 
@@ -70,4 +71,64 @@ class FirestoreAgentDatasource implements AgentRepository {
       });
     });
   }
+
+  @override
+  Future<void> purchaseAgent({
+    required String uid,
+    required AgentType type,
+    required int price,
+  }) async {
+    final balRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('economy')
+        .doc('balance');
+    final agentRef = _agentsCollection(uid).doc(type.value);
+
+    await _firestore.runTransaction((txn) async {
+      // Check if agent already exists
+      final agentSnap = await txn.get(agentRef);
+      if (agentSnap.exists) {
+        throw AgentAlreadyOwnedException(type);
+      }
+
+      // Deduct coins (skip for free agents)
+      if (price > 0) {
+        final balSnap = await txn.get(balRef);
+        final currentCoins = balSnap.exists
+            ? (balSnap.data()?['coins'] as int? ?? 0)
+            : 0;
+        if (currentCoins < price) {
+          throw InsufficientCoinsException(currentCoins, price);
+        }
+        txn.set(
+          balRef,
+          {
+            'coins': FieldValue.increment(-price),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+      }
+
+      // Create agent document
+      txn.set(agentRef, {
+        'type': type.value,
+        'level': 1,
+        'xp': 0,
+        'status': AgentStatus.idle.value,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+}
+
+/// Thrown when the player already owns the requested agent.
+class AgentAlreadyOwnedException implements Exception {
+  const AgentAlreadyOwnedException(this.type);
+  final AgentType type;
+
+  @override
+  String toString() => 'AgentAlreadyOwnedException: ${type.value} already owned';
 }

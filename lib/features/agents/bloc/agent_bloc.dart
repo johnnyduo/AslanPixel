@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/enums/agent_type.dart';
 import '../data/models/agent_model.dart';
 import '../data/repositories/agent_repository.dart';
 
@@ -16,6 +17,7 @@ class AgentBloc extends Bloc<AgentEvent, AgentState> {
     on<AgentWatchStarted>(_onWatchStarted);
     on<AgentStatusUpdated>(_onStatusUpdated);
     on<AgentTaskCompleted>(_onTaskCompleted);
+    on<AgentPurchaseRequested>(_onPurchaseRequested);
   }
 
   final AgentRepository _repository;
@@ -83,6 +85,30 @@ class AgentBloc extends Bloc<AgentEvent, AgentState> {
       await _repository.clearActiveTask(event.uid, event.agentId);
     } catch (e) {
       emit(AgentError(e.toString()));
+    }
+  }
+
+  Future<void> _onPurchaseRequested(
+    AgentPurchaseRequested event,
+    Emitter<AgentState> emit,
+  ) async {
+    try {
+      // Check if already owned
+      final existing = await _repository.getAgent(event.uid, event.agentType);
+      if (existing != null) {
+        emit(const AgentPurchaseError('คุณมี Agent นี้แล้ว'));
+        return;
+      }
+
+      await _repository.purchaseAgent(
+        uid: event.uid,
+        type: event.agentType,
+        price: event.price,
+      );
+
+      emit(AgentPurchaseSuccess(event.agentType));
+    } catch (e) {
+      emit(AgentPurchaseError(e.toString()));
     }
   }
 
