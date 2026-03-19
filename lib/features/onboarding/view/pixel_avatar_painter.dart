@@ -291,34 +291,23 @@ class PixelAvatarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (avatarIndex < 0 || avatarIndex >= _grids.length) return;
-
-    final grid = _grids[avatarIndex];
-    final palette = _palettes[avatarIndex];
-
-    const gridCols = 16;
-    const gridRows = 20;
-
-    final pixW = size.width / gridCols;
-    final pixH = size.height / gridRows;
+    final grid = _grids[avatarIndex.clamp(0, _grids.length - 1)];
+    final palette = _palettes[avatarIndex.clamp(0, _palettes.length - 1)];
+    final rows = grid.length;
+    final cols = grid[0].length;
+    final pw = size.width / cols;
+    final ph = size.height / rows;
 
     final paint = Paint()..isAntiAlias = false;
 
-    for (var row = 0; row < gridRows; row++) {
-      for (var col = 0; col < gridCols; col++) {
-        final colorIdx = grid[row][col];
-        if (colorIdx == 0) continue; // transparent
-
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final colorIdx = grid[r][c];
+        if (colorIdx == 0) continue;
         final color = colorIdx < palette.length ? palette[colorIdx] : palette[1];
         paint.color = color;
-
         canvas.drawRect(
-          Rect.fromLTWH(
-            col * pixW,
-            row * pixH,
-            pixW - 0.3,
-            pixH - 0.3,
-          ),
+          Rect.fromLTWH(c * pw, r * ph, pw, ph),
           paint,
         );
       }
@@ -326,5 +315,6 @@ class PixelAvatarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(PixelAvatarPainter old) => old.avatarIndex != avatarIndex;
+  bool shouldRepaint(PixelAvatarPainter oldDelegate) =>
+      oldDelegate.avatarIndex != avatarIndex;
 }

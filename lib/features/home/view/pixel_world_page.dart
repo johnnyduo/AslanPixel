@@ -21,6 +21,7 @@ import 'package:aslan_pixel/features/home/bloc/room_state.dart';
 import 'package:aslan_pixel/features/home/data/datasources/firestore_room_datasource.dart';
 import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
 import 'package:aslan_pixel/features/home/view/room_item_picker.dart';
+import 'package:aslan_pixel/features/home/game/npc_quotes.dart';
 import 'package:aslan_pixel/shared/widgets/ready_to_collect_badge.dart';
 import 'package:aslan_pixel/shared/widgets/reward_popup.dart';
 
@@ -169,6 +170,13 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
   // Dialogue state
   String? _dialogueText;
   AgentType? _dialogueAgentType;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+    NpcQuotes.useEnglish = isEnglish;
+  }
 
   void _handleAgentTap(BuildContext context, AgentType agentType) {
     context.read<PixelWorldBloc>().add(PixelWorldAgentTapped(agentType));

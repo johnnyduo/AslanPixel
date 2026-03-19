@@ -564,12 +564,13 @@ class _AvatarStep extends StatelessWidget {
 
                 return GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
-                    childAspectRatio: 0.78, // taller cards (80×100 ratio)
+                    childAspectRatio: 0.72, // portrait cards taller than wide
                   ),
                   itemCount: _avatars.length,
                   itemBuilder: (context, index) {
@@ -689,7 +690,7 @@ class _AvatarCard extends StatelessWidget {
                   color: isSelected
                       ? colors.accent.withValues(alpha: 0.9)
                       : colors.textDisabled,
-                  fontSize: 9,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
@@ -722,8 +723,11 @@ class _AvatarImage extends StatelessWidget {
       filterQuality: FilterQuality.none, // pixel-art: no blurring
       errorBuilder: (context, error, stackTrace) {
         // Fallback to CustomPainter if sprite not loaded
-        return CustomPaint(
-          painter: PixelAvatarPainter(avatarIndex: meta.painterIndex),
+        return LayoutBuilder(
+          builder: (context, constraints) => CustomPaint(
+            painter: PixelAvatarPainter(avatarIndex: meta.painterIndex),
+            size: Size(constraints.maxWidth, constraints.maxHeight),
+          ),
         );
       },
     );
@@ -905,9 +909,13 @@ class _AvatarPreviewCard extends StatelessWidget {
                 meta.spriteAsset,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.none,
-                errorBuilder: (context, error, stackTrace) => CustomPaint(
-                  painter: PixelAvatarPainter(avatarIndex: meta.painterIndex),
-                  size: const Size(80, 100),
+                errorBuilder: (context, error, stackTrace) =>
+                    LayoutBuilder(
+                  builder: (context, constraints) => CustomPaint(
+                    painter:
+                        PixelAvatarPainter(avatarIndex: meta.painterIndex),
+                    size: Size(constraints.maxWidth, constraints.maxHeight),
+                  ),
                 ),
               ),
             ),
