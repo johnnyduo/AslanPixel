@@ -164,23 +164,21 @@ class NpcSpriteComponent extends PositionComponent
     if (comp == null) return;
 
     if (_isWalking) {
+      // If real walk animation is playing, skip synthetic bounce entirely.
+      if (_walkComponent != null && _walkComponent!.playing) return;
+
+      // Synthetic 2-frame walk (only used when no walk frame sprites exist)
       _walkTimer += dt;
-      // Wrap timer
       if (_walkTimer > _walkCyclePeriod) {
         _walkTimer -= _walkCyclePeriod;
       }
 
-      final t = _walkTimer / _walkCyclePeriod; // 0..1 through cycle
+      final t = _walkTimer / _walkCyclePeriod;
       final pi2 = 3.141592653589793 * 2;
 
-      // ── Step bounce: two "foot plants" per cycle (double-frequency sine)
-      // abs() creates a bounce-up pattern: ∧∧ per cycle
       final stepY = -(_sinApprox(t * pi2 * 2).abs()) * _stepBounceAmp;
-
-      // ── Weight sway: lean left then right once per cycle
       final swayX = _sinApprox(t * pi2) * _swayAmp;
 
-      // Apply deltas
       comp.position.y += (stepY - _prevStepY);
       comp.position.x += (swayX - _prevSwayX);
       _prevStepY = stepY;
