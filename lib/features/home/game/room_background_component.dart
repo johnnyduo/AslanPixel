@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 // ---------------------------------------------------------------------------
 // RoomType
@@ -43,10 +46,12 @@ class RoomBackgroundComponent extends PositionComponent
     };
 
     try {
-      final sprite = await Sprite.load(
-        'assets/sprites/room_backgrounds/$assetName',
-        images: game.images,
-      );
+      final path = 'assets/sprites/room_backgrounds/$assetName';
+      final data = await rootBundle.load(path);
+      final bytes = data.buffer.asUint8List();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final sprite = Sprite(frame.image);
       _bgSprite = SpriteComponent(
         sprite: sprite,
         size: size,

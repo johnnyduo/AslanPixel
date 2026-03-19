@@ -1,10 +1,12 @@
+import 'dart:ui' as ui;
 import 'dart:ui' show Paint;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart'
-    show Color, Colors, FontWeight, TextStyle;
+    show Color, Colors, FontWeight, Shadow, TextStyle;
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/home/bloc/agent_status.dart';
@@ -56,10 +58,15 @@ final _agentPositions = <AgentType, Vector2>{
 // PixelAgentComponent
 // ---------------------------------------------------------------------------
 
-/// A single agent rendered as a coloured circle with a name label below it.
+/// A single agent rendered as a pixel-art sprite with a name label below it.
+///
+/// Sprites are loaded from `assets/sprites/agents/agent_{name}_{status}.png`
+/// via Flutter's [rootBundle] (bypasses Flame's `assets/images/` prefix).
+/// Falls back to a coloured circle if the sprite asset is missing.
 ///
 /// Implements [TapCallbacks] so individual agent taps can be detected.
-class PixelAgentComponent extends PositionComponent with TapCallbacks {
+class PixelAgentComponent extends PositionComponent
+    with TapCallbacks, HasGameReference<FlameGame> {
   PixelAgentComponent({
     required this.agentType,
     required AgentStatus agentStatus,
@@ -68,68 +75,113 @@ class PixelAgentComponent extends PositionComponent with TapCallbacks {
   })  : _agentStatus = agentStatus,
         super(
           position: position,
-          size: Vector2.all(_agentRadius * 2),
+          size: Vector2.all(_spriteSize),
           anchor: Anchor.center,
         );
 
-  static const double _agentRadius = 28;
-
+  /// Display size on canvas (scaled up from 16px pixel art).
+  static const double _spriteSize = 64;
   final AgentType agentType;
   AgentStatus _agentStatus;
   final void Function(AgentType) onTapped;
 
-  late CircleComponent _circle;
+  SpriteComponent? _spriteComp;
   late TextComponent _label;
 
   AgentStatus get agentStatus => _agentStatus;
 
-  /// Update the agent's status and re-tint the circle accordingly.
-  // ignore: avoid_setters_without_getters
   set agentStatus(AgentStatus status) {
     _agentStatus = status;
-    _circle.paint.color = _statusTint(status);
+    _loadStatusSprite();
   }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-
-    _circle = CircleComponent(
-      radius: _agentRadius,
-      paint: _makePaint(_statusTint(_agentStatus)),
-      anchor: Anchor.center,
-      position: Vector2(_agentRadius, _agentRadius),
-    );
+    await _loadStatusSprite();
 
     _label = TextComponent(
       text: agentType.displayName,
-      position: Vector2(_agentRadius, _agentRadius * 2 + 4),
+      position: Vector2(_spriteSize / 2, _spriteSize + 4),
       anchor: Anchor.topCenter,
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.white,
           fontSize: 11,
           fontWeight: FontWeight.w600,
+          shadows: [Shadow(color: Colors.black, blurRadius: 4)],
         ),
       ),
     );
+    await add(_label);
+  }
 
-    await addAll([_circle, _label]);
+  Future<void> _loadStatusSprite() async {
+    final agentName = _agentSpriteName(agentType);
+    final statusName = _statusSpriteName(_agentStatus);
+    final path = 'assets/sprites/agents/agent_${agentName}_$statusName.png';
+
+    try {
+      final data = await rootBundle.load(path);
+      final bytes = data.buffer.asUint8List();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final sprite = Sprite(frame.image);
+
+      if (_spriteComp != null) {
+        _spriteComp!.sprite = sprite;
+      } else {
+        _spriteComp = SpriteComponent(
+          sprite: sprite,
+          size: Vector2.all(_spriteSize),
+          anchor: Anchor.topLeft,
+        );
+        await add(_spriteComp!);
+      }
+    } catch (e) {
+      // Fallback to colored circle if sprite fails
+      if (_spriteComp == null) {
+        final circle = CircleComponent(
+          radius: _spriteSize / 2,
+          paint: Paint()..color = _agentColor(agentType),
+          anchor: Anchor.center,
+          position: Vector2(_spriteSize / 2, _spriteSize / 2),
+        );
+        await add(circle);
+      }
+    }
+  }
+
+  String _agentSpriteName(AgentType type) {
+    switch (type) {
+      case AgentType.analyst:
+        return 'analyst';
+      case AgentType.scout:
+        return 'scout';
+      case AgentType.risk:
+        return 'guardian';
+      case AgentType.social:
+        return 'social';
+    }
+  }
+
+  String _statusSpriteName(AgentStatus status) {
+    switch (status) {
+      case AgentStatus.idle:
+        return 'idle';
+      case AgentStatus.working:
+        return 'working';
+      case AgentStatus.returning:
+        return 'returning';
+      case AgentStatus.celebrating:
+        return 'celebrating';
+      case AgentStatus.fail:
+        return 'fail';
+    }
   }
 
   @override
-  void onTapDown(TapDownEvent event) {
-    onTapped(agentType);
-  }
-
-  // --------------------------------------------------------------------------
-
-  Color _statusTint(AgentStatus status) {
-    if (status == AgentStatus.fail) return Colors.redAccent;
-    return _agentColor(agentType);
-  }
-
-  static Paint _makePaint(Color color) => Paint()..color = color;
+  void onTapDown(TapDownEvent event) => onTapped(agentType);
 }
 
 // ---------------------------------------------------------------------------
@@ -163,8 +215,11 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Fixed canvas size — camera will letterbox/scale to fit the widget.
+    // The game world is 400×700 logical units. We use visibleGameSize
+    // to let Flame scale it to fill the widget. The camera auto-fits
+    // while maintaining the world coordinate system for NPC/agent positions.
     camera.viewfinder.visibleGameSize = Vector2(_canvasWidth, _canvasHeight);
+    camera.viewfinder.anchor = Anchor.topCenter;
 
     // ------------------------------------------------------------------
     // Layer 1: Room background (replaces plain RectangleComponent fill)

@@ -21,6 +21,8 @@ import 'core/config/env_config.dart';
 import 'core/config/theme_provider.dart';
 import 'core/routing/route.dart';
 import 'core/routing/route_generator.dart';
+import 'core/utils/analytics_service.dart';
+import 'core/utils/app_version_service.dart';
 import 'core/utils/fcm_service.dart';
 import 'core/utils/globals.dart';
 import 'core/utils/local_notification_service.dart';
@@ -110,7 +112,13 @@ Future<void> setConfig() async {
   // Phase 3: Non-blocking post-init (fire-and-forget)
   unawaited(appBloc.preloadCaches());
   unawaited(FcmService().initialize());
+
+  // Precache all sprite assets for instant loading
+  unawaited(_precacheSprites());
   unawaited(LocalNotificationService.instance.initialize());
+
+  // App version check (non-blocking)
+  unawaited(_checkAppVersion());
 
   if (!kIsWeb) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -122,6 +130,32 @@ Future<void> setConfig() async {
       ),
     );
   }
+}
+
+Future<void> _checkAppVersion() async {
+  try {
+    if (await AppVersionService.isUpdateRequired()) {
+      final ctx = Globals.navigatorKey.currentContext;
+      if (ctx != null) {
+        AppVersionService.showUpdateDialog(ctx);
+      }
+    }
+  } catch (_) {}
+}
+
+/// Precache critical sprite assets into Flutter's asset bundle cache
+/// so they load instantly when the Flame game initializes.
+Future<void> _precacheSprites() async {
+  try {
+    final paths = [
+      'assets/sprites/room_backgrounds/room_starter.png',
+      'assets/sprites/agents/agent_analyst_idle.png',
+      'assets/sprites/agents/agent_scout_idle.png',
+      'assets/sprites/agents/agent_guardian_idle.png',
+      'assets/sprites/agents/agent_social_idle.png',
+    ];
+    await Future.wait(paths.map((p) => rootBundle.load(p)));
+  } catch (_) {}
 }
 
 /// Initialize Remote Config with fail-open defaults.
@@ -185,6 +219,7 @@ class _MyAppState extends State<MyApp> {
             debugShowCheckedModeBanner: false,
             themeMode: _themeMode,
             onGenerateRoute: RouteGenerator.generateRoute,
+            navigatorObservers: [AnalyticsService.observer],
             navigatorKey: Globals.navigatorKey,
             scaffoldMessengerKey: Globals.scaffoldMessengerKey,
             locale: _locale,

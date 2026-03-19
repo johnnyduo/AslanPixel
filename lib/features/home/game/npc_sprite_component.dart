@@ -1,9 +1,11 @@
+import 'dart:ui' as ui;
 import 'dart:ui' show Offset;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart'
     show Colors, FontWeight, Shadow, TextStyle;
+import 'package:flutter/services.dart' show rootBundle;
 
 // ---------------------------------------------------------------------------
 // NpcDirection
@@ -92,9 +94,12 @@ class NpcSpriteComponent extends PositionComponent
 
     _currentSprite = _sprites[_direction] ?? _sprites[NpcDirection.south];
 
+    // If no sprite loaded at all, skip visual component (graceful degradation).
+    if (_currentSprite == null) return;
+
     // Sprite sub-component — sits at (0,0) relative to this component.
     _spriteComponent = SpriteComponent(
-      sprite: _currentSprite,
+      sprite: _currentSprite!,
       size: Vector2(spriteWidth, spriteHeight),
       anchor: Anchor.topLeft,
       position: Vector2.zero(),
@@ -141,18 +146,39 @@ class NpcSpriteComponent extends PositionComponent
   // Update — idle bob animation (only when not walking)
   // ---------------------------------------------------------------------------
 
+  // Walk step animation state (used when no walk frames exist)
+  double _walkStepTimer = 0;
+  static const double _walkStepPeriod = 0.25; // fast step bounce
+  static const double _walkStepAmplitude = 3.0; // pixels bounce
+  double _walkStepOffset = 0;
+
   @override
   void update(double dt) {
     super.update(dt);
 
-    if (_isWalking) return;
+    if (_isWalking) {
+      // Walk step bounce animation — makes NPC look like it's stepping
+      // even without dedicated walk frame sprites.
+      _walkStepTimer += dt;
+      if (_walkStepTimer > _walkStepPeriod) {
+        _walkStepTimer -= _walkStepPeriod;
+      }
+      final walkPhase =
+          (_walkStepTimer / _walkStepPeriod) * 2 * 3.141592653589793;
+      final walkSin = _sinApprox(walkPhase).abs(); // absolute = bouncy step
+      final newWalkOffset = -walkSin * _walkStepAmplitude;
+      final walkDelta = newWalkOffset - _walkStepOffset;
+      _walkStepOffset = newWalkOffset;
+      _spriteComponent?.position.y += walkDelta;
+      return;
+    }
 
+    // Idle bob animation
     _bobTimer += dt;
     if (_bobTimer > _bobPeriod) {
       _bobTimer -= _bobPeriod;
     }
 
-    // Sine wave: one full oscillation per period.
     final phase = (_bobTimer / _bobPeriod) * 2 * 3.141592653589793;
     final sinVal = _sinApprox(phase);
     final newOffset = sinVal * _bobAmplitude;
@@ -160,7 +186,6 @@ class NpcSpriteComponent extends PositionComponent
     final delta = newOffset - _bobOffset;
     _bobOffset = newOffset;
 
-    // Shift only the sprite sub-component vertically; the label stays put.
     _spriteComponent?.position.y += delta;
   }
 
@@ -193,7 +218,7 @@ class NpcSpriteComponent extends PositionComponent
       _walkComponent!.animation = walkAnim;
       _walkComponent!.opacity = 1.0;
       _walkComponent!.playing = true;
-      _spriteComponent!.opacity = 0.0;
+      _spriteComponent?.opacity = 0.0;
     }
     // If no walk animation for this direction, keep static sprite visible.
   }
@@ -203,19 +228,29 @@ class NpcSpriteComponent extends PositionComponent
     _isWalking = false;
     _walkComponent?.opacity = 0.0;
     _walkComponent?.playing = false;
-    _spriteComponent!.opacity = 1.0;
+    _spriteComponent?.opacity = 1.0;
   }
 
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /// Load a sprite from Flutter's asset bundle (bypasses Flame's
+  /// `assets/images/` prefix that causes path resolution failures).
+  Future<Sprite> _loadSprite(String path) async {
+    final data = await rootBundle.load(path);
+    final bytes = data.buffer.asUint8List();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    return Sprite(frame.image);
+  }
+
   Future<void> _preloadSprites() async {
     // Attempt to load all four directional sprites.
     for (final dir in NpcDirection.values) {
       final path = 'assets/sprites/npcs/${npcName}_${dir.name}.png';
       try {
-        final sprite = await Sprite.load(path, images: game.images);
+        final sprite = await _loadSprite(path);
         _sprites[dir] = sprite;
       } catch (_) {
         // Asset not found for this direction — slot stays null.
@@ -227,7 +262,7 @@ class NpcSpriteComponent extends PositionComponent
     if (_sprites.values.every((s) => s == null)) {
       final idlePath = 'assets/sprites/npcs/${npcName}_idle.png';
       try {
-        final idleSprite = await Sprite.load(idlePath, images: game.images);
+        final idleSprite = await _loadSprite(idlePath);
         for (final dir in NpcDirection.values) {
           _sprites[dir] = idleSprite;
         }
@@ -243,7 +278,7 @@ class NpcSpriteComponent extends PositionComponent
         final path =
             'assets/sprites/npcs/${npcName}_${dir.name}_walk$i.png';
         try {
-          final frame = await Sprite.load(path, images: game.images);
+          final frame = await _loadSprite(path);
           frames.add(frame);
         } catch (_) {
           // Frame not found — break out; require all 4 to form a valid animation.

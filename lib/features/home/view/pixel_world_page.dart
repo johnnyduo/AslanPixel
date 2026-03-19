@@ -23,6 +23,8 @@ import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
 import 'package:aslan_pixel/features/home/view/room_item_picker.dart';
 import 'package:aslan_pixel/features/home/game/npc_quotes.dart';
 import 'package:aslan_pixel/shared/widgets/ready_to_collect_badge.dart';
+import 'package:aslan_pixel/features/agents/view/agent_shop_page.dart';
+import 'package:aslan_pixel/features/home/view/room_theme_shop_page.dart';
 import 'package:aslan_pixel/shared/widgets/reward_popup.dart';
 
 // ---------------------------------------------------------------------------
@@ -285,13 +287,18 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
       ],
       child: Scaffold(
         backgroundColor: _colorNavy,
+        extendBodyBehindAppBar: true,
+        extendBody: true,
         body: BlocBuilder<PixelWorldBloc, PixelWorldState>(
           builder: (context, state) {
             return Stack(
+              fit: StackFit.expand,
               children: [
-                // ---- Game area ----
+                // ---- Game area (full screen, no padding) ----
                 if (_game != null)
-                  GameWidget<PixelRoomGame>(game: _game!)
+                  Positioned.fill(
+                    child: GameWidget<PixelRoomGame>(game: _game!),
+                  )
                 else
                   const SizedBox.expand(),
 
@@ -371,6 +378,42 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
                       ),
                     );
                   },
+                ),
+
+                // ---- Agent Shop FAB ----
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 130,
+                  child: FloatingActionButton.small(
+                    heroTag: 'agent_shop_fab',
+                    backgroundColor: _colorGold,
+                    foregroundColor: _colorNavy,
+                    tooltip: 'Agent Shop',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        AgentShopPage.routeName,
+                      );
+                    },
+                    child: const Icon(Icons.store_outlined, size: 20),
+                  ),
+                ),
+
+                // ---- Room Theme Shop FAB ----
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 180,
+                  child: FloatingActionButton.small(
+                    heroTag: 'room_theme_shop_fab',
+                    backgroundColor: const Color(0xFF00D9FF),
+                    foregroundColor: _colorNavy,
+                    tooltip: 'Room Themes',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        RoomThemeShopPage.routeName,
+                      );
+                    },
+                    child: const Icon(Icons.wallpaper_outlined, size: 20),
+                  ),
                 ),
 
                 // ---- Customize Room FAB ----
