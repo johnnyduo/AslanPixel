@@ -39,6 +39,20 @@ class EconomyLoaded extends EconomyState {
   List<Object?> get props => [coins, xp, level];
 }
 
+/// Emitted once when the user's level increases.
+///
+/// [bonusCoins] = newLevel * 50. The BLoC emits this briefly before
+/// continuing with [EconomyLoaded], so listeners can show a celebration.
+class EconomyLevelUp extends EconomyState {
+  const EconomyLevelUp({required this.newLevel, required this.bonusCoins});
+
+  final int newLevel;
+  final int bonusCoins;
+
+  @override
+  List<Object?> get props => [newLevel, bonusCoins];
+}
+
 /// A non-recoverable error occurred while watching or mutating the economy.
 class EconomyError extends EconomyState {
   const EconomyError(this.message);

@@ -28,6 +28,9 @@ class EconomyBloc extends Bloc<EconomyEvent, EconomyState> {
   final EconomyRepository _repository;
   String? _watchedUid;
 
+  /// Tracks the last known level so we can detect level-ups.
+  int _previousLevel = 0;
+
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   Future<void> _onWatchStarted(
@@ -42,11 +45,22 @@ class EconomyBloc extends Bloc<EconomyEvent, EconomyState> {
 
     await emit.forEach<EconomyModel>(
       _repository.watchEconomy(event.uid),
-      onData: (model) => EconomyLoaded(
-        coins: model.coins,
-        xp: model.xp,
-        level: model.level,
-      ),
+      onData: (model) {
+        final newLevel = model.level;
+
+        // Detect level-up: previous level must be > 0 (not first load).
+        if (_previousLevel > 0 && newLevel > _previousLevel) {
+          final bonusCoins = newLevel * 50;
+          emit(EconomyLevelUp(newLevel: newLevel, bonusCoins: bonusCoins));
+        }
+        _previousLevel = newLevel;
+
+        return EconomyLoaded(
+          coins: model.coins,
+          xp: model.xp,
+          level: model.level,
+        );
+      },
       onError: (error, _) => EconomyError(error.toString()),
     );
   }
