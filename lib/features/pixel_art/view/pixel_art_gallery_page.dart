@@ -8,7 +8,8 @@ import 'package:aslan_pixel/features/pixel_art/view/pixel_canvas_widget.dart';
 
 /// Gallery that lists all pixel art canvases owned by the current user.
 ///
-/// Uses [StreamBuilder] directly against [FirestorePixelArtDatasource].
+/// Uses [StreamBuilder] directly against [FirestorePixelArtDatasource]
+/// with lazy-loading pagination via [NotificationListener].
 class PixelArtGalleryPage extends StatelessWidget {
   const PixelArtGalleryPage({super.key});
 
@@ -16,9 +17,99 @@ class PixelArtGalleryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final datasource = FirestorePixelArtDatasource();
+    return const _GalleryView();
+  }
+}
 
+class _GalleryView extends StatefulWidget {
+  const _GalleryView();
+
+  @override
+  State<_GalleryView> createState() => _GalleryViewState();
+}
+
+class _GalleryViewState extends State<_GalleryView> {
+  static const _pageSize = 20;
+
+  final _datasource = FirestorePixelArtDatasource();
+  late final String _uid;
+
+  final List<PixelCanvasModel> _canvases = [];
+  bool _loading = true;
+  bool _hasMore = true;
+  bool _loadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _loadInitial();
+  }
+
+  Future<void> _loadInitial() async {
+    if (_uid.isEmpty) {
+      setState(() => _loading = false);
+      return;
+    }
+    try {
+      final first = await _datasource
+          .watchMyCanvases(_uid)
+          .first;
+      if (!mounted) return;
+      setState(() {
+        _canvases.addAll(first.take(_pageSize));
+        _hasMore = first.length > _pageSize;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollEndNotification &&
+        !_loadingMore &&
+        _hasMore &&
+        notification.metrics.pixels >=
+            notification.metrics.maxScrollExtent - 200) {
+      _loadMore();
+    }
+    return false;
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+
+    try {
+      final all = await _datasource.watchMyCanvases(_uid).first;
+      if (!mounted) return;
+      final newItems = all.skip(_canvases.length).take(_pageSize).toList();
+      setState(() {
+        _canvases.addAll(newItems);
+        _hasMore = newItems.length >= _pageSize;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
+  }
+
+  Future<void> _createAndOpen() async {
+    if (_uid.isEmpty) return;
+    final canvas = await _datasource.createCanvas(_uid, 32, 32);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PixelArtEditorPage(canvas: canvas),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A1628),
       appBar: AppBar(
@@ -36,69 +127,49 @@ class PixelArtGalleryPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF00F5A0),
         foregroundColor: const Color(0xFF0A1628),
-        tooltip: 'New 32×32 canvas',
-        onPressed: () => _createAndOpen(context, datasource, uid),
+        tooltip: 'New 32x32 canvas',
+        onPressed: _createAndOpen,
         child: const Icon(Icons.add),
       ),
-      body: StreamBuilder<List<PixelCanvasModel>>(
-        stream: datasource.watchMyCanvases(uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+      body: _loading
+          ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF00F5A0)),
-            );
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Color(0xFFFF4D4F)),
-              ),
-            );
-          }
-
-          final canvases = snapshot.data ?? [];
-          if (canvases.isEmpty) {
-            return const Center(
-              child: Text(
-                'No canvases yet.\nTap + to create one.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF6B8AAB), fontSize: 16),
-              ),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1,
-            ),
-            itemCount: canvases.length,
-            itemBuilder: (context, index) {
-              final canvas = canvases[index];
-              return _CanvasThumbnailCard(canvas: canvas);
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _createAndOpen(
-    BuildContext context,
-    FirestorePixelArtDatasource datasource,
-    String uid,
-  ) async {
-    if (uid.isEmpty) return;
-    final canvas = await datasource.createCanvas(uid, 32, 32);
-    if (!context.mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PixelArtEditorPage(canvas: canvas),
-      ),
+            )
+          : _canvases.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No canvases yet.\nTap + to create one.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF6B8AAB), fontSize: 16),
+                  ),
+                )
+              : NotificationListener<ScrollNotification>(
+                  onNotification: _onScrollNotification,
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1,
+                    ),
+                    itemCount: _canvases.length + (_loadingMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= _canvases.length) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF00F5A0),
+                            ),
+                          ),
+                        );
+                      }
+                      return _CanvasThumbnailCard(canvas: _canvases[index]);
+                    },
+                  ),
+                ),
     );
   }
 }

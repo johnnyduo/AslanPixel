@@ -57,6 +57,15 @@ class AgentModel {
   final DateTime? taskCompletesAt;
   final String? personalityKey;
 
+  /// XP needed for next level: level * 1000
+  int get xpForNextLevel => level * 1000;
+
+  /// Progress to next level (0.0 - 1.0)
+  double get levelProgress => (xp % (level * 1000)) / (level * 1000);
+
+  /// Check if ready to level up
+  bool get canLevelUp => xp >= xpForNextLevel;
+
   factory AgentModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return AgentModel(

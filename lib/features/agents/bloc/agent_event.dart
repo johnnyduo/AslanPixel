@@ -44,6 +44,19 @@ class AgentTaskCompleted extends AgentEvent {
   List<Object?> get props => [uid, agentId, coinsEarned];
 }
 
+class AgentLevelUpRequested extends AgentEvent {
+  const AgentLevelUpRequested({
+    required this.uid,
+    required this.agentId,
+  });
+
+  final String uid;
+  final String agentId;
+
+  @override
+  List<Object?> get props => [uid, agentId];
+}
+
 class AgentPurchaseRequested extends AgentEvent {
   const AgentPurchaseRequested({
     required this.agentType,

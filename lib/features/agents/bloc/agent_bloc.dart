@@ -17,6 +17,7 @@ class AgentBloc extends Bloc<AgentEvent, AgentState> {
     on<AgentWatchStarted>(_onWatchStarted);
     on<AgentStatusUpdated>(_onStatusUpdated);
     on<AgentTaskCompleted>(_onTaskCompleted);
+    on<AgentLevelUpRequested>(_onLevelUpRequested);
     on<AgentPurchaseRequested>(_onPurchaseRequested);
   }
 
@@ -83,6 +84,18 @@ class AgentBloc extends Bloc<AgentEvent, AgentState> {
         AgentStatus.idle,
       );
       await _repository.clearActiveTask(event.uid, event.agentId);
+    } catch (e) {
+      emit(AgentError(e.toString()));
+    }
+  }
+
+  Future<void> _onLevelUpRequested(
+    AgentLevelUpRequested event,
+    Emitter<AgentState> emit,
+  ) async {
+    try {
+      await _repository.levelUpAgent(event.uid, event.agentId);
+      emit(AgentLevelUpSuccess(event.agentId));
     } catch (e) {
       emit(AgentError(e.toString()));
     }

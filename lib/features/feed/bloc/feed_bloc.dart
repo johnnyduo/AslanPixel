@@ -1,22 +1,28 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:aslan_pixel/features/feed/data/models/feed_post_model.dart';
 import 'package:aslan_pixel/features/feed/data/repositories/feed_repository.dart';
+import 'package:aslan_pixel/features/follows/data/repositories/follow_repository.dart';
 
 part 'feed_event.dart';
 part 'feed_state.dart';
 
 /// BLoC responsible for managing the social feed.
 class FeedBloc extends Bloc<FeedEvent, FeedState> {
-  FeedBloc(this._repository) : super(const FeedInitial()) {
+  FeedBloc(this._repository, {this.followRepository})
+      : super(const FeedInitial()) {
     on<FeedWatchStarted>(_onWatchStarted);
     on<FeedPostCreated>(_onPostCreated);
     on<FeedReactionAdded>(_onReactionAdded);
     on<FeedLoadMoreRequested>(_onLoadMore);
+    on<FeedFilterToggled>(_onFilterToggled);
   }
 
   final FeedRepository _repository;
+  final FollowRepository? followRepository;
 
   Future<void> _onWatchStarted(
     FeedWatchStarted event,
@@ -75,12 +81,42 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
         limit: 20,
         startAfter: lastPost.createdAt,
       );
-      emit(FeedLoaded(
-        [...current.posts, ...morePosts],
+      emit(current.copyWith(
+        posts: [...current.posts, ...morePosts],
         hasMore: morePosts.length >= 20,
+        isLoadingMore: false,
       ));
     } catch (_) {
       emit(current.copyWith(isLoadingMore: false));
+    }
+  }
+
+  Future<void> _onFilterToggled(
+    FeedFilterToggled event,
+    Emitter<FeedState> emit,
+  ) async {
+    final current = state;
+    if (current is! FeedLoaded) return;
+
+    if (!event.showFollowedOnly) {
+      emit(current.copyWith(showFollowedOnly: false));
+      return;
+    }
+
+    // Fetch following UIDs if we don't have them yet
+    if (current.followingUids.isEmpty && followRepository != null) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+        final uids = await followRepository!.watchFollowing(uid).first;
+        emit(current.copyWith(
+          showFollowedOnly: true,
+          followingUids: uids,
+        ));
+      } catch (_) {
+        emit(current.copyWith(showFollowedOnly: true));
+      }
+    } else {
+      emit(current.copyWith(showFollowedOnly: true));
     }
   }
 }

@@ -24,25 +24,42 @@ class FeedLoaded extends FeedState {
     this.posts, {
     this.hasMore = true,
     this.isLoadingMore = false,
+    this.showFollowedOnly = false,
+    this.followingUids = const [],
   });
 
   final List<FeedPostModel> posts;
   final bool hasMore;
   final bool isLoadingMore;
+  final bool showFollowedOnly;
+  final List<String> followingUids;
+
+  /// Returns posts filtered by the current filter mode.
+  List<FeedPostModel> get filteredPosts {
+    if (!showFollowedOnly || followingUids.isEmpty) return posts;
+    return posts
+        .where((p) => p.authorUid != null && followingUids.contains(p.authorUid))
+        .toList();
+  }
 
   FeedLoaded copyWith({
     List<FeedPostModel>? posts,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? showFollowedOnly,
+    List<String>? followingUids,
   }) =>
       FeedLoaded(
         posts ?? this.posts,
         hasMore: hasMore ?? this.hasMore,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        showFollowedOnly: showFollowedOnly ?? this.showFollowedOnly,
+        followingUids: followingUids ?? this.followingUids,
       );
 
   @override
-  List<Object?> get props => [posts, hasMore, isLoadingMore];
+  List<Object?> get props =>
+      [posts, hasMore, isLoadingMore, showFollowedOnly, followingUids];
 }
 
 /// An error occurred while loading or updating the feed.

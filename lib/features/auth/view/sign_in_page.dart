@@ -9,6 +9,7 @@ import 'package:sizer/sizer.dart';
 
 import 'package:aslan_pixel/core/config/app_colors.dart';
 import 'package:aslan_pixel/features/auth/bloc/auth_bloc.dart';
+import 'package:aslan_pixel/features/auth/view/forgot_password_page.dart';
 import 'sign_up_page.dart';
 
 /// Full-screen sign-in page.
@@ -260,7 +261,25 @@ class _SignInPageState extends State<SignInPage> {
               ],
             ),
           ),
-          SizedBox(height: 2.h),
+          SizedBox(height: 0.8.h),
+
+          // Forgot password link
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context)
+                  .pushNamed(ForgotPasswordPage.routeName),
+              child: Text(
+                'ลืมรหัสผ่าน?',
+                style: TextStyle(
+                  color: colors.primary,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 1.5.h),
 
           // Sign In
           _buildPrimaryButton(

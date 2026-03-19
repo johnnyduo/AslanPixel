@@ -49,3 +49,13 @@ class FeedReactionAdded extends FeedEvent {
 class FeedLoadMoreRequested extends FeedEvent {
   const FeedLoadMoreRequested();
 }
+
+/// Toggles between showing all posts or only posts from followed users.
+class FeedFilterToggled extends FeedEvent {
+  const FeedFilterToggled({required this.showFollowedOnly});
+
+  final bool showFollowedOnly;
+
+  @override
+  List<Object?> get props => [showFollowedOnly];
+}

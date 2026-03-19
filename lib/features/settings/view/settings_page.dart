@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:aslan_pixel/features/settings/view/notification_settings_page.dart';
 import 'package:aslan_pixel/main.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
@@ -43,18 +44,32 @@ class SettingsPage extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        children: const [
-          _SectionHeader(label: 'รูปลักษณ์'),
-          _ThemeRow(),
-          _LanguageRow(),
-          SizedBox(height: 8),
-          _SectionHeader(label: 'บัญชี'),
-          _SignOutRow(),
-          SizedBox(height: 8),
-          _SectionHeader(label: 'ข้อมูล'),
-          _PrivacyPolicyRow(),
-          _VersionRow(),
-          SizedBox(height: 32),
+        children: [
+          const _SectionHeader(label: 'รูปลักษณ์'),
+          const _ThemeRow(),
+          const _LanguageRow(),
+          const SizedBox(height: 8),
+          const _SectionHeader(label: 'การแจ้งเตือน'),
+          _SettingsTile(
+            icon: Icons.notifications_outlined,
+            iconColor: _kNeonGreen,
+            label: 'ตั้งค่าการแจ้งเตือน',
+            trailing: const Icon(
+              Icons.chevron_right,
+              color: _kTextSecondary,
+              size: 20,
+            ),
+            onTap: () => Navigator.of(context)
+                .pushNamed(NotificationSettingsPage.routeName),
+          ),
+          const SizedBox(height: 8),
+          const _SectionHeader(label: 'บัญชี'),
+          const _SignOutRow(),
+          const SizedBox(height: 8),
+          const _SectionHeader(label: 'ข้อมูล'),
+          const _PrivacyPolicyRow(),
+          const _VersionRow(),
+          const SizedBox(height: 32),
         ],
       ),
     );

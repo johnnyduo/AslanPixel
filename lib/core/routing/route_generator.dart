@@ -4,6 +4,7 @@ import 'package:page_transition/page_transition.dart';
 
 import 'package:aslan_pixel/features/auth/bloc/auth_bloc.dart';
 import 'package:aslan_pixel/features/auth/data/datasources/firebase_auth_datasource.dart';
+import 'package:aslan_pixel/features/auth/view/forgot_password_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
 import 'package:aslan_pixel/features/broker/view/broker_page.dart';
@@ -27,6 +28,7 @@ import 'package:aslan_pixel/features/pixel_art/view/pixel_art_gallery_page.dart'
 import 'package:aslan_pixel/features/profile/view/edit_profile_page.dart';
 import 'package:aslan_pixel/features/profile/view/profile_page.dart';
 import 'package:aslan_pixel/features/quests/view/quest_page.dart';
+import 'package:aslan_pixel/features/settings/view/notification_settings_page.dart';
 import 'package:aslan_pixel/features/settings/view/settings_page.dart';
 import 'package:aslan_pixel/features/agents/view/agent_shop_page.dart';
 import 'package:aslan_pixel/features/home/view/room_theme_shop_page.dart';
@@ -59,6 +61,8 @@ class RouteGenerator {
     try {
       if (args == null) {
         switch (settings.name) {
+          case ForgotPasswordPage.routeName:
+            return gotoRightToLeftPage(const ForgotPasswordPage());
           case SignInPage.routeName:
             return gotoPage(_withAuthBloc(const SignInPage()));
           case SignUpPage.routeName:
@@ -83,6 +87,8 @@ class RouteGenerator {
             return gotoRightToLeftPage(const QuestPage());
           case SettingsPage.routeName:
             return gotoRightToLeftPage(const SettingsPage());
+          case NotificationSettingsPage.routeName:
+            return gotoRightToLeftPage(const NotificationSettingsPage());
           case FeedPage.routeName:
             return gotoRightToLeftPage(const FeedPage());
           case FinancePage.routeName:
@@ -108,6 +114,8 @@ class RouteGenerator {
         }
       } else {
         switch (settings.name) {
+          case ForgotPasswordPage.routeName:
+            return gotoRightToLeftPage(const ForgotPasswordPage());
           case SignInPage.routeName:
             return gotoPage(_withAuthBloc(const SignInPage()));
           case SignUpPage.routeName:
@@ -135,6 +143,8 @@ class RouteGenerator {
             return gotoRightToLeftPage(const QuestPage());
           case SettingsPage.routeName:
             return gotoRightToLeftPage(const SettingsPage());
+          case NotificationSettingsPage.routeName:
+            return gotoRightToLeftPage(const NotificationSettingsPage());
           case FeedPage.routeName:
             return gotoRightToLeftPage(const FeedPage());
           case FinancePage.routeName:

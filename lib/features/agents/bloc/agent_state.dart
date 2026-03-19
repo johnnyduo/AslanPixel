@@ -33,6 +33,15 @@ class AgentError extends AgentState {
   List<Object?> get props => [message];
 }
 
+class AgentLevelUpSuccess extends AgentState {
+  const AgentLevelUpSuccess(this.agentId);
+
+  final String agentId;
+
+  @override
+  List<Object?> get props => [agentId];
+}
+
 class AgentPurchaseSuccess extends AgentState {
   const AgentPurchaseSuccess(this.agentType);
 

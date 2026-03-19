@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aslan_pixel/features/feed/bloc/feed_bloc.dart';
 import 'package:aslan_pixel/features/feed/data/datasources/firestore_feed_datasource.dart';
 import 'package:aslan_pixel/features/feed/view/feed_post_card.dart';
+import 'package:aslan_pixel/features/follows/data/datasources/firestore_follow_datasource.dart';
+import 'package:aslan_pixel/features/follows/data/repositories/follow_repository_impl.dart';
 
 // ── Colour constants ──────────────────────────────────────────────────────────
 const Color _navy = Color(0xFF0A1628);
@@ -21,8 +23,10 @@ class FeedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<FeedBloc>(
-      create: (ctx) =>
-          FeedBloc(FirestoreFeedDatasource())..add(const FeedWatchStarted()),
+      create: (ctx) => FeedBloc(
+        FirestoreFeedDatasource(),
+        followRepository: FollowRepositoryImpl(FirestoreFollowDatasource()),
+      )..add(const FeedWatchStarted()),
       child: const _FeedView(),
     );
   }
@@ -75,6 +79,39 @@ class _FeedViewState extends State<_FeedView> {
           ),
         ),
         centerTitle: false,
+        actions: [
+          BlocBuilder<FeedBloc, FeedState>(
+            buildWhen: (prev, curr) {
+              if (prev is! FeedLoaded || curr is! FeedLoaded) return true;
+              return prev.showFollowedOnly != curr.showFollowedOnly;
+            },
+            builder: (context, state) {
+              final isFiltered =
+                  state is FeedLoaded && state.showFollowedOnly;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(
+                    'ติดตาม',
+                    style: TextStyle(
+                      color: isFiltered ? _navy : _textWhite,
+                      fontSize: 12,
+                    ),
+                  ),
+                  selected: isFiltered,
+                  selectedColor: _neonGreen,
+                  backgroundColor: _navy,
+                  side: BorderSide(
+                    color: isFiltered ? _neonGreen : const Color(0xFF1E3050),
+                  ),
+                  onSelected: (v) => context
+                      .read<FeedBloc>()
+                      .add(FeedFilterToggled(showFollowedOnly: v)),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: BlocBuilder<FeedBloc, FeedState>(
         builder: (context, state) {
@@ -93,20 +130,23 @@ class _FeedViewState extends State<_FeedView> {
             );
           }
           if (state is FeedLoaded) {
-            if (state.posts.isEmpty) {
-              return const Center(
+            final displayPosts = state.filteredPosts;
+            if (displayPosts.isEmpty) {
+              return Center(
                 child: Text(
-                  'ยังไม่มีโพสต์ เป็นคนแรกที่โพสต์!',
-                  style: TextStyle(color: _textWhite, fontSize: 14),
+                  state.showFollowedOnly
+                      ? 'ยังไม่มีโพสต์จากคนที่คุณติดตาม'
+                      : 'ยังไม่มีโพสต์ เป็นคนแรกที่โพสต์!',
+                  style: const TextStyle(color: _textWhite, fontSize: 14),
                 ),
               );
             }
             return ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: state.posts.length + (state.hasMore ? 1 : 0),
+              itemCount: displayPosts.length + (state.hasMore ? 1 : 0),
               itemBuilder: (ctx, index) {
-                if (index >= state.posts.length) {
+                if (index >= displayPosts.length) {
                   return state.isLoadingMore
                       ? const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
@@ -116,7 +156,7 @@ class _FeedViewState extends State<_FeedView> {
                         )
                       : const SizedBox.shrink();
                 }
-                return FeedPostCard(post: state.posts[index]);
+                return FeedPostCard(post: displayPosts[index]);
               },
             );
           }
