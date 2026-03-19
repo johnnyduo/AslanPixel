@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'dart:ui' as ui;
 import 'dart:ui' show Paint;
 
@@ -13,6 +14,7 @@ import 'package:aslan_pixel/features/home/bloc/agent_status.dart';
 import 'package:aslan_pixel/features/home/data/models/room_item_model.dart';
 import 'package:aslan_pixel/features/home/game/npc_sprite_component.dart';
 import 'package:aslan_pixel/features/home/game/npc_walk_controller.dart';
+import 'package:aslan_pixel/features/home/game/room_collision_map.dart';
 import 'package:aslan_pixel/features/home/game/room_background_component.dart';
 import 'package:aslan_pixel/features/home/game/room_item_component.dart';
 
@@ -284,16 +286,25 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
       _NpcConfig(name: 'npc_intern',         position: Vector2(300, 580), direction: NpcDirection.south),
     ];
 
+    // Create shared collision map for NPC pathfinding.
+    // Room items will be blocked dynamically when updateRoomItems is called.
+    final collisionMap = RoomCollisionMap();
+
     for (final cfg in npcConfigs) {
+      // Place NPC at a walkable starting position.
+      final startPos = collisionMap.isPositionWalkable(cfg.position)
+          ? cfg.position
+          : collisionMap.randomWalkablePosition(Random());
+
       final npc = NpcSpriteComponent(
         npcName: cfg.name,
-        position: cfg.position,
+        position: startPos,
         initialDirection: cfg.direction,
       );
       await add(npc);
 
-      // Walk controller is a sibling — added to the game, not to the NPC.
-      await add(NpcWalkController(npc: npc));
+      // Walk controller uses collision map for valid pathfinding.
+      await add(NpcWalkController(npc: npc, collisionMap: collisionMap));
     }
 
     // ------------------------------------------------------------------

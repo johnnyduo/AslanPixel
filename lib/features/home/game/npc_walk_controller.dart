@@ -24,6 +24,7 @@ import 'package:flame/game.dart';
 import 'package:aslan_pixel/features/home/game/npc_quote_bubble.dart';
 import 'package:aslan_pixel/features/home/game/npc_quotes.dart';
 import 'package:aslan_pixel/features/home/game/npc_sprite_component.dart';
+import 'package:aslan_pixel/features/home/game/room_collision_map.dart';
 
 // ---------------------------------------------------------------------------
 // NpcWalkController
@@ -43,16 +44,12 @@ import 'package:aslan_pixel/features/home/game/npc_sprite_component.dart';
 class NpcWalkController extends Component with HasGameReference<FlameGame> {
   NpcWalkController({
     required NpcSpriteComponent npc,
-    double canvasWidth = 400,
-    double canvasHeight = 800,
-    double margin = 60,
+    RoomCollisionMap? collisionMap,
     double walkSpeed = 40,
     double arrivalThreshold = 8,
     double quoteProbability = 0.20,
   })  : _npc = npc,
-        _canvasWidth = canvasWidth,
-        _canvasHeight = canvasHeight,
-        _margin = margin,
+        _collisionMap = collisionMap ?? RoomCollisionMap(),
         _walkSpeed = walkSpeed,
         _arrivalThreshold = arrivalThreshold,
         _quoteProbability = quoteProbability,
@@ -61,10 +58,10 @@ class NpcWalkController extends Component with HasGameReference<FlameGame> {
   // The NPC sprite this controller drives.
   final NpcSpriteComponent _npc;
 
-  // Canvas / movement configuration.
-  final double _canvasWidth;
-  final double _canvasHeight;
-  final double _margin;
+  // Collision map — NPCs only walk on walkable cells.
+  final RoomCollisionMap _collisionMap;
+
+  // Movement configuration.
   final double _walkSpeed;
   final double _arrivalThreshold;
   final double _quoteProbability;
@@ -124,8 +121,18 @@ class NpcWalkController extends Component with HasGameReference<FlameGame> {
       return;
     }
 
-    // Move toward target.
+    // Calculate next position.
     final step = delta.normalized() * (_walkSpeed * dt);
+    final nextPos = _npc.position + step;
+
+    // Check if next position is walkable — if blocked, pick a new target.
+    if (!_collisionMap.isPositionWalkable(nextPos)) {
+      _npc.stopWalking();
+      _pickNewTarget();
+      return;
+    }
+
+    // Move toward target.
     _npc.position.add(step);
 
     // Update NPC facing direction based on dominant axis.
@@ -195,16 +202,17 @@ class NpcWalkController extends Component with HasGameReference<FlameGame> {
   void _pickNewTarget() {
     _state = _WalkState.walking;
 
-    final minX = _margin;
-    final maxX = _canvasWidth - _margin;
-    // NPCs should stay in the lower portion (below furniture area at top)
-    final minY = _canvasHeight * 0.35;
-    final maxY = _canvasHeight - _margin;
-
-    _target = Vector2(
-      minX + _rng.nextDouble() * (maxX - minX),
-      minY + _rng.nextDouble() * (maxY - minY),
-    );
+    // Pick a random walkable cell from the collision map.
+    // Also verify the path is somewhat clear (no walking through walls).
+    for (int attempt = 0; attempt < 10; attempt++) {
+      final candidate = _collisionMap.randomWalkablePosition(_rng);
+      if (_collisionMap.isPathClear(_npc.position, candidate)) {
+        _target = candidate;
+        return;
+      }
+    }
+    // Fallback: pick any walkable position even if path isn't fully clear.
+    _target = _collisionMap.randomWalkablePosition(_rng);
   }
 
   // ---------------------------------------------------------------------------
