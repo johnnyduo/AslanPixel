@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_event.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_state.dart';
@@ -19,8 +17,6 @@ class PredictionBloc extends Bloc<PredictionEvent, PredictionState> {
   }
 
   final PredictionRepository _repository;
-  StreamSubscription<List<PredictionEventModel>>? _eventsSubscription;
-  StreamSubscription<List<PredictionEntryModel>>? _entriesSubscription;
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -31,20 +27,16 @@ class PredictionBloc extends Bloc<PredictionEvent, PredictionState> {
     Emitter<PredictionState> emit,
   ) async {
     emit(const PredictionLoading());
-    await _eventsSubscription?.cancel();
-
-    _eventsSubscription = _repository.watchOpenEvents().listen(
-      (events) {
+    await emit.forEach<List<PredictionEventModel>>(
+      _repository.watchOpenEvents(),
+      onData: (events) {
         final current = state;
         if (current is PredictionLoaded) {
-          emit(current.copyWith(events: events));
-        } else {
-          emit(PredictionLoaded(events: events));
+          return current.copyWith(events: events);
         }
+        return PredictionLoaded(events: events);
       },
-      onError: (Object error) {
-        emit(PredictionError(error.toString()));
-      },
+      onError: (error, _) => PredictionError(error.toString()),
     );
   }
 
@@ -52,18 +44,16 @@ class PredictionBloc extends Bloc<PredictionEvent, PredictionState> {
     PredictionMyEntriesWatchStarted event,
     Emitter<PredictionState> emit,
   ) async {
-    await _entriesSubscription?.cancel();
-
-    _entriesSubscription = _repository.watchMyEntries(event.uid).listen(
-      (entries) {
+    await emit.forEach<List<PredictionEntryModel>>(
+      _repository.watchMyEntries(event.uid),
+      onData: (entries) {
         final current = state;
         if (current is PredictionLoaded) {
-          emit(current.copyWith(myEntries: entries));
+          return current.copyWith(myEntries: entries);
         }
+        return state;
       },
-      onError: (Object error) {
-        emit(PredictionError(error.toString()));
-      },
+      onError: (error, _) => PredictionError(error.toString()),
     );
   }
 
@@ -128,10 +118,5 @@ class PredictionBloc extends Bloc<PredictionEvent, PredictionState> {
     }
   }
 
-  @override
-  Future<void> close() {
-    _eventsSubscription?.cancel();
-    _entriesSubscription?.cancel();
-    return super.close();
-  }
+  // emit.forEach handles subscription lifecycle automatically.
 }
