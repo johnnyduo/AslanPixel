@@ -146,47 +146,56 @@ class NpcSpriteComponent extends PositionComponent
   // Update — idle bob animation (only when not walking)
   // ---------------------------------------------------------------------------
 
-  // Walk step animation state (used when no walk frames exist)
-  double _walkStepTimer = 0;
-  static const double _walkStepPeriod = 0.25; // fast step bounce
-  static const double _walkStepAmplitude = 3.0; // pixels bounce
-  double _walkStepOffset = 0;
+  // ── Walk animation state (synthetic 2-frame walk from static sprites) ──
+  double _walkTimer = 0;
+  static const double _walkCyclePeriod = 0.35; // one full step cycle
+  // Vertical: step bounce (foot hits ground)
+  static const double _stepBounceAmp = 2.5;
+  // Horizontal: weight shift (lean left/right like shifting between feet)
+  static const double _swayAmp = 1.2;
+  double _prevStepY = 0;
+  double _prevSwayX = 0;
 
   @override
   void update(double dt) {
     super.update(dt);
 
+    final comp = _spriteComponent;
+    if (comp == null) return;
+
     if (_isWalking) {
-      // Walk step bounce animation — makes NPC look like it's stepping
-      // even without dedicated walk frame sprites.
-      _walkStepTimer += dt;
-      if (_walkStepTimer > _walkStepPeriod) {
-        _walkStepTimer -= _walkStepPeriod;
+      _walkTimer += dt;
+      // Wrap timer
+      if (_walkTimer > _walkCyclePeriod) {
+        _walkTimer -= _walkCyclePeriod;
       }
-      final walkPhase =
-          (_walkStepTimer / _walkStepPeriod) * 2 * 3.141592653589793;
-      final walkSin = _sinApprox(walkPhase).abs(); // absolute = bouncy step
-      final newWalkOffset = -walkSin * _walkStepAmplitude;
-      final walkDelta = newWalkOffset - _walkStepOffset;
-      _walkStepOffset = newWalkOffset;
-      _spriteComponent?.position.y += walkDelta;
+
+      final t = _walkTimer / _walkCyclePeriod; // 0..1 through cycle
+      final pi2 = 3.141592653589793 * 2;
+
+      // ── Step bounce: two "foot plants" per cycle (double-frequency sine)
+      // abs() creates a bounce-up pattern: ∧∧ per cycle
+      final stepY = -(_sinApprox(t * pi2 * 2).abs()) * _stepBounceAmp;
+
+      // ── Weight sway: lean left then right once per cycle
+      final swayX = _sinApprox(t * pi2) * _swayAmp;
+
+      // Apply deltas
+      comp.position.y += (stepY - _prevStepY);
+      comp.position.x += (swayX - _prevSwayX);
+      _prevStepY = stepY;
+      _prevSwayX = swayX;
       return;
     }
 
-    // Idle bob animation
+    // ── Idle: gentle breathing bob ──
     _bobTimer += dt;
-    if (_bobTimer > _bobPeriod) {
-      _bobTimer -= _bobPeriod;
-    }
+    if (_bobTimer > _bobPeriod) _bobTimer -= _bobPeriod;
 
     final phase = (_bobTimer / _bobPeriod) * 2 * 3.141592653589793;
-    final sinVal = _sinApprox(phase);
-    final newOffset = sinVal * _bobAmplitude;
-
-    final delta = newOffset - _bobOffset;
+    final newOffset = _sinApprox(phase) * _bobAmplitude;
+    comp.position.y += (newOffset - _bobOffset);
     _bobOffset = newOffset;
-
-    _spriteComponent?.position.y += delta;
   }
 
   // ---------------------------------------------------------------------------
@@ -226,6 +235,13 @@ class NpcSpriteComponent extends PositionComponent
   /// Stop walking: hides walk animation and restores static sprite.
   void stopWalking() {
     _isWalking = false;
+    // Reset walk offsets so sprite returns to neutral position
+    _spriteComponent?.position.x -= _prevSwayX;
+    _spriteComponent?.position.y -= _prevStepY;
+    _prevSwayX = 0;
+    _prevStepY = 0;
+    _walkTimer = 0;
+
     _walkComponent?.opacity = 0.0;
     _walkComponent?.playing = false;
     _spriteComponent?.opacity = 1.0;
