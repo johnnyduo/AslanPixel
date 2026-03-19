@@ -15,4 +15,11 @@ abstract class FeedRepository {
 
   /// Increments the reaction count for [emoji] on post [postId] by [uid].
   Future<void> addReaction(String postId, String emoji, String uid);
+
+  /// Fetches a single page of feed posts for infinite scroll pagination.
+  /// Returns posts ordered by [createdAt] descending, starting after [startAfter].
+  Future<List<FeedPostModel>> fetchFeedPage({
+    int limit = 20,
+    DateTime? startAfter,
+  });
 }

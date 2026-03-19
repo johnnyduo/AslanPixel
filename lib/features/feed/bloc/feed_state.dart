@@ -20,12 +20,29 @@ class FeedLoading extends FeedState {
 
 /// Feed data is available.
 class FeedLoaded extends FeedState {
-  const FeedLoaded(this.posts);
+  const FeedLoaded(
+    this.posts, {
+    this.hasMore = true,
+    this.isLoadingMore = false,
+  });
 
   final List<FeedPostModel> posts;
+  final bool hasMore;
+  final bool isLoadingMore;
+
+  FeedLoaded copyWith({
+    List<FeedPostModel>? posts,
+    bool? hasMore,
+    bool? isLoadingMore,
+  }) =>
+      FeedLoaded(
+        posts ?? this.posts,
+        hasMore: hasMore ?? this.hasMore,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      );
 
   @override
-  List<Object?> get props => [posts];
+  List<Object?> get props => [posts, hasMore, isLoadingMore];
 }
 
 /// An error occurred while loading or updating the feed.

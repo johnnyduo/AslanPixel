@@ -13,6 +13,7 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     on<FeedWatchStarted>(_onWatchStarted);
     on<FeedPostCreated>(_onPostCreated);
     on<FeedReactionAdded>(_onReactionAdded);
+    on<FeedLoadMoreRequested>(_onLoadMore);
   }
 
   final FeedRepository _repository;
@@ -53,6 +54,33 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
       await _repository.addReaction(event.postId, event.emoji, event.uid);
     } catch (_) {
       // Swallow silently; stream will reflect actual state.
+    }
+  }
+
+  Future<void> _onLoadMore(
+    FeedLoadMoreRequested event,
+    Emitter<FeedState> emit,
+  ) async {
+    final current = state;
+    if (current is! FeedLoaded ||
+        !current.hasMore ||
+        current.isLoadingMore) {
+      return;
+    }
+
+    emit(current.copyWith(isLoadingMore: true));
+    try {
+      final lastPost = current.posts.last;
+      final morePosts = await _repository.fetchFeedPage(
+        limit: 20,
+        startAfter: lastPost.createdAt,
+      );
+      emit(FeedLoaded(
+        [...current.posts, ...morePosts],
+        hasMore: morePosts.length >= 20,
+      ));
+    } catch (_) {
+      emit(current.copyWith(isLoadingMore: false));
     }
   }
 }

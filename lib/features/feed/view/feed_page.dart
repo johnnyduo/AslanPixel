@@ -28,8 +28,37 @@ class FeedPage extends StatelessWidget {
   }
 }
 
-class _FeedView extends StatelessWidget {
+class _FeedView extends StatefulWidget {
   const _FeedView();
+
+  @override
+  State<_FeedView> createState() => _FeedViewState();
+}
+
+class _FeedViewState extends State<_FeedView> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >
+        _scrollController.position.maxScrollExtent - 200) {
+      context.read<FeedBloc>().add(const FeedLoadMoreRequested());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,10 +102,22 @@ class _FeedView extends StatelessWidget {
               );
             }
             return ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: state.posts.length,
-              itemBuilder: (ctx, index) =>
-                  FeedPostCard(post: state.posts[index]),
+              itemCount: state.posts.length + (state.hasMore ? 1 : 0),
+              itemBuilder: (ctx, index) {
+                if (index >= state.posts.length) {
+                  return state.isLoadingMore
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: CircularProgressIndicator(color: _neonGreen),
+                          ),
+                        )
+                      : const SizedBox.shrink();
+                }
+                return FeedPostCard(post: state.posts[index]);
+              },
             );
           }
           return const SizedBox.shrink();

@@ -44,3 +44,8 @@ class FeedReactionAdded extends FeedEvent {
   @override
   List<Object?> get props => [postId, emoji, uid];
 }
+
+/// Requests loading the next page of feed posts.
+class FeedLoadMoreRequested extends FeedEvent {
+  const FeedLoadMoreRequested();
+}

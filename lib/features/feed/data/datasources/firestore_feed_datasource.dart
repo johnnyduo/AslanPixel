@@ -45,6 +45,21 @@ class FirestoreFeedDatasource implements FeedRepository {
   }
 
   @override
+  Future<List<FeedPostModel>> fetchFeedPage({
+    int limit = 20,
+    DateTime? startAfter,
+  }) async {
+    var query = _collection
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+    if (startAfter != null) {
+      query = query.startAfter([Timestamp.fromDate(startAfter)]);
+    }
+    final snap = await query.get();
+    return snap.docs.map(FeedPostModel.fromFirestore).toList();
+  }
+
+  @override
   Future<void> addReaction(String postId, String emoji, String uid) async {
     final docRef = _collection.doc(postId);
     await _firestore.runTransaction((transaction) async {
