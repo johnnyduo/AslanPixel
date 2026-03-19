@@ -217,14 +217,23 @@ class NpcSpriteComponent extends PositionComponent
   /// Start walking in [direction]: shows walk animation if available, otherwise
   /// keeps the static directional sprite visible.
   void startWalking(NpcDirection direction) {
+    final directionChanged = _direction != direction;
     _isWalking = true;
-    setDirection(direction);
+
+    // Only update direction/animation when direction actually changes
+    // to avoid resetting the animation every frame.
+    if (directionChanged) {
+      setDirection(direction);
+    }
 
     final walkAnim = _walkAnimations[direction];
     if (walkAnim != null && _walkComponent != null) {
-      _walkComponent!.animation = walkAnim;
+      // Only re-assign animation if direction changed (avoids restart flicker)
+      if (directionChanged || !_walkComponent!.playing) {
+        _walkComponent!.animation = walkAnim;
+        _walkComponent!.playing = true;
+      }
       _walkComponent!.opacity = 1.0;
-      _walkComponent!.playing = true;
       _spriteComponent?.opacity = 0.0;
     }
     // If no walk animation for this direction, keep static sprite visible.

@@ -212,14 +212,22 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
   Color backgroundColor() => _colorNavy;
 
   @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    // Scale to fill screen width — room stretches to cover, no side bars.
+    if (size.x > 0) {
+      final zoom = size.x / _canvasWidth;
+      camera.viewfinder.zoom = zoom;
+    }
+  }
+
+  @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // The game world is 400×700 logical units. We use visibleGameSize
-    // to let Flame scale it to fill the widget. The camera auto-fits
-    // while maintaining the world coordinate system for NPC/agent positions.
-    camera.viewfinder.visibleGameSize = Vector2(_canvasWidth, _canvasHeight);
+    // Center the camera on the room.
     camera.viewfinder.anchor = Anchor.topCenter;
+    camera.viewfinder.position = Vector2(_canvasWidth / 2, 0);
 
     // ------------------------------------------------------------------
     // Layer 1: Room background (replaces plain RectangleComponent fill)
