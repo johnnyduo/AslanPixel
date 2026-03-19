@@ -56,3 +56,41 @@ class PredictionError extends PredictionState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Vote data loaded for a specific prediction event.
+class PredictionVotesData extends PredictionState {
+  const PredictionVotesData({
+    required this.eventId,
+    required this.bullCount,
+    required this.bearCount,
+    this.myVote,
+  });
+
+  final String eventId;
+  final int bullCount;
+  final int bearCount;
+  final String? myVote;
+
+  @override
+  List<Object?> get props => [eventId, bullCount, bearCount, myVote];
+}
+
+/// Vote was successfully cast.
+class PredictionVoteCastedSuccess extends PredictionState {
+  const PredictionVoteCastedSuccess({required this.side});
+
+  final String side;
+
+  @override
+  List<Object?> get props => [side];
+}
+
+/// Vote cast failed.
+class PredictionVoteCastError extends PredictionState {
+  const PredictionVoteCastError(this.message);
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}

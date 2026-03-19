@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
@@ -13,6 +15,9 @@ class FcmService {
   static final FcmService _instance = FcmService._();
   factory FcmService() => _instance;
   FcmService._();
+
+  StreamSubscription<RemoteMessage>? _onMessageSub;
+  StreamSubscription<RemoteMessage>? _onMessageOpenedSub;
 
   Future<void> initialize() async {
     // Request permission (iOS prompts user; Android 13+ respects this)
@@ -42,10 +47,9 @@ class FcmService {
     }
 
     // Handle messages that arrive while the app is in the foreground.
-    // We use WidgetsBinding.instance.addPostFrameCallback so the overlay
-    // insert happens in a safe frame — this also sidesteps the
-    // use_build_context_synchronously lint for the stream listener context.
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    _onMessageSub?.cancel();
+    _onMessageSub =
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('[FCM] Foreground message: ${message.notification?.title}');
       final title = message.notification?.title ?? '';
       final body = message.notification?.body ?? '';
@@ -57,10 +61,20 @@ class FcmService {
     });
 
     // Handle notification tap when app was in background / terminated
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    _onMessageOpenedSub?.cancel();
+    _onMessageOpenedSub =
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('[FCM] App opened from notification: ${message.data}');
       // TODO: Phase production — navigate based on message.data['route']
     });
+  }
+
+  /// Cancels FCM stream listeners. Safe to call multiple times.
+  Future<void> dispose() async {
+    await _onMessageSub?.cancel();
+    await _onMessageOpenedSub?.cancel();
+    _onMessageSub = null;
+    _onMessageOpenedSub = null;
   }
 
   /// Persists the current FCM token to Firestore under the authenticated user.

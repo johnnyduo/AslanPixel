@@ -121,4 +121,43 @@ class FirestorePredictionDatasource implements PredictionRepository {
               .toList(),
         );
   }
+
+  // ---------------------------------------------------------------------------
+  // loadVotes
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<({int bullCount, int bearCount, String? myVote})> loadVotes({
+    required String eventId,
+    required String uid,
+  }) async {
+    final snap = await _events.doc(eventId).collection('votes').get();
+    int bull = 0;
+    int bear = 0;
+    String? mine;
+    for (final doc in snap.docs) {
+      final side = doc.data()['side'] as String?;
+      if (side == 'bull') bull++;
+      if (side == 'bear') bear++;
+      if (doc.id == uid) mine = side;
+    }
+    return (bullCount: bull, bearCount: bear, myVote: mine);
+  }
+
+  // ---------------------------------------------------------------------------
+  // castVote
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> castVote({
+    required String eventId,
+    required String uid,
+    required String side,
+  }) async {
+    await _events.doc(eventId).collection('votes').doc(uid).set({
+      'uid': uid,
+      'side': side,
+      'votedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

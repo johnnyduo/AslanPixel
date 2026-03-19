@@ -14,6 +14,8 @@ class PredictionBloc extends Bloc<PredictionEvent, PredictionState> {
     on<PredictionWatchStarted>(_onWatchStarted);
     on<PredictionMyEntriesWatchStarted>(_onMyEntriesWatchStarted);
     on<PredictionEventEntered>(_onEventEntered);
+    on<PredictionVotesLoaded>(_onVotesLoaded);
+    on<PredictionVoteCasted>(_onVoteCasted);
   }
 
   final PredictionRepository _repository;
@@ -80,6 +82,49 @@ class PredictionBloc extends Bloc<PredictionEvent, PredictionState> {
       emit(const PredictionEntered());
     } catch (e) {
       emit(PredictionError(e.toString()));
+    }
+  }
+
+  Future<void> _onVotesLoaded(
+    PredictionVotesLoaded event,
+    Emitter<PredictionState> emit,
+  ) async {
+    try {
+      final result = await _repository.loadVotes(
+        eventId: event.eventId,
+        uid: event.uid,
+      );
+      emit(PredictionVotesData(
+        eventId: event.eventId,
+        bullCount: result.bullCount,
+        bearCount: result.bearCount,
+        myVote: result.myVote,
+      ));
+    } catch (e) {
+      emit(PredictionError(e.toString()));
+    }
+  }
+
+  Future<void> _onVoteCasted(
+    PredictionVoteCasted event,
+    Emitter<PredictionState> emit,
+  ) async {
+    try {
+      await _repository.castVote(
+        eventId: event.eventId,
+        uid: event.uid,
+        side: event.side,
+      );
+      // Also enter the prediction (staking coins)
+      await _repository.enterPrediction(
+        eventId: event.eventId,
+        uid: event.uid,
+        selectedOptionId: event.selectedOptionId,
+        coinStaked: event.coinStaked,
+      );
+      emit(PredictionVoteCastedSuccess(side: event.side));
+    } catch (e) {
+      emit(PredictionVoteCastError(e.toString()));
     }
   }
 

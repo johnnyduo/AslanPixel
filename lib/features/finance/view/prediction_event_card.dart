@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_bloc.dart';
 import 'package:aslan_pixel/features/finance/bloc/prediction_event.dart';
+import 'package:aslan_pixel/features/finance/bloc/prediction_state.dart';
 import 'package:aslan_pixel/features/finance/data/models/prediction_event_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -282,47 +283,18 @@ class _BullBearVoteSectionState extends State<_BullBearVoteSection> {
 
   bool get _isBullBearEvent => _bullOption != null && _bearOption != null;
 
-  CollectionReference<Map<String, dynamic>> get _votesRef =>
-      FirebaseFirestore.instance
-          .collection('predictionEvents')
-          .doc(widget.event.eventId)
-          .collection('votes');
-
   @override
   void initState() {
     super.initState();
     if (_isBullBearEvent) {
-      _loadVotes();
+      widget.bloc.add(PredictionVotesLoaded(
+        eventId: widget.event.eventId,
+        uid: widget.uid,
+      ));
     }
   }
 
-  Future<void> _loadVotes() async {
-    try {
-      // Load aggregate vote counts
-      final snap = await _votesRef.get();
-      int bull = 0;
-      int bear = 0;
-      String? mine;
-      for (final doc in snap.docs) {
-        final side = doc.data()['side'] as String?;
-        if (side == 'bull') bull++;
-        if (side == 'bear') bear++;
-        if (doc.id == widget.uid) mine = side;
-      }
-      if (mounted) {
-        setState(() {
-          _bullCount = bull;
-          _bearCount = bear;
-          _myVote = mine;
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _castVote(String side, PredictionOption option) async {
+  void _castVote(String side, PredictionOption option) {
     if (_myVote != null) return; // already voted
 
     // Optimistic update
@@ -335,62 +307,13 @@ class _BullBearVoteSectionState extends State<_BullBearVoteSection> {
       }
     });
 
-    try {
-      // Write vote to Firestore
-      await _votesRef.doc(widget.uid).set({
-        'uid': widget.uid,
-        'side': side,
-        'votedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Also enter the prediction (staking coins)
-      if (mounted) {
-        widget.bloc.add(
-          PredictionEventEntered(
-            eventId: widget.event.eventId,
-            uid: widget.uid,
-            selectedOptionId: option.optionId,
-            coinStaked: widget.event.coinCost,
-          ),
-        );
-      }
-
-      // Show confirmation snackbar
-      if (mounted) {
-        final label = side == 'bull' ? 'Bull 📈' : 'Bear 📉';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'บันทึกการโหวต $label เรียบร้อย!',
-              style: const TextStyle(color: Color(0xFF0A1628)),
-            ),
-            backgroundColor: _neonGreen,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      // Rollback on error
-      if (mounted) {
-        setState(() {
-          _myVote = null;
-          if (side == 'bull') {
-            _bullCount--;
-          } else {
-            _bearCount--;
-          }
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาด: $e'),
-            backgroundColor: _red,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+    widget.bloc.add(PredictionVoteCasted(
+      eventId: widget.event.eventId,
+      uid: widget.uid,
+      side: side,
+      selectedOptionId: option.optionId,
+      coinStaked: widget.event.coinCost,
+    ));
   }
 
   @override
@@ -411,6 +334,52 @@ class _BullBearVoteSectionState extends State<_BullBearVoteSection> {
       );
     }
 
+    return BlocListener<PredictionBloc, PredictionState>(
+      bloc: widget.bloc,
+      listener: (context, state) {
+        if (state is PredictionVotesData &&
+            state.eventId == widget.event.eventId) {
+          setState(() {
+            _bullCount = state.bullCount;
+            _bearCount = state.bearCount;
+            _myVote = state.myVote;
+            _isLoading = false;
+          });
+        } else if (state is PredictionVoteCastedSuccess) {
+          final label = state.side == 'bull' ? 'Bull 📈' : 'Bear 📉';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'บันทึกการโหวต $label เรียบร้อย!',
+                style: const TextStyle(color: Color(0xFF0A1628)),
+              ),
+              backgroundColor: _neonGreen,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (state is PredictionVoteCastError) {
+          // Rollback on error
+          setState(() {
+            if (_myVote == 'bull') _bullCount--;
+            if (_myVote == 'bear') _bearCount--;
+            _myVote = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('เกิดข้อผิดพลาด: ${state.message}'),
+              backgroundColor: _red,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     final total = _bullCount + _bearCount;
     final bullPct = total > 0 ? _bullCount / total : 0.5;
     final bearPct = total > 0 ? _bearCount / total : 0.5;

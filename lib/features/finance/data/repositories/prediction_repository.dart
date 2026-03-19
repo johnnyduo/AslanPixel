@@ -18,4 +18,17 @@ abstract class PredictionRepository {
 
   /// Live stream of the current user's prediction entries.
   Stream<List<PredictionEntryModel>> watchMyEntries(String uid);
+
+  /// Load vote counts and the current user's vote for a prediction event.
+  Future<({int bullCount, int bearCount, String? myVote})> loadVotes({
+    required String eventId,
+    required String uid,
+  });
+
+  /// Cast a bull/bear vote for a prediction event.
+  Future<void> castVote({
+    required String eventId,
+    required String uid,
+    required String side,
+  });
 }
