@@ -7,10 +7,13 @@ import 'package:aslan_pixel/features/auth/data/datasources/firebase_auth_datasou
 import 'package:aslan_pixel/features/auth/view/sign_in_page.dart';
 import 'package:aslan_pixel/features/auth/view/sign_up_page.dart';
 import 'package:aslan_pixel/features/broker/view/broker_page.dart';
+import 'package:aslan_pixel/features/broker/view/manual_order_page.dart';
 import 'package:aslan_pixel/features/feed/view/feed_page.dart';
+import 'package:aslan_pixel/features/finance/view/crypto_page.dart';
 import 'package:aslan_pixel/features/finance/view/finance_page.dart';
 import 'package:aslan_pixel/features/home/bloc/ranking_bloc.dart';
 import 'package:aslan_pixel/features/home/data/datasources/firestore_ranking_datasource.dart';
+import 'package:aslan_pixel/features/home/view/friend_room_page.dart';
 import 'package:aslan_pixel/features/home/view/leaderboard_page.dart';
 import 'package:aslan_pixel/features/home/view/main_tabs_page.dart';
 import 'package:aslan_pixel/features/inventory/view/inventory_page.dart';
@@ -25,6 +28,8 @@ import 'package:aslan_pixel/features/profile/view/edit_profile_page.dart';
 import 'package:aslan_pixel/features/profile/view/profile_page.dart';
 import 'package:aslan_pixel/features/quests/view/quest_page.dart';
 import 'package:aslan_pixel/features/settings/view/settings_page.dart';
+import 'package:aslan_pixel/features/agents/view/agent_shop_page.dart';
+import 'package:aslan_pixel/features/home/view/room_theme_shop_page.dart';
 import 'package:aslan_pixel/features/world/view/plaza_page.dart';
 import '../utils/crash_reporter.dart';
 
@@ -82,9 +87,18 @@ class RouteGenerator {
             return gotoRightToLeftPage(const FeedPage());
           case FinancePage.routeName:
             return gotoRightToLeftPage(const FinancePage());
+          case CryptoPage.routeName:
+            return gotoRightToLeftPage(const CryptoPage());
+          case ManualOrderPage.routeName:
+            return gotoRightToLeftPage(const ManualOrderPage());
+          case AgentShopPage.routeName:
+            return gotoRightToLeftPage(const AgentShopPage());
+          case RoomThemeShopPage.routeName:
+            return gotoRightToLeftPage(const RoomThemeShopPage());
           // Routes below require arguments — return error route when args are
           // missing so the app surfaces a meaningful fallback instead of an
           // unhandled exception from a null-argument dereference.
+          case FriendRoomPage.routeName:
           case NotificationPage.routeName:
           case LeaderboardPage.routeName:
           case PixelArtEditorPage.routeName:
@@ -125,6 +139,24 @@ class RouteGenerator {
             return gotoRightToLeftPage(const FeedPage());
           case FinancePage.routeName:
             return gotoRightToLeftPage(const FinancePage());
+          case CryptoPage.routeName:
+            return gotoRightToLeftPage(const CryptoPage());
+          case ManualOrderPage.routeName:
+            return gotoRightToLeftPage(const ManualOrderPage());
+          case AgentShopPage.routeName:
+            return gotoRightToLeftPage(const AgentShopPage());
+          case RoomThemeShopPage.routeName:
+            return gotoRightToLeftPage(const RoomThemeShopPage());
+          case FriendRoomPage.routeName:
+            if (args is Map<String, String>) {
+              return gotoRightToLeftPage(
+                FriendRoomPage(
+                  friendUid: args['friendUid'] ?? '',
+                  friendName: args['friendName'] ?? '',
+                ),
+              );
+            }
+            return _errorRoute();
           case LeaderboardPage.routeName:
             if (args is String && args.isNotEmpty) {
               return gotoRightToLeftPage(

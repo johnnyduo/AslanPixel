@@ -16,6 +16,9 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<RoomItemPlaced>(_onItemPlaced);
     on<RoomItemRemoved>(_onItemRemoved);
     on<RoomItemUnlocked>(_onItemUnlocked);
+    on<FriendRoomVisitRequested>(_onFriendVisit);
+    on<RoomThemePurchaseRequested>(_onThemePurchase);
+    on<RoomThemeChanged>(_onThemeChanged);
   }
 
   final RoomRepository _repository;
@@ -101,6 +104,50 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         await _repository.unlockItem(event.uid, event.itemId);
       }
       // If already unlocked, nothing to do.
+    } catch (e) {
+      emit(RoomError(e.toString()));
+    }
+  }
+
+  Future<void> _onFriendVisit(
+    FriendRoomVisitRequested event,
+    Emitter<RoomState> emit,
+  ) async {
+    emit(const RoomLoading());
+    try {
+      final items = await _repository.getFriendRoom(event.friendUid);
+      emit(FriendRoomLoaded(event.friendUid, items));
+    } catch (e) {
+      emit(RoomError(e.toString()));
+    }
+  }
+
+  Future<void> _onThemePurchase(
+    RoomThemePurchaseRequested event,
+    Emitter<RoomState> emit,
+  ) async {
+    try {
+      await _repository.purchaseTheme(
+        uid: event.uid,
+        themeId: event.themeId,
+        price: event.price,
+      );
+      emit(RoomThemePurchaseSuccess(event.themeId));
+    } catch (e) {
+      emit(RoomThemePurchaseFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onThemeChanged(
+    RoomThemeChanged event,
+    Emitter<RoomState> emit,
+  ) async {
+    try {
+      await _repository.setActiveTheme(
+        uid: event.uid,
+        themeId: event.themeId,
+      );
+      emit(RoomThemeChangeSuccess(event.themeId));
     } catch (e) {
       emit(RoomError(e.toString()));
     }

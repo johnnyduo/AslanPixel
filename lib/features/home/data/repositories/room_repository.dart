@@ -22,4 +22,31 @@ abstract class RoomRepository {
   ///
   /// No-ops silently if the item does not exist.
   Future<void> unlockItem(String uid, String itemId);
+
+  /// Fetch a friend's room for read-only visit.
+  Future<List<RoomItem>> getFriendRoom(String friendUid);
+
+  /// Purchases a room theme for [uid], deducting [price] coins atomically.
+  ///
+  /// Throws [InsufficientCoinsException] if the user does not have enough coins.
+  /// Throws [StateError] if the theme is already owned.
+  Future<void> purchaseTheme({
+    required String uid,
+    required String themeId,
+    required int price,
+  });
+
+  /// Sets the active room theme for [uid].
+  ///
+  /// Throws [StateError] if the theme is not owned.
+  Future<void> setActiveTheme({
+    required String uid,
+    required String themeId,
+  });
+
+  /// Returns the list of theme IDs owned by [uid].
+  Future<List<String>> getOwnedThemes(String uid);
+
+  /// Returns the currently active theme ID for [uid], or `'starter'` if unset.
+  Future<String> getActiveTheme(String uid);
 }

@@ -21,6 +21,31 @@ class RoomLoaded extends RoomState {
   final RoomModel room;
 }
 
+/// A friend's room has been loaded for read-only visit.
+class FriendRoomLoaded extends RoomState {
+  const FriendRoomLoaded(this.friendUid, this.items);
+  final String friendUid;
+  final List<RoomItem> items;
+}
+
+/// A room theme was successfully purchased.
+class RoomThemePurchaseSuccess extends RoomState {
+  const RoomThemePurchaseSuccess(this.themeId);
+  final String themeId;
+}
+
+/// The active room theme was successfully changed.
+class RoomThemeChangeSuccess extends RoomState {
+  const RoomThemeChangeSuccess(this.themeId);
+  final String themeId;
+}
+
+/// A room theme purchase failed (e.g. insufficient coins).
+class RoomThemePurchaseFailure extends RoomState {
+  const RoomThemePurchaseFailure(this.message);
+  final String message;
+}
+
 /// An error occurred while loading or mutating room data.
 class RoomError extends RoomState {
   const RoomError(this.message);

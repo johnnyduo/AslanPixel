@@ -35,3 +35,38 @@ class RoomItemUnlocked extends RoomEvent {
   final String uid;
   final String itemId;
 }
+
+/// Request to visit a friend's room in read-only mode.
+class FriendRoomVisitRequested extends RoomEvent {
+  const FriendRoomVisitRequested(this.friendUid);
+  final String friendUid;
+}
+
+/// Request to purchase a room theme for [uid].
+///
+/// Deducts [price] coins via Firestore transaction and records the theme
+/// in the user's owned themes collection.
+class RoomThemePurchaseRequested extends RoomEvent {
+  const RoomThemePurchaseRequested({
+    required this.themeId,
+    required this.uid,
+    required this.price,
+  });
+
+  final String themeId;
+  final String uid;
+  final int price;
+}
+
+/// Request to change the active room theme for [uid].
+///
+/// The theme must already be owned.
+class RoomThemeChanged extends RoomEvent {
+  const RoomThemeChanged({
+    required this.themeId,
+    required this.uid,
+  });
+
+  final String themeId;
+  final String uid;
+}

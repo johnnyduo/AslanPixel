@@ -172,7 +172,7 @@ class _ProfileContent extends StatelessWidget {
           // Follow button — only shown when viewing another user's profile.
           if (!isSelf)
             SliverToBoxAdapter(
-              child: _buildFollowSection(),
+              child: _buildFollowSection(context),
             ),
           SliverToBoxAdapter(child: _buildPrivacySection(context)),
           SliverToBoxAdapter(child: _buildBadgesSection()),
@@ -372,13 +372,32 @@ class _ProfileContent extends StatelessWidget {
 
   // ── Follow Section ────────────────────────────────────────────────────────
 
-  Widget _buildFollowSection() {
+  Widget _buildFollowSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Center(
-        child: FollowButton(
-          uid: currentUid,
-          targetUid: profileUid,
+        child: Column(
+          children: [
+            FollowButton(
+              uid: currentUid,
+              targetUid: profileUid,
+            ),
+            const SizedBox(height: 8),
+            if (!isSelf)
+              OutlinedButton.icon(
+                icon: const Icon(Icons.door_front_door_rounded),
+                label: const Text('เยี่ยมชมห้อง'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF00F5A0),
+                  side: const BorderSide(color: Color(0xFF00F5A0)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => Navigator.of(context).pushNamed(
+                  '/friend-room',
+                  arguments: {'friendUid': profileUid, 'friendName': user.displayName ?? ''},
+                ),
+              ),
+          ],
         ),
       ),
     );
