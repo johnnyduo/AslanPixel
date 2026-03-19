@@ -45,9 +45,10 @@ class PixelIcon extends StatelessWidget {
       width: size,
       height: size,
       color: color,
+      colorBlendMode: color != null ? BlendMode.srcIn : null,
       filterQuality: FilterQuality.none, // Keep pixel art crisp!
       errorBuilder: (_, __, ___) => Icon(
-        Icons.square,
+        Icons.circle_outlined,
         size: size,
         color: color ?? Colors.white54,
       ),

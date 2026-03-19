@@ -51,9 +51,15 @@ class NpcQuoteBubble extends PositionComponent
     await super.onLoad();
     // Clamp bubble to actual game bounds — prevents overflow off-screen.
     final gameW = game.size.x;
+    final gameH = game.size.y;
     final bubbleHalfW = (_maxBubbleWidth + _horizontalPadding * 2) / 2;
-    final clampedX = _npcPosition.x.clamp(bubbleHalfW + 8, gameW - bubbleHalfW - 8);
-    final clampedY = (_npcPosition.y - _yOffset).clamp(_estimatedHeight + 8, game.size.y - 20);
+    final margin = 12.0;
+    final clampedX = _npcPosition.x.clamp(bubbleHalfW + margin, gameW - bubbleHalfW - margin);
+    // Bubble anchor is bottomCenter, so Y is the bottom edge.
+    // Ensure top of bubble (Y - estimatedHeight - tailHeight) stays above margin.
+    final minY = _estimatedHeight + _tailHeight + margin;
+    final maxY = gameH - margin;
+    final clampedY = (_npcPosition.y - _yOffset).clamp(minY, maxY);
     position = Vector2(clampedX, clampedY);
   }
 

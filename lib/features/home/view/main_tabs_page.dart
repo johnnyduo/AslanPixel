@@ -71,10 +71,12 @@ class _MainTabsPageState extends State<MainTabsPage> {
           items: List.generate(
             _tabLabels.length,
             (i) => BottomNavigationBarItem(
-              icon: PixelIcon(
-                _tabPixelIcons[i],
-                size: 24,
-                color: _currentIndex == i ? selectedColor : unselectedColor,
+              icon: Opacity(
+                opacity: _currentIndex == i ? 1.0 : 0.4,
+                child: PixelIcon(
+                  _tabPixelIcons[i],
+                  size: 24,
+                ),
               ),
               label: _tabLabels[i],
             ),
