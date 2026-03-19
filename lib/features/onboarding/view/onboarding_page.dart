@@ -399,25 +399,12 @@ class _IntroStepState extends State<_IntroStep>
                 ),
               );
             },
-            child: Center(
-              child: ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [
-                    const Color(0xFF00f5a0),
-                    const Color(0xFF7b2fff),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds),
-                child: const Text(
-                  'AP',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 52,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -2,
-                  ),
-                ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo_280.png',
+                width: 140,
+                height: 140,
+                fit: BoxFit.cover,
               ),
             ),
           ),
