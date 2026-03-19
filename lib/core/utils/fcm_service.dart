@@ -23,8 +23,19 @@ class FcmService {
     );
     debugPrint('[FCM] Authorization status: ${settings.authorizationStatus}');
 
-    // Retrieve and cache the device token
-    final token = await FirebaseMessaging.instance.getToken();
+    // Retrieve and cache the device token.
+    // On iOS the APNS token may not be ready immediately — retry a few times.
+    String? token;
+    for (var attempt = 0; attempt < 3 && token == null; attempt++) {
+      try {
+        if (attempt > 0) {
+          await Future<void>.delayed(const Duration(seconds: 2));
+        }
+        token = await FirebaseMessaging.instance.getToken();
+      } catch (e) {
+        debugPrint('[FCM] getToken attempt ${attempt + 1} failed: $e');
+      }
+    }
     if (token != null) {
       debugPrint('[FCM] Token: ${token.substring(0, 20)}...');
       Globals.fcmToken = token;
