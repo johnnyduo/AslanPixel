@@ -4,6 +4,7 @@ import 'package:aslan_pixel/features/broker/bloc/broker_bloc.dart';
 import 'package:aslan_pixel/features/broker/bloc/broker_event.dart';
 import 'package:aslan_pixel/features/broker/bloc/broker_state.dart';
 import 'package:aslan_pixel/features/broker/data/models/portfolio_snapshot_model.dart';
+import 'package:aslan_pixel/shared/widgets/sparkline_chart.dart';
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -177,6 +178,33 @@ class _ConnectCard extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+              // Connect Real Broker — disabled (coming soon)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.link_rounded),
+                  label: const Text('เชื่อมต่อ Broker จริง (เร็วๆ นี้)'),
+                  style: OutlinedButton.styleFrom(
+                    disabledForegroundColor: _textWhite.withValues(alpha: 0.35),
+                    side: BorderSide(
+                      color: _textWhite.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 16),
               const Text(
                 'ข้อมูลเพื่อการศึกษา ไม่ใช่คำแนะนำทางการเงิน',
@@ -286,6 +314,49 @@ class _PortfolioDashboard extends StatelessWidget {
                         ),
                       ),
                   ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Portfolio sparkline chart — 30-day simulated performance
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _neonGreen.withValues(alpha: 0.12),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ประสิทธิภาพ 30 วัน',
+                  style: TextStyle(
+                    color: _textWhite.withValues(alpha: 0.55),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (_, constraints) => SparklineChart(
+                    values: const [
+                      468000, 471500, 469200, 475800, 473000, 478400,
+                      480100, 477600, 483200, 481900, 488700, 486500,
+                      491300, 489800, 494500, 492100, 497600, 495400,
+                      498900, 496200, 500100, 498700, 502400, 500800,
+                      503600, 501200, 504900, 502300, 500241,
+                    ],
+                    width: constraints.maxWidth,
+                    height: 56,
+                    strokeWidth: 2,
+                  ),
                 ),
               ],
             ),
