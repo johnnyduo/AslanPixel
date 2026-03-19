@@ -44,7 +44,7 @@ class NpcWalkController extends Component with HasGameReference<FlameGame> {
   NpcWalkController({
     required NpcSpriteComponent npc,
     double canvasWidth = 400,
-    double canvasHeight = 700,
+    double canvasHeight = 400,
     double margin = 60,
     double walkSpeed = 40,
     double arrivalThreshold = 8,

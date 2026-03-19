@@ -4,22 +4,13 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
-// ---------------------------------------------------------------------------
-// RoomType
-// ---------------------------------------------------------------------------
-
 /// Identifies which room background variant to render.
 enum RoomType { starter, office, penthouse }
 
-// ---------------------------------------------------------------------------
-// RoomBackgroundComponent
-// ---------------------------------------------------------------------------
-
-/// A Flame component that renders a Gemini-generated room background PNG.
+/// Renders a room background PNG with **fit-width** scaling.
 ///
-/// Uses **cover** scaling: the image fills the entire room area without
-/// distortion. If the aspect ratios differ, the image is cropped (not
-/// stretched) — just like CSS `background-size: cover`.
+/// The image scales to fill the room width exactly, preserving its
+/// original aspect ratio. No stretch, no distortion.
 class RoomBackgroundComponent extends PositionComponent
     with HasGameReference<FlameGame> {
   RoomBackgroundComponent({
@@ -28,8 +19,6 @@ class RoomBackgroundComponent extends PositionComponent
   }) : super(size: roomSize, position: Vector2.zero());
 
   final RoomType roomType;
-
-  SpriteComponent? _bgSprite;
 
   @override
   Future<void> onLoad() async {
@@ -50,29 +39,20 @@ class RoomBackgroundComponent extends PositionComponent
 
       final imgW = frame.image.width.toDouble();
       final imgH = frame.image.height.toDouble();
+      final aspect = imgH / imgW; // 1.0 for 1024×1024
 
-      // Cover: scale so the image completely covers the target area.
-      // Pick the LARGER scale factor so nothing is uncovered.
-      final scaleX = size.x / imgW;
-      final scaleY = size.y / imgH;
-      final coverScale = scaleX > scaleY ? scaleX : scaleY;
+      // Fit width: image fills canvas width exactly, height scales proportionally.
+      final renderW = size.x;
+      final renderH = size.x * aspect;
 
-      final renderW = imgW * coverScale;
-      final renderH = imgH * coverScale;
-
-      // Center the oversized dimension (crop equally from both sides).
-      final offsetX = (size.x - renderW) / 2;
-      final offsetY = (size.y - renderH) / 2;
-
-      _bgSprite = SpriteComponent(
+      await add(SpriteComponent(
         sprite: Sprite(frame.image),
         size: Vector2(renderW, renderH),
-        position: Vector2(offsetX, offsetY),
+        position: Vector2.zero(),
         anchor: Anchor.topLeft,
-      );
-      await add(_bgSprite!);
+      ));
     } catch (_) {
-      // Asset missing — renders blank, no crash.
+      // Asset missing — renders blank navy background.
     }
   }
 }
