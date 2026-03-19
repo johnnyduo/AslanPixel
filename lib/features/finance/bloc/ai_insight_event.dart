@@ -32,3 +32,19 @@ class AiInsightWatchStarted extends AiInsightEvent {
   @override
   List<Object?> get props => [uid];
 }
+
+/// Force a fresh insight from the AI service, bypassing any cache.
+class AiInsightForceRefreshRequested extends AiInsightEvent {
+  const AiInsightForceRefreshRequested({
+    required this.uid,
+    required this.type,
+    required this.symbols,
+  });
+
+  final String uid;
+  final String type;
+  final String symbols;
+
+  @override
+  List<Object?> get props => [uid, type, symbols];
+}

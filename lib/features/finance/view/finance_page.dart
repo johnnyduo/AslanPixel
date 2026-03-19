@@ -12,6 +12,7 @@ import 'package:aslan_pixel/features/finance/bloc/prediction_state.dart';
 import 'package:aslan_pixel/features/finance/data/datasources/firestore_ai_insight_datasource.dart';
 import 'package:aslan_pixel/features/finance/data/datasources/firestore_prediction_datasource.dart';
 import 'package:aslan_pixel/features/finance/view/market_insight_card.dart';
+import 'package:aslan_pixel/features/finance/view/portfolio_chart_card.dart';
 import 'package:aslan_pixel/features/finance/view/prediction_event_card.dart';
 import 'package:aslan_pixel/features/home/view/market_ticker_tile.dart';
 
@@ -157,14 +158,17 @@ class _PredictionsTab extends StatelessWidget {
 class _MarketTab extends StatelessWidget {
   const _MarketTab();
 
+  // Thai-relevant symbols with realistic mock prices and ±2% variance seed
   static const _mockTickers = [
-    _MockTicker(symbol: 'BTC/USD', price: '\$42,350', change: 1.82),
-    _MockTicker(symbol: 'ETH/USD', price: '\$2,348', change: -0.54),
-    _MockTicker(symbol: 'BNB/USD', price: '\$312', change: 0.97),
-    _MockTicker(symbol: 'SET', price: '1,412', change: -0.31),
+    _MockTicker(symbol: 'SET',     price: '1,412',      change:  0.43),
+    _MockTicker(symbol: 'BTC/USD', price: '\$84,200',   change:  1.82),
+    _MockTicker(symbol: 'ETH/USD', price: '\$3,210',    change: -0.54),
+    _MockTicker(symbol: 'AAPL',    price: '\$224.15',   change:  0.91),
+    _MockTicker(symbol: 'TSLA',    price: '\$172.30',   change: -1.47),
+    _MockTicker(symbol: 'NVDA',    price: '\$880.50',   change:  2.08),
   ];
 
-  static const String _insightContext = 'BTC ETH SET';
+  static const String _insightSymbols = 'SET BTC ETH AAPL TSLA NVDA';
 
   @override
   Widget build(BuildContext context) {
@@ -178,29 +182,35 @@ class _MarketTab extends StatelessWidget {
           AiInsightRequested(
             uid: uid,
             type: 'market_summary',
-            context: _insightContext,
+            context: _insightSymbols,
           ),
         ),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Portfolio performance chart
+          const PortfolioChartCard(),
+
+          const SizedBox(height: 16),
+
           // AI Market Insight card
           BlocBuilder<AiInsightBloc, AiInsightState>(
             builder: (ctx, state) {
-              final isLoading = state is AiInsightLoading ||
-                  state is AiInsightInitial;
-              final insight = state is AiInsightLoaded && state.insights.isNotEmpty
-                  ? state.insights.first
-                  : null;
+              final isLoading =
+                  state is AiInsightLoading || state is AiInsightInitial;
+              final insight =
+                  state is AiInsightLoaded && state.insights.isNotEmpty
+                      ? state.insights.first
+                      : null;
 
               return MarketInsightCard(
                 insight: insight,
                 isLoading: isLoading,
                 onRefresh: () => ctx.read<AiInsightBloc>().add(
-                      AiInsightRequested(
+                      AiInsightForceRefreshRequested(
                         uid: uid,
                         type: 'market_summary',
-                        context: _insightContext,
+                        symbols: _insightSymbols,
                       ),
                     ),
               );
@@ -209,7 +219,21 @@ class _MarketTab extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Market tickers
+          // Section label
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'ตลาดโลก',
+              style: TextStyle(
+                color: _textWhite,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+
+          // Market tickers — 6 Thai-relevant symbols
           ...List.generate(_mockTickers.length, (i) {
             final t = _mockTickers[i];
             return Padding(
@@ -221,6 +245,18 @@ class _MarketTab extends StatelessWidget {
               ),
             );
           }),
+
+          // Disclaimer footer
+          const SizedBox(height: 8),
+          Text(
+            'ข้อมูลเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน',
+            style: TextStyle(
+              color: _textWhite.withValues(alpha: 0.3),
+              fontSize: 10,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );

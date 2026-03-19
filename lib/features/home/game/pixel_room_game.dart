@@ -10,6 +10,7 @@ import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/home/bloc/agent_status.dart';
 import 'package:aslan_pixel/features/home/data/models/room_item_model.dart';
 import 'package:aslan_pixel/features/home/game/npc_sprite_component.dart';
+import 'package:aslan_pixel/features/home/game/npc_walk_controller.dart';
 import 'package:aslan_pixel/features/home/game/room_background_component.dart';
 import 'package:aslan_pixel/features/home/game/room_item_component.dart';
 
@@ -175,35 +176,38 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     );
 
     // ------------------------------------------------------------------
-    // Layer 2: NPC sprites
+    // Layer 2: NPC sprites + autonomous walk controllers
     //
-    // Two NPCs at fixed positions in the room canvas:
-    //   - Banker  → top-left area  (near the desk furniture zone)
-    //   - Trader  → centre of room
+    // Ten NPCs are spread across the 400 × 700 canvas.  Each gets a
+    // NpcWalkController added as a sibling component (not a child of the
+    // sprite) so the controller can freely update the sprite's position.
     //
     // Sprite identifiers match assets/sprites/npcs/npc_{name}_{dir}.png
+    // Missing assets are handled gracefully inside NpcSpriteComponent.
     // ------------------------------------------------------------------
     final npcConfigs = [
-      _NpcConfig(
-        name: 'npc_banker',
-        position: Vector2(_canvasWidth * 0.22, _canvasHeight * 0.35),
-        direction: NpcDirection.south,
-      ),
-      _NpcConfig(
-        name: 'npc_trader',
-        position: Vector2(_canvasWidth * 0.50, _canvasHeight * 0.52),
-        direction: NpcDirection.south,
-      ),
+      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  200), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 350), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 200), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_merchant',       position: Vector2(80,  500), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_sysbot',         position: Vector2(200, 150), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(350, 450), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(130, 380), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_hacker',         position: Vector2(280, 550), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_oracle',         position: Vector2(340, 300), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_intern',         position: Vector2(200, 600), direction: NpcDirection.south),
     ];
 
     for (final cfg in npcConfigs) {
-      await add(
-        NpcSpriteComponent(
-          npcName: cfg.name,
-          position: cfg.position,
-          initialDirection: cfg.direction,
-        ),
+      final npc = NpcSpriteComponent(
+        npcName: cfg.name,
+        position: cfg.position,
+        initialDirection: cfg.direction,
       );
+      await add(npc);
+
+      // Walk controller is a sibling — added to the game, not to the NPC.
+      await add(NpcWalkController(npc: npc));
     }
 
     // ------------------------------------------------------------------

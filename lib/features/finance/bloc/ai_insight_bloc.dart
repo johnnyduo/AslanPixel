@@ -17,6 +17,7 @@ class AiInsightBloc extends Bloc<AiInsightEvent, AiInsightState> {
         super(const AiInsightInitial()) {
     on<AiInsightRequested>(_onRequested);
     on<AiInsightWatchStarted>(_onWatchStarted);
+    on<AiInsightForceRefreshRequested>(_onForceRefresh);
   }
 
   final AIService _aiService;
@@ -48,6 +49,45 @@ class AiInsightBloc extends Bloc<AiInsightEvent, AiInsightState> {
       );
 
       // 3. Build and persist the new insight.
+      final now = DateTime.now();
+      final insightId = FirebaseFirestore.instance.collection('_').doc().id;
+      final insight = AiInsightModel(
+        insightId: insightId,
+        uid: event.uid,
+        type: event.type,
+        content: contentTh,
+        contentTh: contentTh,
+        modelUsed: 'gemini-2.0-flash',
+        generatedAt: now,
+        expiresAt: now.add(const Duration(minutes: 30)),
+      );
+
+      if (event.uid.isNotEmpty) {
+        await _repository.saveInsight(insight);
+      }
+
+      emit(AiInsightLoaded([insight]));
+    } catch (e) {
+      emit(AiInsightError(e.toString()));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // _onForceRefresh — bypasses Firestore cache, calls AI directly
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onForceRefresh(
+    AiInsightForceRefreshRequested event,
+    Emitter<AiInsightState> emit,
+  ) async {
+    emit(const AiInsightLoading());
+
+    try {
+      final contentTh = await _aiService.generateMarketSummary(
+        symbols: event.symbols,
+        context: event.symbols,
+      );
+
       final now = DateTime.now();
       final insightId = FirebaseFirestore.instance.collection('_').doc().id;
       final insight = AiInsightModel(

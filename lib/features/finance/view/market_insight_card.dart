@@ -51,50 +51,114 @@ class MarketInsightCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// _ShimmerContent — grey placeholder rows
+// _ShimmerContent — animated pulsing placeholder rows
 // ---------------------------------------------------------------------------
 
-class _ShimmerContent extends StatelessWidget {
+class _ShimmerContent extends StatefulWidget {
   const _ShimmerContent();
 
   @override
+  State<_ShimmerContent> createState() => _ShimmerContentState();
+}
+
+class _ShimmerContentState extends State<_ShimmerContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header placeholder
-        Row(
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, _) {
+        final alpha = 0.12 + _pulse.value * 0.18;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _GreyBox(width: 120, height: 14),
-            const Spacer(),
-            _GreyBox(width: 48, height: 14),
+            // Header row — label + loading indicator
+            Row(
+              children: [
+                Container(
+                  width: 130,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: _neonGreen.withValues(alpha: alpha * 0.6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const Spacer(),
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    color: _neonGreen,
+                    strokeWidth: 1.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'กำลังวิเคราะห์...',
+                  style: TextStyle(
+                    color: _neonGreen.withValues(alpha: alpha * 1.5),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Line 1 — full width
+            _ShimmerBox(
+              width: double.infinity,
+              height: 12,
+              alpha: alpha,
+            ),
+            const SizedBox(height: 8),
+            // Line 2 — 80%
+            _ShimmerBox(
+              width: MediaQuery.of(context).size.width * 0.75,
+              height: 12,
+              alpha: alpha * 0.85,
+            ),
+            const SizedBox(height: 8),
+            // Line 3 — 55%
+            _ShimmerBox(
+              width: MediaQuery.of(context).size.width * 0.55,
+              height: 12,
+              alpha: alpha * 0.65,
+            ),
           ],
-        ),
-        const SizedBox(height: 12),
-        // Line 1 — full width
-        _GreyBox(width: double.infinity, height: 12),
-        const SizedBox(height: 8),
-        // Line 2 — 80%
-        _GreyBox(
-          width: MediaQuery.of(context).size.width * 0.8,
-          height: 12,
-        ),
-        const SizedBox(height: 8),
-        // Line 3 — 60%
-        _GreyBox(
-          width: MediaQuery.of(context).size.width * 0.6,
-          height: 12,
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _GreyBox extends StatelessWidget {
-  const _GreyBox({required this.width, required this.height});
+class _ShimmerBox extends StatelessWidget {
+  const _ShimmerBox({
+    required this.width,
+    required this.height,
+    required this.alpha,
+  });
 
   final double width;
   final double height;
+  final double alpha;
 
   @override
   Widget build(BuildContext context) {
@@ -102,12 +166,13 @@ class _GreyBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: _grey.withValues(alpha: 0.25),
+        color: _grey.withValues(alpha: alpha.clamp(0.0, 1.0)),
         borderRadius: BorderRadius.circular(4),
       ),
     );
   }
 }
+
 
 // ---------------------------------------------------------------------------
 // _LoadedContent

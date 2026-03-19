@@ -69,6 +69,10 @@ lib/
 | LocalNotificationService | `lib/core/utils/local_notification_service.dart` |
 | AnimatedCoinCounter | `lib/shared/widgets/animated_coin_counter.dart` |
 | SparklineChart | `lib/shared/widgets/sparkline_chart.dart` |
+| NPC walk AI | `lib/features/home/game/npc_walk_controller.dart` |
+| NPC quotes (600 TH+EN) | `lib/features/home/game/npc_quotes.dart` |
+| NPC quote bubble | `lib/features/home/game/npc_quote_bubble.dart` |
+| Dopamine widgets | `lib/shared/widgets/reward_popup.dart`, `confetti_overlay.dart`, `floating_reward_text.dart` |
 
 ## Common Patterns
 
@@ -115,16 +119,22 @@ await _firestore.runTransaction((transaction) async {
 - Don't mock Firebase in integration tests — use Firebase Emulator
 - Don't add `accessToken` check in `RootPage` for onboarding check — use `onboardingComplete` field
 - Don't put business logic in widgets — put in BLoC or repository
-- Don't use Gemini for NPC sprite generation — output is not valid pixel art PNG
+- Don't use Gemini for NPC sprite generation — output is JPEG data saved as PNG (200-450KB, invalid), NOT valid 48×48 pixel art
+- Don't use PixelLab individual GET `/characters/{id}` endpoint — returns 500 Internal Server Error. Use list endpoint `GET /characters?limit=10` and extract `preview_url` token instead
+- Don't generate room backgrounds via PixelLab — use Gemini `gemini-3.1-flash-image-preview` (see `scripts/gen_rooms.mjs`)
 - Don't use `.withOpacity()` — always use `.withValues(alpha:)` (Dart 3.x API)
 
 ## Pixel World
 
-- **Room background**: Gemini-generated PNGs stored in `assets/sprites/room_backgrounds/`
-- **NPC sprites**: Generated via PixelLab API, 48×48 pixels, stored at `assets/sprites/npcs/{name}_{direction}.png`
+- **Room background**: Gemini-generated PNGs stored in `assets/sprites/room_backgrounds/` (12 rooms: starter, office, penthouse + 9 Wall Street themes)
+- **NPC sprites**: Generated via PixelLab API `POST /create-character-with-4-directions`, 48×48 pixels, stored at `assets/sprites/npcs/{name}_{direction}.png`. All 10 NPCs complete: banker, trader, champion, merchant, sysbot, pixelcat, analyst_senior, hacker, oracle, intern.
+- **PixelLab download strategy**: Use `GET /characters?limit=10` (not individual endpoint — 500 errors) to get fresh `preview_url` with token, then construct `{base_url}/{user_id}/{char_id}/rotations/{dir}.png?t={token}` and download immediately (tokens expire in ~seconds).
+- **NPC auto-walk**: `NpcWalkController` — wander AI picks random canvas target every 2-5s, walks at 40px/s, faces correct direction. Added as sibling to NpcSpriteComponent in game tree.
+- **NPC quotes**: `kNpcQuotes` in `npc_quotes.dart` — 60 bilingual quotes per NPC (600 total). `NpcQuotes.useEnglish` static flag toggles locale. 20% chance shows `NpcQuoteBubble` on NPC arrival.
 - **Walk animation**: 4-frame `SpriteAnimation` using frames `{name}_{dir}_walk{1-4}.png`
 - **Room items**: `RoomItemComponent` draws items with Canvas; positioned using `slotX`/`slotY` grid slots on the room floor
 - **Quest→Room unlock flow**: `QuestRewardClaimedSuccess` (with `unlockedItemId`) → fires `RoomItemUnlocked` event on `RoomBloc` → item appears in room
+- **Max team size**: `kMaxTeamSize = 8` in `idle_task_engine.dart`
 
 ## Firebase Setup (one-time manual steps)
 1. `flutterfire configure` → generates `lib/firebase_options.dart` (gitignored)
