@@ -46,12 +46,12 @@ Color _agentColor(AgentType type) {
 const double _canvasWidth = 400;
 const double _canvasHeight = 710; // Match 9:16 portrait room background
 
-/// Quadrant centre positions for each agent.
+/// Quadrant centre positions for each agent (in the room area).
 final _agentPositions = <AgentType, Vector2>{
-  AgentType.analyst: Vector2(70, 140),
-  AgentType.scout: Vector2(330, 140),
-  AgentType.risk: Vector2(70, 480),
-  AgentType.social: Vector2(330, 480),
+  AgentType.analyst: Vector2(80, 160),
+  AgentType.scout: Vector2(320, 160),
+  AgentType.risk: Vector2(80, 560),
+  AgentType.social: Vector2(320, 560),
 };
 
 // ---------------------------------------------------------------------------
@@ -126,7 +126,17 @@ class PixelAgentComponent extends PositionComponent
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
-      final sprite = Sprite(frame.image);
+      final img = frame.image;
+
+      // Agent sprites are sprite sheets (e.g. 64×16 = 4 frames of 16×16).
+      // Extract just the first frame for display.
+      final frameH = img.height.toDouble();
+      final frameW = frameH; // Each frame is square (16×16)
+      final sprite = Sprite(
+        img,
+        srcPosition: Vector2.zero(),
+        srcSize: Vector2(frameW, frameH),
+      );
 
       if (_spriteComp != null) {
         _spriteComp!.sprite = sprite;
@@ -250,17 +260,20 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     // Sprite identifiers match assets/sprites/npcs/npc_{name}_{dir}.png
     // Missing assets are handled gracefully inside NpcSpriteComponent.
     // ------------------------------------------------------------------
+    // NPCs spread across the full 400×710 canvas.
+    // Top section (room art 0-400): desks, shelves, furniture area
+    // Bottom section (navy floor 400-650): open walking area
     final npcConfigs = [
-      _NpcConfig(name: 'npc_banker',         position: Vector2(60,  180), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 250), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 300), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_merchant',       position: Vector2(280, 200), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_sysbot',         position: Vector2(150, 140), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(340, 360), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(120, 280), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 340), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_oracle',         position: Vector2(200, 320), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_intern',         position: Vector2(160, 380), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  230), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 280), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 250), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_merchant',       position: Vector2(200, 450), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_sysbot',         position: Vector2(320, 180), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 500), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(130, 350), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 420), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_oracle',         position: Vector2(200, 180), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_intern',         position: Vector2(300, 530), direction: NpcDirection.south),
     ];
 
     for (final cfg in npcConfigs) {
