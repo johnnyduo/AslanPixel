@@ -386,6 +386,25 @@ class _PortfolioDashboard extends StatelessWidget {
 
           const SizedBox(height: 24),
 
+          // Manual order button
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.receipt_long_rounded),
+              label: const Text('สั่งซื้อ/ขาย'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF00F5A0),
+                side: const BorderSide(color: Color(0xFF00F5A0)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () => Navigator.of(context).pushNamed('/manual-order'),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           // Disconnect button
           SizedBox(
             width: double.infinity,

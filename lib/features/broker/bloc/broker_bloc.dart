@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:aslan_pixel/core/utils/analytics_service.dart';
 import 'package:aslan_pixel/features/broker/bloc/broker_event.dart';
 import 'package:aslan_pixel/features/broker/bloc/broker_state.dart';
 import 'package:aslan_pixel/features/broker/data/connectors/broker_connector.dart';
@@ -48,6 +52,7 @@ class BrokerBloc extends Bloc<BrokerEvent, BrokerState> {
         portfolio: portfolio,
         connectorId: event.connectorId,
       ));
+      unawaited(AnalyticsService.logBrokerConnected(connectorId: event.connectorId));
     } catch (e) {
       emit(BrokerError(e.toString()));
     }
