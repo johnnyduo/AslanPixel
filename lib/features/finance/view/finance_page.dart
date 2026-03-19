@@ -14,6 +14,7 @@ import 'package:aslan_pixel/features/finance/data/datasources/firestore_predicti
 import 'package:aslan_pixel/features/finance/view/market_insight_card.dart';
 import 'package:aslan_pixel/features/finance/view/portfolio_chart_card.dart';
 import 'package:aslan_pixel/features/finance/view/prediction_event_card.dart';
+import 'package:aslan_pixel/features/finance/view/crypto_page.dart';
 import 'package:aslan_pixel/features/home/view/market_ticker_tile.dart';
 
 // ---------------------------------------------------------------------------
@@ -219,11 +220,66 @@ class _MarketTab extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          // Live Crypto Market button
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, CryptoPage.routeName),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _neonGreen.withValues(alpha: 0.15),
+                    _surface,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _neonGreen.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.currency_bitcoin,
+                      color: _neonGreen, size: 20),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Crypto Market',
+                          style: TextStyle(
+                            color: _textWhite,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '\u0e23\u0e32\u0e04\u0e32\u0e04\u0e23\u0e34\u0e1b\u0e42\u0e15\u0e2a\u0e14\u0e08\u0e32\u0e01 Binance',
+                          style: TextStyle(
+                            color: _neonGreen,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios,
+                      color: _neonGreen.withValues(alpha: 0.6), size: 16),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
           // Section label
           const Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
-              'ตลาดโลก',
+              '\u0e15\u0e25\u0e32\u0e14\u0e42\u0e25\u0e01',
               style: TextStyle(
                 color: _textWhite,
                 fontWeight: FontWeight.bold,
