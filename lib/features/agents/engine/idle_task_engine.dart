@@ -12,6 +12,7 @@ class IdleTaskEngine {
   const IdleTaskEngine._();
 
   static const Map<TaskTier, Duration> tierDurations = {
+    TaskTier.quick: Duration(minutes: 1),
     TaskTier.basic: Duration(minutes: 5),
     TaskTier.standard: Duration(minutes: 30),
     TaskTier.advanced: Duration(hours: 2),
@@ -19,6 +20,7 @@ class IdleTaskEngine {
   };
 
   static const Map<TaskTier, int> tierBaseReward = {
+    TaskTier.quick: 5,
     TaskTier.basic: 10,
     TaskTier.standard: 50,
     TaskTier.advanced: 200,
@@ -27,6 +29,7 @@ class IdleTaskEngine {
 
   /// XP awarded per tier on settlement (flat, before any multipliers).
   static const Map<TaskTier, int> tierXpReward = {
+    TaskTier.quick: 5,
     TaskTier.basic: 10,
     TaskTier.standard: 35,
     TaskTier.advanced: 120,
@@ -161,6 +164,8 @@ class IdleTaskEngine {
   /// Tier display name in Thai with duration hint.
   static String tierNameTh(TaskTier tier) {
     switch (tier) {
+      case TaskTier.quick:
+        return 'ด่วน (1 นาที)';
       case TaskTier.basic:
         return 'พื้นฐาน (5 นาที)';
       case TaskTier.standard:

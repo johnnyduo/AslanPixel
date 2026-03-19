@@ -4,7 +4,7 @@ import 'package:aslan_pixel/core/enums/agent_type.dart';
 
 enum TaskType { research, scoutMission, analysis, socialScan }
 
-enum TaskTier { basic, standard, advanced, elite }
+enum TaskTier { quick, basic, standard, advanced, elite }
 
 class AgentTask {
   const AgentTask({
@@ -124,6 +124,8 @@ class AgentTask {
 
   static TaskTier _tierFromString(String? value) {
     switch (value) {
+      case 'quick':
+        return TaskTier.quick;
       case 'standard':
         return TaskTier.standard;
       case 'advanced':
@@ -137,6 +139,8 @@ class AgentTask {
 
   static String _tierToString(TaskTier tier) {
     switch (tier) {
+      case TaskTier.quick:
+        return 'quick';
       case TaskTier.basic:
         return 'basic';
       case TaskTier.standard:

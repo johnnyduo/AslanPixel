@@ -365,6 +365,7 @@ class _TierSegmentedButton extends StatelessWidget {
     return SegmentedButton<TaskTier>(
       segments: TaskTier.values.map((tier) {
         final label = switch (tier) {
+          TaskTier.quick => 'ด่วน',
           TaskTier.basic => 'พื้นฐาน',
           TaskTier.standard => 'มาตรฐาน',
           TaskTier.advanced => 'ขั้นสูง',
