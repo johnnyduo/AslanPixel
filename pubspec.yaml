@@ -130,5 +130,6 @@ flutter:
     - assets/3d/prototype/
     - assets/3d/skeleton/
     - assets/3d/scenes/
+    - assets/sprites/3d_thumbnails/
     - assets/tiles/
     - assets/audio/

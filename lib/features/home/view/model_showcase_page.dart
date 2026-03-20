@@ -19,9 +19,10 @@ const _kOrange = Color(0xFFFF6B35);
 // ---------------------------------------------------------------------------
 
 class _Model3D {
-  const _Model3D({required this.name, required this.path});
+  const _Model3D({required this.name, required this.path, this.thumbnail});
   final String name;
   final String path;
+  final String? thumbnail; // Optional thumbnail image path
 }
 
 class _ModelCategory {
@@ -47,12 +48,12 @@ final List<_ModelCategory> _kCategories = [
     icon: Icons.person,
     color: _kNeonGreen,
     models: const [
-      _Model3D(name: 'Knight', path: 'assets/3d/characters/Knight.glb'),
-      _Model3D(name: 'Mage', path: 'assets/3d/characters/Mage.glb'),
-      _Model3D(name: 'Ranger', path: 'assets/3d/characters/Ranger.glb'),
-      _Model3D(name: 'Barbarian', path: 'assets/3d/characters/Barbarian.glb'),
-      _Model3D(name: 'Rogue', path: 'assets/3d/characters/Rogue.glb'),
-      _Model3D(name: 'Rogue Hooded', path: 'assets/3d/characters/Rogue_Hooded.glb'),
+      _Model3D(name: 'Knight', path: 'assets/3d/characters/Knight.glb', thumbnail: 'assets/sprites/3d_thumbnails/Knight.png'),
+      _Model3D(name: 'Mage', path: 'assets/3d/characters/Mage.glb', thumbnail: 'assets/sprites/3d_thumbnails/Mage.png'),
+      _Model3D(name: 'Ranger', path: 'assets/3d/characters/Ranger.glb', thumbnail: 'assets/sprites/3d_thumbnails/Ranger.png'),
+      _Model3D(name: 'Barbarian', path: 'assets/3d/characters/Barbarian.glb', thumbnail: 'assets/sprites/3d_thumbnails/Barbarian.png'),
+      _Model3D(name: 'Rogue', path: 'assets/3d/characters/Rogue.glb', thumbnail: 'assets/sprites/3d_thumbnails/Rogue.png'),
+      _Model3D(name: 'Rogue Hooded', path: 'assets/3d/characters/Rogue_Hooded.glb', thumbnail: 'assets/sprites/3d_thumbnails/Rogue_Hooded.png'),
     ],
   ),
   _ModelCategory(
@@ -302,7 +303,7 @@ class _ModelCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Icon placeholder area
+            // Thumbnail or placeholder
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -312,13 +313,30 @@ class _ModelCard extends StatelessWidget {
                     top: Radius.circular(14),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.view_in_ar,
-                    size: 48,
-                    color: color.withValues(alpha: 120 / 255),
-                  ),
-                ),
+                child: model.thumbnail != null
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(14),
+                        ),
+                        child: Image.asset(
+                          model.thumbnail!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Icon(
+                              Icons.view_in_ar,
+                              size: 48,
+                              color: color.withValues(alpha: 120 / 255),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.view_in_ar,
+                          size: 48,
+                          color: color.withValues(alpha: 120 / 255),
+                        ),
+                      ),
               ),
             ),
             // Label
