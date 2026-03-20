@@ -129,5 +129,6 @@ flutter:
     - assets/3d/forest/
     - assets/3d/prototype/
     - assets/3d/skeleton/
+    - assets/3d/scenes/
     - assets/tiles/
     - assets/audio/

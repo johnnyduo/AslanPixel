@@ -85,20 +85,21 @@ class _Room3DPageState extends State<Room3DPage> {
       ),
       body: Column(
         children: [
-          // ---- 3D Viewer ----
+          // ---- 3D Room Scene ----
           Expanded(
             child: ModelViewer(
-              key: ValueKey(_selectedAgent),
-              src: _modelSrc,
-              alt: _kAgentCharacterLabels[_selectedAgent] ?? 'Character',
+              key: const ValueKey('trading_room'),
+              src: 'assets/3d/scenes/trading_room.glb',
+              alt: 'Trading Room',
               ar: false,
               autoRotate: true,
               autoRotateDelay: 0,
               cameraControls: true,
+              cameraOrbit: '45deg 55deg 8m',
               backgroundColor: _kBgColor,
               shadowIntensity: 1.0,
               shadowSoftness: 0.8,
-              exposure: 1.0,
+              exposure: 1.2,
             ),
           ),
 

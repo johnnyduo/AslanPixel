@@ -134,7 +134,8 @@ class _RoomItemPickerSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -217,6 +218,7 @@ class _RoomItemPickerSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
