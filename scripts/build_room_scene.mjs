@@ -22,42 +22,42 @@ const io = new NodeIO();
 // Room layout: position each furniture piece in the scene
 const roomItems = [
   // Desks and work area
-  { file: 'furniture/table_medium.gltf', pos: [0, 0, -2], rot: 0, label: 'main_desk' },
-  { file: 'furniture/table_small.gltf', pos: [-2, 0, -2], rot: 0, label: 'side_desk' },
-  { file: 'furniture/chair_A.gltf', pos: [0, 0, -1], rot: Math.PI, label: 'desk_chair' },
+  { file: 'furniture/table_medium.glb', pos: [0, 0, -2], rot: 0, label: 'main_desk' },
+  { file: 'furniture/table_small.glb', pos: [-2, 0, -2], rot: 0, label: 'side_desk' },
+  { file: 'furniture/chair_A.glb', pos: [0, 0, -1], rot: Math.PI, label: 'desk_chair' },
 
   // Bookshelves
-  { file: 'furniture/shelf_B_large_decorated.gltf', pos: [-3, 0, -3], rot: 0, label: 'bookshelf_left' },
-  { file: 'furniture/shelf_A_big.gltf', pos: [3, 0, -3], rot: 0, label: 'bookshelf_right' },
+  { file: 'furniture/shelf_B_large_decorated.glb', pos: [-3, 0, -3], rot: 0, label: 'bookshelf_left' },
+  { file: 'furniture/shelf_A_big.glb', pos: [3, 0, -3], rot: 0, label: 'bookshelf_right' },
 
   // Seating area
-  { file: 'furniture/couch.gltf', pos: [2, 0, 1], rot: -Math.PI/2, label: 'couch' },
-  { file: 'furniture/armchair.gltf', pos: [-2, 0, 1], rot: Math.PI/2, label: 'armchair' },
-  { file: 'furniture/table_low.gltf', pos: [0, 0, 1], rot: 0, label: 'coffee_table' },
+  { file: 'furniture/couch.glb', pos: [2, 0, 1], rot: -Math.PI/2, label: 'couch' },
+  { file: 'furniture/armchair.glb', pos: [-2, 0, 1], rot: Math.PI/2, label: 'armchair' },
+  { file: 'furniture/table_low.glb', pos: [0, 0, 1], rot: 0, label: 'coffee_table' },
 
   // Lamps
-  { file: 'furniture/lamp_standing.gltf', pos: [-3, 0, 1], rot: 0, label: 'lamp' },
-  { file: 'furniture/lamp_table.gltf', pos: [0.5, 0.7, -2], rot: 0, label: 'desk_lamp' },
+  { file: 'furniture/lamp_standing.glb', pos: [-3, 0, 1], rot: 0, label: 'lamp' },
+  { file: 'furniture/lamp_table.glb', pos: [0.5, 0.7, -2], rot: 0, label: 'desk_lamp' },
 
   // Decorations
-  { file: 'furniture/rug_rectangle_A.gltf', pos: [0, 0, 0], rot: 0, label: 'rug' },
-  { file: 'furniture/cactus_medium_A.gltf', pos: [3, 0, -1], rot: 0, label: 'plant' },
-  { file: 'furniture/book_set.gltf', pos: [-0.5, 0.7, -2], rot: 0.3, label: 'books' },
+  { file: 'furniture/rug_rectangle_A.glb', pos: [0, 0, 0], rot: 0, label: 'rug' },
+  { file: 'furniture/cactus_medium_A.glb', pos: [3, 0, -1], rot: 0, label: 'plant' },
+  { file: 'furniture/book_set.glb', pos: [-0.5, 0.7, -2], rot: 0.3, label: 'books' },
 
   // Wall art
-  { file: 'furniture/pictureframe_large_A.gltf', pos: [0, 1.5, -3.4], rot: 0, label: 'frame_center' },
-  { file: 'furniture/pictureframe_small_A.gltf', pos: [-1.5, 1.5, -3.4], rot: 0, label: 'frame_left' },
+  { file: 'furniture/pictureframe_large_A.glb', pos: [0, 1.5, -3.4], rot: 0, label: 'frame_center' },
+  { file: 'furniture/pictureframe_small_A.glb', pos: [-1.5, 1.5, -3.4], rot: 0, label: 'frame_left' },
 
   // Resources / Trading props
-  { file: 'resources/Gold_Bars.gltf', pos: [1, 0.7, -2], rot: 0.2, label: 'gold_bars' },
-  { file: 'resources/Silver_Bars.gltf', pos: [-1, 0.7, -1.8], rot: -0.1, label: 'silver_bars' },
+  { file: 'resources/Gold_Bars.glb', pos: [1, 0.7, -2], rot: 0.2, label: 'gold_bars' },
+  { file: 'resources/Silver_Bars.glb', pos: [-1, 0.7, -1.8], rot: -0.1, label: 'silver_bars' },
 
   // Coins on desk
-  { file: 'prototype/Coin_A.gltf', pos: [0.3, 0.75, -1.8], rot: 0, label: 'coin_1' },
-  { file: 'prototype/Coin_B.gltf', pos: [0.5, 0.75, -1.9], rot: 0.5, label: 'coin_2' },
+  { file: 'prototype/Coin_A.glb', pos: [0.3, 0.75, -1.8], rot: 0, label: 'coin_1' },
+  { file: 'prototype/Coin_B.glb', pos: [0.5, 0.75, -1.9], rot: 0.5, label: 'coin_2' },
 
   // Floor base
-  { file: 'prototype/Floor.gltf', pos: [0, -0.01, 0], rot: 0, label: 'floor' },
+  { file: 'prototype/Floor.glb', pos: [0, -0.01, 0], rot: 0, label: 'floor' },
 ];
 
 // Character to place in center
