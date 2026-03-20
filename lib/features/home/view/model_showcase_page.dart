@@ -386,8 +386,6 @@ class _FullScreenModelViewer extends StatelessWidget {
             autoRotateDelay: 0,
             cameraControls: true,
             backgroundColor: _kBgColor,
-            shadowIntensity: 1.0,
-            shadowSoftness: 0.8,
             exposure: 1.0,
           ),
           // Hint text at bottom

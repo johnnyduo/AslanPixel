@@ -97,8 +97,6 @@ class _Room3DPageState extends State<Room3DPage> {
               cameraControls: true,
               cameraOrbit: '45deg 55deg 8m',
               backgroundColor: _kBgColor,
-              shadowIntensity: 1.0,
-              shadowSoftness: 0.8,
               exposure: 1.2,
             ),
           ),
