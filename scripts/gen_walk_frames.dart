@@ -11,6 +11,8 @@
 ///
 /// Input:  assets/sprites/npcs/npc_{name}_{dir}.png  (48×48)
 /// Output: assets/sprites/npcs/npc_{name}_{dir}_walk{1-4}.png
+library;
+
 
 import 'dart:io';
 import 'package:image/image.dart' as img;

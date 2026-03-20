@@ -28,7 +28,7 @@ class AppBloc {
   bool _isForceSigningOut = false;
 
   // Setup Crashlytics collection
-  setCrashlytics() async {
+  Future<void> setCrashlytics() async {
     try {
       if (kDebugMode) {
         await FirebaseCrashlytics.instance
@@ -45,7 +45,7 @@ class AppBloc {
   }
 
   // Setup Performance Monitoring collection
-  setPerformance() async {
+  Future<void> setPerformance() async {
     try {
       if (kDebugMode) {
         await FirebasePerformance.instance
@@ -62,7 +62,7 @@ class AppBloc {
   }
 
   // Setup status bar style
-  setStatusBarColor() {
+  void setStatusBarColor() {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -73,7 +73,7 @@ class AppBloc {
   }
 
   // Listen to Firebase Auth state changes and update global authStatus
-  requestCheckSignin() async {
+  Future<void> requestCheckSignin() async {
     // Cancel any existing subscription to prevent memory leaks
     await _authStateSubscription?.cancel();
 

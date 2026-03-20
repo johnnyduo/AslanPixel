@@ -6,7 +6,6 @@ import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/agents/bloc/agent_bloc.dart';
 import 'package:aslan_pixel/features/agents/data/models/agent_model.dart';
 import '../../mocks/mock_repositories.dart';
-import '../../mocks/test_fixtures.dart';
 
 void main() {
   late MockAgentRepository repo;

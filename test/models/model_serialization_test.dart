@@ -3,16 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/agents/data/models/agent_model.dart';
-import 'package:aslan_pixel/features/feed/data/models/feed_post_model.dart';
-import 'package:aslan_pixel/features/finance/data/models/ai_insight_model.dart';
 import 'package:aslan_pixel/features/finance/data/models/prediction_event_model.dart';
 import 'package:aslan_pixel/features/follows/data/models/follow_model.dart';
 import 'package:aslan_pixel/features/home/data/models/ranking_entry_model.dart';
 import 'package:aslan_pixel/features/home/data/models/room_item_model.dart';
-import 'package:aslan_pixel/features/notifications/data/models/notification_model.dart';
 import 'package:aslan_pixel/features/pixel_art/data/models/pixel_canvas_model.dart';
-import 'package:aslan_pixel/features/profile/data/models/badge_model.dart';
-import 'package:aslan_pixel/features/quests/data/models/quest_model.dart';
 import 'package:aslan_pixel/features/world/data/models/plaza_presence_model.dart';
 
 import '../mocks/test_fixtures.dart';

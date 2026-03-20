@@ -1,9 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:aslan_pixel/features/feed/bloc/feed_bloc.dart';
-import 'package:aslan_pixel/features/feed/data/models/feed_post_model.dart';
 import '../../mocks/mock_repositories.dart';
 import '../../mocks/test_fixtures.dart';
 

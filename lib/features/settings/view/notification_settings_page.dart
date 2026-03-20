@@ -125,7 +125,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                 final t = _kTypes[index];
                 final enabled = _toggles[t.key] ?? true;
                 return SwitchListTile(
-                  activeColor: colors.primary,
+                  activeThumbColor: colors.primary,
                   inactiveTrackColor: colors.surface,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
