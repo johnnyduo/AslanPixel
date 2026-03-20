@@ -20,7 +20,7 @@ class LocalNotificationService {
       requestSoundPermission: true,
     );
     await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: ios),
+      settings: const InitializationSettings(android: android, iOS: ios),
     );
     _initialized = true;
   }
@@ -28,10 +28,10 @@ class LocalNotificationService {
   Future<void> showTaskComplete(String agentName, int coinsEarned) async {
     if (!_initialized) return;
     await _plugin.show(
-      1001,
-      'ภารกิจเสร็จสิ้น! 🎉',
-      '$agentName ได้รับ $coinsEarned เหรียญ',
-      const NotificationDetails(
+      id: 1001,
+      title: 'ภารกิจเสร็จสิ้น! 🎉',
+      body: '$agentName ได้รับ $coinsEarned เหรียญ',
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'task_complete', 'Task Complete',
           channelDescription: 'Agent task completion notifications',
@@ -46,10 +46,10 @@ class LocalNotificationService {
   Future<void> showQuestComplete(String questTitle, int coinsEarned) async {
     if (!_initialized) return;
     await _plugin.show(
-      1002,
-      'Quest สำเร็จ! ✨',
-      '$questTitle +$coinsEarned เหรียญ',
-      const NotificationDetails(
+      id: 1002,
+      title: 'Quest สำเร็จ! ✨',
+      body: '$questTitle +$coinsEarned เหรียญ',
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'quest_complete', 'Quest Complete',
           channelDescription: 'Quest completion notifications',

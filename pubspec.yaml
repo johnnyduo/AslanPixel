@@ -41,13 +41,13 @@ dependencies:
   flutter_easyloading: ^3.0.5
   page_transition: ^2.2.1
   photo_view: ^0.15.0
-  dotted_border: ^2.1.0
+  dotted_border: ^3.1.0
   animated_text_kit: ^4.3.0
   auto_size_text: ^3.0.0
 
   # Charts (from AslanApp reference)
   fl_chart: ^1.1.1
-  syncfusion_flutter_charts: ^32.1.24
+  syncfusion_flutter_charts: ^33.1.44
 
   # Auth providers
   google_sign_in: ^7.1.1
@@ -78,8 +78,8 @@ dependencies:
   path_provider: ^2.1.5
 
   # Notifications
-  flutter_local_notifications: ^19.5.0
-  timezone: ^0.10.1
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
 
   # Navigation & misc
   get: ^4.7.2
@@ -95,7 +95,7 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   bloc_test: ^10.0.0
   mocktail: ^1.0.4
   fake_cloud_firestore: ^4.0.0
