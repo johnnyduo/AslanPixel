@@ -85,36 +85,87 @@ class _Room3DPageState extends State<Room3DPage> {
       ),
       body: Column(
         children: [
-          // ---- 3D Character Viewer with room background ----
+          // ---- Room background ----
           Expanded(
             child: Stack(
               children: [
-                // Room background image
+                // Pixel art room background
                 Positioned.fill(
                   child: Image.asset(
-                    'assets/sprites/room_backgrounds/room_starter.png',
+                    'assets/sprites/room_backgrounds/room_penthouse.png',
                     fit: BoxFit.cover,
                     filterQuality: FilterQuality.none,
                   ),
                 ),
-                // Dark overlay for depth
+                // Subtle dark overlay
                 Positioned.fill(
                   child: Container(
-                    color: _kBgColor.withValues(alpha: 0.3),
+                    color: _kBgColor.withValues(alpha: 0.15),
                   ),
                 ),
-                // 3D Character on top
-                ModelViewer(
-                  key: ValueKey(_selectedAgent),
-                  src: _modelSrc,
-                  alt: _kAgentCharacterLabels[_selectedAgent] ?? 'Character',
-                  ar: false,
-                  autoRotate: true,
-                  autoRotateDelay: 0,
-                  cameraControls: true,
-                  cameraOrbit: '0deg 75deg 1.5m',
-                  backgroundColor: const Color(0x00000000),
-                  exposure: 1.5,
+                // 3D Character — small, centered bottom
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 280,
+                  child: ModelViewer(
+                    key: ValueKey(_selectedAgent),
+                    src: _modelSrc,
+                    alt: _kAgentCharacterLabels[_selectedAgent] ?? 'Character',
+                    ar: false,
+                    autoRotate: true,
+                    autoRotateDelay: 0,
+                    cameraControls: true,
+                    cameraOrbit: '0deg 80deg 2.5m',
+                    backgroundColor: const Color(0x00000000),
+                    exposure: 1.5,
+                  ),
+                ),
+                // Agent name + type label
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 16,
+                  left: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _kBgColor.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _chipColor(_selectedAgent).withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _chipColor(_selectedAgent),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _kAgentCharacterLabels[_selectedAgent] ?? '',
+                          style: TextStyle(
+                            color: _chipColor(_selectedAgent),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Lv 1 • ว่าง',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
