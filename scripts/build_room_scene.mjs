@@ -18,8 +18,8 @@ const io = new NodeIO();
 
 // Room layout with positions [x, y, z] and scale
 const roomItems = [
-  // Floor
-  { file: 'prototype/Floor.glb', pos: [0, 0, 0], scale: 3.0 },
+  // Floor (no scale — use default size)
+  { file: 'prototype/Floor.glb', pos: [0, -0.02, 0] },
 
   // Main desk area (back wall)
   { file: 'furniture/table_medium.glb', pos: [0, 0, -2.5] },
@@ -55,6 +55,19 @@ const roomItems = [
   // Cabinets (sides)
   { file: 'furniture/cabinet_medium.glb', pos: [-3.5, 0, -1.0] },
   { file: 'furniture/cabinet_small.glb', pos: [3.5, 0, 1.5] },
+
+  // Character (Knight = Analyst agent)
+  { file: 'characters/Knight.glb', pos: [0, 0, 0.5] },
+
+  // Extra floor tiles to cover area
+  { file: 'prototype/Floor.glb', pos: [2, -0.02, 0] },
+  { file: 'prototype/Floor.glb', pos: [-2, -0.02, 0] },
+  { file: 'prototype/Floor.glb', pos: [0, -0.02, 2] },
+  { file: 'prototype/Floor.glb', pos: [2, -0.02, 2] },
+  { file: 'prototype/Floor.glb', pos: [-2, -0.02, 2] },
+  { file: 'prototype/Floor.glb', pos: [0, -0.02, -2] },
+  { file: 'prototype/Floor.glb', pos: [2, -0.02, -2] },
+  { file: 'prototype/Floor.glb', pos: [-2, -0.02, -2] },
 ];
 
 async function buildScene() {

@@ -95,7 +95,7 @@ class _Room3DPageState extends State<Room3DPage> {
               autoRotate: true,
               autoRotateDelay: 0,
               cameraControls: true,
-              cameraOrbit: '45deg 55deg 8m',
+              cameraOrbit: '30deg 65deg 4m',
               backgroundColor: _kBgColor,
               exposure: 1.2,
             ),
