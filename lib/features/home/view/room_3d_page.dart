@@ -85,19 +85,38 @@ class _Room3DPageState extends State<Room3DPage> {
       ),
       body: Column(
         children: [
-          // ---- 3D Room Scene ----
+          // ---- 3D Character Viewer with room background ----
           Expanded(
-            child: ModelViewer(
-              key: const ValueKey('trading_room'),
-              src: 'assets/3d/scenes/trading_room.glb',
-              alt: 'Trading Room',
-              ar: false,
-              autoRotate: true,
-              autoRotateDelay: 0,
-              cameraControls: true,
-              cameraOrbit: '30deg 65deg 4m',
-              backgroundColor: _kBgColor,
-              exposure: 1.2,
+            child: Stack(
+              children: [
+                // Room background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/sprites/room_backgrounds/room_starter.png',
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.none,
+                  ),
+                ),
+                // Dark overlay for depth
+                Positioned.fill(
+                  child: Container(
+                    color: _kBgColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                // 3D Character on top
+                ModelViewer(
+                  key: ValueKey(_selectedAgent),
+                  src: _modelSrc,
+                  alt: _kAgentCharacterLabels[_selectedAgent] ?? 'Character',
+                  ar: false,
+                  autoRotate: true,
+                  autoRotateDelay: 0,
+                  cameraControls: true,
+                  cameraOrbit: '0deg 75deg 1.5m',
+                  backgroundColor: const Color(0x00000000),
+                  exposure: 1.5,
+                ),
+              ],
             ),
           ),
 
