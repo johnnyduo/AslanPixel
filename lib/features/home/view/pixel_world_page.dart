@@ -20,6 +20,7 @@ import 'package:aslan_pixel/features/home/bloc/room_event.dart';
 import 'package:aslan_pixel/features/home/bloc/room_state.dart';
 import 'package:aslan_pixel/features/home/data/datasources/firestore_room_datasource.dart';
 import 'package:aslan_pixel/features/home/game/pixel_room_game.dart';
+import 'package:aslan_pixel/features/home/view/room_3d_page.dart';
 import 'package:aslan_pixel/features/home/view/room_item_picker.dart';
 import 'package:aslan_pixel/features/home/game/npc_quotes.dart';
 import 'package:aslan_pixel/shared/widgets/ready_to_collect_badge.dart';
@@ -411,6 +412,24 @@ class _PixelWorldViewState extends State<_PixelWorldView> {
                       );
                     },
                     child: const Icon(Icons.wallpaper_outlined, size: 20),
+                  ),
+                ),
+
+                // ---- 3D Room FAB ----
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 230,
+                  child: FloatingActionButton.small(
+                    heroTag: 'room_3d_fab',
+                    backgroundColor: const Color(0xFF00F5A0),
+                    foregroundColor: _colorNavy,
+                    tooltip: '3D Room',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        Room3DPage.routeName,
+                      );
+                    },
+                    child: const Icon(Icons.view_in_ar, size: 20),
                   ),
                 ),
 

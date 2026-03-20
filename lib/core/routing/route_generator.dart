@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:page_transition/page_transition.dart';
 
+import 'package:aslan_pixel/core/enums/agent_type.dart';
 import 'package:aslan_pixel/features/auth/bloc/auth_bloc.dart';
 import 'package:aslan_pixel/features/auth/data/datasources/firebase_auth_datasource.dart';
 import 'package:aslan_pixel/features/auth/view/forgot_password_page.dart';
@@ -33,6 +34,8 @@ import 'package:aslan_pixel/features/settings/view/legal_page.dart';
 import 'package:aslan_pixel/features/settings/view/notification_settings_page.dart';
 import 'package:aslan_pixel/features/settings/view/settings_page.dart';
 import 'package:aslan_pixel/features/agents/view/agent_shop_page.dart';
+import 'package:aslan_pixel/features/home/view/room_3d_page.dart';
+import 'package:aslan_pixel/features/home/view/model_showcase_page.dart';
 import 'package:aslan_pixel/features/home/view/room_theme_shop_page.dart';
 import 'package:aslan_pixel/features/world/view/plaza_page.dart';
 import '../utils/crash_reporter.dart';
@@ -103,6 +106,10 @@ class RouteGenerator {
             return gotoRightToLeftPage(const AgentShopPage());
           case RoomThemeShopPage.routeName:
             return gotoRightToLeftPage(const RoomThemeShopPage());
+          case Room3DPage.routeName:
+            return gotoRightToLeftPage(const Room3DPage());
+          case ModelShowcasePage.routeName:
+            return gotoRightToLeftPage(const ModelShowcasePage());
           case AccountDeletionPage.routeName:
             return gotoRightToLeftPage(const AccountDeletionPage());
           case LegalPage.privacyPolicyRouteName:
@@ -165,6 +172,13 @@ class RouteGenerator {
             return gotoRightToLeftPage(const AgentShopPage());
           case RoomThemeShopPage.routeName:
             return gotoRightToLeftPage(const RoomThemeShopPage());
+          case Room3DPage.routeName:
+            if (args is AgentType) {
+              return gotoRightToLeftPage(Room3DPage(agentType: args));
+            }
+            return gotoRightToLeftPage(const Room3DPage());
+          case ModelShowcasePage.routeName:
+            return gotoRightToLeftPage(const ModelShowcasePage());
           case AccountDeletionPage.routeName:
             return gotoRightToLeftPage(const AccountDeletionPage());
           case LegalPage.privacyPolicyRouteName:

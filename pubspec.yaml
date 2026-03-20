@@ -88,6 +88,7 @@ dependencies:
   fluttertoast: ^9.0.0
   app_version_update: ^6.2.0
   audioplayers: ^6.1.0
+  model_viewer_plus: ^1.10.0
 
 dev_dependencies:
   flutter_test:
@@ -121,5 +122,12 @@ flutter:
     - assets/sprites/room_items/special/
     - assets/sprites/effects/
     - assets/sprites/ui/
+    - assets/3d/characters/
+    - assets/3d/furniture/
+    - assets/3d/resources/
+    - assets/3d/city/
+    - assets/3d/forest/
+    - assets/3d/prototype/
+    - assets/3d/skeleton/
     - assets/tiles/
     - assets/audio/
