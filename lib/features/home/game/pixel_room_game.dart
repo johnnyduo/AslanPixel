@@ -48,12 +48,13 @@ Color _agentColor(AgentType type) {
 const double _canvasWidth = 400;
 const double _canvasHeight = 800; // Match 1:2 portrait room background (1024×2048)
 
-/// Quadrant centre positions for each agent.
+/// Quadrant centre positions for each agent — placed in the walkable area
+/// (bottom half of the room, below the furniture zone).
 final _agentPositions = <AgentType, Vector2>{
-  AgentType.analyst: Vector2(80, 200),
-  AgentType.scout: Vector2(320, 200),
-  AgentType.risk: Vector2(80, 600),
-  AgentType.social: Vector2(320, 600),
+  AgentType.analyst: Vector2(60, 420),
+  AgentType.scout: Vector2(340, 420),
+  AgentType.risk: Vector2(60, 720),
+  AgentType.social: Vector2(340, 720),
 };
 
 // ---------------------------------------------------------------------------
@@ -131,22 +132,16 @@ class PixelAgentComponent extends PositionComponent
       final sheetImg = frame.image;
 
       // Agent sprites are sprite sheets (e.g. 64×16 = 4 frames of 16×16).
-      // Crop the first frame using PictureRecorder.
-      final frameH = sheetImg.height;
+      // Use Sprite's built-in srcPosition/srcSize to crop the first frame
+      // instead of PictureRecorder which can fail on some devices.
+      final frameH = sheetImg.height.toDouble();
       final frameW = frameH; // Each frame is square (16×16)
 
-      final recorder = ui.PictureRecorder();
-      final cropCanvas = ui.Canvas(recorder);
-      cropCanvas.drawImageRect(
+      final sprite = Sprite(
         sheetImg,
-        ui.Rect.fromLTWH(0, 0, frameW.toDouble(), frameH.toDouble()),
-        ui.Rect.fromLTWH(0, 0, frameW.toDouble(), frameH.toDouble()),
-        ui.Paint(),
+        srcPosition: Vector2(0, 0),
+        srcSize: Vector2(frameW, frameH),
       );
-      final picture = recorder.endRecording();
-      final croppedImg = await picture.toImage(frameW, frameH);
-
-      final sprite = Sprite(croppedImg);
 
       if (_spriteComp != null) {
         _spriteComp!.sprite = sprite;
@@ -270,20 +265,20 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     // Sprite identifiers match assets/sprites/npcs/npc_{name}_{dir}.png
     // Missing assets are handled gracefully inside NpcSpriteComponent.
     // ------------------------------------------------------------------
-    // NPCs spread across the full 400×800 canvas.
-    // Top half (0-400): room furniture area
-    // Bottom half (400-750): open floor / extended room area
+    // NPCs spread across the walkable area (bottom half of room).
+    // Top half (0-400): room furniture area — BLOCKED
+    // Bottom half (400-750): open floor / NPC walking area
     final npcConfigs = [
-      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  250), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 300), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 270), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_merchant',       position: Vector2(200, 500), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_sysbot',         position: Vector2(320, 200), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 550), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(130, 380), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 480), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_oracle',         position: Vector2(200, 220), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_intern',         position: Vector2(300, 580), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  500), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 520), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 480), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_merchant',       position: Vector2(160, 580), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_sysbot',         position: Vector2(280, 550), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 620), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(240, 600), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 640), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_oracle',         position: Vector2(180, 460), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_intern',         position: Vector2(120, 680), direction: NpcDirection.south),
     ];
 
     // Create shared collision map for NPC pathfinding.

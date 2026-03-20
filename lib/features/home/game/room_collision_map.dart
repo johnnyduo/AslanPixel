@@ -111,7 +111,7 @@ class RoomCollisionMap {
   }
 
   // ---------------------------------------------------------------------------
-  // Default room layout for "starter" room
+  // Default room layout for "starter" room (Stardew Valley–style pixel art)
   //
   // 10 columns × 20 rows (400×800 px)
   //
@@ -119,90 +119,23 @@ class RoomCollisionMap {
   //   . = walkable floor
   //   # = blocked (wall/furniture/decoration)
   //
-  // Row 0-5:   Top wall + furniture (desk, monitors, bookshelf, lamp)
-  // Row 6-7:   Desk edge / transition zone
-  // Row 8-17:  Open floor (main NPC walking area)
-  // Row 18-19: Bottom wall / edge
+  // Row 0-9:   Wall + desk + furniture + bookshelves — ALL BLOCKED
+  // Row 10-17: Open walkable floor (main NPC walking area), edges blocked
+  // Row 18-19: Bottom wall / border — ALL BLOCKED
   // ---------------------------------------------------------------------------
 
   static List<List<bool>> _buildDefaultGrid() {
-    // Start with everything walkable
+    // Start with everything blocked
     final grid = List.generate(
       kGridRows,
-      (_) => List.filled(kGridCols, true),
+      (_) => List.filled(kGridCols, false),
     );
 
-    // Helper to block cells
-    void block(int row, int col) {
-      if (row >= 0 && row < kGridRows && col >= 0 && col < kGridCols) {
-        grid[row][col] = false;
+    // Only rows 10-17, columns 1-8 are walkable (open floor area)
+    for (int r = 10; r <= 17; r++) {
+      for (int c = 1; c <= 8; c++) {
+        grid[r][c] = true;
       }
-    }
-
-    // --- Top wall (row 0): entirely blocked ---
-    for (int c = 0; c < kGridCols; c++) {
-      block(0, c);
-    }
-
-    // --- Row 1-2: Upper furniture zone ---
-    // Left bookshelf (col 0-1, row 1-3)
-    block(1, 0); block(1, 1);
-    block(2, 0); block(2, 1);
-    block(3, 0); block(3, 1);
-
-    // Center desk with monitors (col 3-6, row 1-3)
-    block(1, 3); block(1, 4); block(1, 5); block(1, 6);
-    block(2, 3); block(2, 4); block(2, 5); block(2, 6);
-    block(3, 3); block(3, 4); block(3, 5); block(3, 6);
-
-    // Right bookshelf + plant (col 8-9, row 1-3)
-    block(1, 8); block(1, 9);
-    block(2, 8); block(2, 9);
-    block(3, 8); block(3, 9);
-
-    // --- Row 4-5: Lamp + chair area ---
-    // Lamp (col 7, row 2)
-    block(2, 7);
-
-    // Chair positions (col 4-5, row 4)
-    block(4, 4); block(4, 5);
-
-    // --- Row 5-6: Transition - mostly walkable except edges ---
-    block(5, 0); block(5, 9);
-    block(6, 0); block(6, 9);
-
-    // --- Row 7-8: Left and right decorations ---
-    // Left candle rack (col 0, row 7-8)
-    block(7, 0);
-    block(8, 0);
-
-    // Right candle rack (col 9, row 7-8)
-    block(7, 9);
-    block(8, 9);
-
-    // --- Row 9-10: Center rug area (walkable but with rug item) ---
-    // Rug is walkable (NPCs can walk on it)
-
-    // --- Row 11-15: Open floor - fully walkable (main NPC area) ---
-    // Just block the edges
-    for (int r = 9; r < 18; r++) {
-      block(r, 0); // left wall
-      block(r, 9); // right wall
-    }
-
-    // --- Row 16-17: Lower furniture ---
-    // Left shelf (col 0-1, row 16-17)
-    block(16, 0); block(16, 1);
-    block(17, 0); block(17, 1);
-
-    // Right shelf (col 8-9, row 16-17)
-    block(16, 8); block(16, 9);
-    block(17, 8); block(17, 9);
-
-    // --- Row 18-19: Bottom wall ---
-    for (int c = 0; c < kGridCols; c++) {
-      block(18, c);
-      block(19, c);
     }
 
     return grid;

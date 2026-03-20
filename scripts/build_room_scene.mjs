@@ -1,15 +1,12 @@
 /**
- * build_room_scene.mjs
+ * build_room_scene.mjs — v2
  *
- * Merges KayKit GLTF models into a single room scene GLB.
- * Uses @gltf-transform/core to read individual models and compose them.
- *
- * Usage: node scripts/build_room_scene.mjs
- * Output: assets/3d/scenes/trading_room.glb
+ * Merges KayKit GLB models into a positioned room scene.
+ * Each item gets proper translation so the room looks correct.
  */
 
 import { NodeIO, Document } from '@gltf-transform/core';
-import { mergeDocuments, flatten } from '@gltf-transform/functions';
+import { mergeDocuments } from '@gltf-transform/functions';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
 
@@ -19,93 +16,104 @@ mkdirSync(OUT_DIR, { recursive: true });
 
 const io = new NodeIO();
 
-// Room layout: position each furniture piece in the scene
+// Room layout with positions [x, y, z] and scale
 const roomItems = [
-  // Desks and work area
-  { file: 'furniture/table_medium.glb', pos: [0, 0, -2], rot: 0, label: 'main_desk' },
-  { file: 'furniture/table_small.glb', pos: [-2, 0, -2], rot: 0, label: 'side_desk' },
-  { file: 'furniture/chair_A.glb', pos: [0, 0, -1], rot: Math.PI, label: 'desk_chair' },
+  // Floor
+  { file: 'prototype/Floor.glb', pos: [0, 0, 0], scale: 3.0 },
 
-  // Bookshelves
-  { file: 'furniture/shelf_B_large_decorated.glb', pos: [-3, 0, -3], rot: 0, label: 'bookshelf_left' },
-  { file: 'furniture/shelf_A_big.glb', pos: [3, 0, -3], rot: 0, label: 'bookshelf_right' },
+  // Main desk area (back wall)
+  { file: 'furniture/table_medium.glb', pos: [0, 0, -2.5] },
+  { file: 'furniture/chair_A.glb', pos: [0, 0, -1.2] },
 
-  // Seating area
-  { file: 'furniture/couch.glb', pos: [2, 0, 1], rot: -Math.PI/2, label: 'couch' },
-  { file: 'furniture/armchair.glb', pos: [-2, 0, 1], rot: Math.PI/2, label: 'armchair' },
-  { file: 'furniture/table_low.glb', pos: [0, 0, 1], rot: 0, label: 'coffee_table' },
+  // Side desk
+  { file: 'furniture/table_small.glb', pos: [-2.5, 0, -2.5] },
 
-  // Lamps
-  { file: 'furniture/lamp_standing.glb', pos: [-3, 0, 1], rot: 0, label: 'lamp' },
-  { file: 'furniture/lamp_table.glb', pos: [0.5, 0.7, -2], rot: 0, label: 'desk_lamp' },
+  // Bookshelves (back corners)
+  { file: 'furniture/shelf_B_large_decorated.glb', pos: [-3.5, 0, -3.0] },
+  { file: 'furniture/shelf_A_big.glb', pos: [3.5, 0, -3.0] },
+
+  // Seating area (front)
+  { file: 'furniture/couch.glb', pos: [2.0, 0, 1.5] },
+  { file: 'furniture/armchair.glb', pos: [-2.0, 0, 1.5] },
+  { file: 'furniture/table_low.glb', pos: [0, 0, 1.5] },
 
   // Decorations
-  { file: 'furniture/rug_rectangle_A.glb', pos: [0, 0, 0], rot: 0, label: 'rug' },
-  { file: 'furniture/cactus_medium_A.glb', pos: [3, 0, -1], rot: 0, label: 'plant' },
-  { file: 'furniture/book_set.glb', pos: [-0.5, 0.7, -2], rot: 0.3, label: 'books' },
+  { file: 'furniture/lamp_standing.glb', pos: [-3.5, 0, 1.0] },
+  { file: 'furniture/lamp_table.glb', pos: [0.8, 0.65, -2.5] },
+  { file: 'furniture/rug_rectangle_A.glb', pos: [0, 0, 0] },
+  { file: 'furniture/cactus_medium_A.glb', pos: [3.5, 0, -1.0] },
+  { file: 'furniture/book_set.glb', pos: [-0.5, 0.65, -2.5] },
 
   // Wall art
-  { file: 'furniture/pictureframe_large_A.glb', pos: [0, 1.5, -3.4], rot: 0, label: 'frame_center' },
-  { file: 'furniture/pictureframe_small_A.glb', pos: [-1.5, 1.5, -3.4], rot: 0, label: 'frame_left' },
+  { file: 'furniture/pictureframe_large_A.glb', pos: [0, 2.0, -3.8] },
 
-  // Resources / Trading props
-  { file: 'resources/Gold_Bars.glb', pos: [1, 0.7, -2], rot: 0.2, label: 'gold_bars' },
-  { file: 'resources/Silver_Bars.glb', pos: [-1, 0.7, -1.8], rot: -0.1, label: 'silver_bars' },
+  // Trading props
+  { file: 'resources/Gold_Bars.glb', pos: [1.2, 0.65, -2.3] },
+  { file: 'prototype/Coin_A.glb', pos: [0.3, 0.7, -2.0] },
+  { file: 'prototype/Coin_B.glb', pos: [-0.3, 0.7, -2.1] },
 
-  // Coins on desk
-  { file: 'prototype/Coin_A.glb', pos: [0.3, 0.75, -1.8], rot: 0, label: 'coin_1' },
-  { file: 'prototype/Coin_B.glb', pos: [0.5, 0.75, -1.9], rot: 0.5, label: 'coin_2' },
-
-  // Floor base
-  { file: 'prototype/Floor.glb', pos: [0, -0.01, 0], rot: 0, label: 'floor' },
+  // Cabinets (sides)
+  { file: 'furniture/cabinet_medium.glb', pos: [-3.5, 0, -1.0] },
+  { file: 'furniture/cabinet_small.glb', pos: [3.5, 0, 1.5] },
 ];
 
-// Character to place in center
-const characterFile = 'characters/Knight.glb';
-
 async function buildScene() {
-  console.log('Building trading room scene...');
+  console.log('Building trading room scene v2...');
 
-  // Create a new document for the combined scene
-  const sceneDoc = await io.read(join(BASE, 'assets/3d', characterFile));
-  const sceneRoot = sceneDoc.getRoot();
-  const scene = sceneRoot.listScenes()[0];
+  // Start with empty document from first item
+  const firstItem = roomItems[0];
+  const sceneDoc = await io.read(join(BASE, 'assets/3d', firstItem.file));
 
-  // Position the character
-  const charNode = sceneRoot.listNodes()[0];
-  if (charNode) {
-    charNode.setTranslation([0, 0, 0]);
-    charNode.setName('character_knight');
-  }
-
-  let loaded = 0;
-  let failed = 0;
-
-  for (const item of roomItems) {
-    const filePath = join(BASE, 'assets/3d', item.file);
-    try {
-      const itemDoc = await io.read(filePath);
-      const itemRoot = itemDoc.getRoot();
-
-      // Merge the item document into the scene document
-      await mergeDocuments(sceneDoc, itemDoc);
-
-      loaded++;
-      console.log(`  ✓ ${item.label} (${item.file})`);
-    } catch (e) {
-      failed++;
-      console.log(`  ✗ ${item.label} — ${e.message}`);
+  // Position the first item's root nodes
+  const firstRoot = sceneDoc.getRoot();
+  for (const node of firstRoot.listNodes()) {
+    if (!node.listChildren().length && node.getMesh()) {
+      node.setTranslation(firstItem.pos);
+      if (firstItem.scale) node.setScale([firstItem.scale, firstItem.scale, firstItem.scale]);
     }
   }
 
-  // Merge all buffers into one (required for GLB export)
+  let loaded = 1;
+  console.log(`  ✓ ${firstItem.file}`);
+
+  for (let i = 1; i < roomItems.length; i++) {
+    const item = roomItems[i];
+    const filePath = join(BASE, 'assets/3d', item.file);
+    try {
+      const itemDoc = await io.read(filePath);
+
+      // Set position on root nodes before merging
+      const itemRoot = itemDoc.getRoot();
+      for (const node of itemRoot.listNodes()) {
+        // Only transform root-level mesh nodes
+        if (node.getMesh() || node.listChildren().length > 0) {
+          const current = node.getTranslation();
+          node.setTranslation([
+            current[0] + item.pos[0],
+            current[1] + item.pos[1],
+            current[2] + item.pos[2],
+          ]);
+          if (item.scale) {
+            node.setScale([item.scale, item.scale, item.scale]);
+          }
+        }
+      }
+
+      await mergeDocuments(sceneDoc, itemDoc);
+      loaded++;
+      console.log(`  ✓ ${item.file} @ [${item.pos}]`);
+    } catch (e) {
+      console.log(`  ✗ ${item.file} — ${e.message}`);
+    }
+  }
+
+  // Merge all buffers into one (required for GLB)
   const root = sceneDoc.getRoot();
   const buffers = root.listBuffers();
   if (buffers.length > 1) {
     const keepBuffer = buffers[0];
     for (let i = 1; i < buffers.length; i++) {
       const buf = buffers[i];
-      // Move all accessors from this buffer to the first buffer
       for (const accessor of root.listAccessors()) {
         if (accessor.getBuffer() === buf) {
           accessor.setBuffer(keepBuffer);
@@ -115,12 +123,12 @@ async function buildScene() {
     }
   }
 
-  // Write the combined scene
   const outPath = join(OUT_DIR, 'trading_room.glb');
   await io.write(outPath, sceneDoc);
 
-  console.log(`\nDone! ${loaded} items loaded, ${failed} failed`);
-  console.log(`Output: ${outPath}`);
+  const { statSync } = await import('fs');
+  const size = Math.round(statSync(outPath).size / 1024);
+  console.log(`\nDone! ${loaded} items, output: ${outPath} (${size}KB)`);
 }
 
 buildScene().catch(e => {
