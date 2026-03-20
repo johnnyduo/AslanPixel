@@ -105,10 +105,10 @@ class _Room3DPageState extends State<Room3DPage> {
                 ),
                 // 3D Character — small, centered bottom
                 Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 280,
+                  left: 40,
+                  right: 40,
+                  bottom: 20,
+                  height: 220,
                   child: ModelViewer(
                     key: ValueKey(_selectedAgent),
                     src: _modelSrc,
@@ -117,9 +117,30 @@ class _Room3DPageState extends State<Room3DPage> {
                     autoRotate: true,
                     autoRotateDelay: 0,
                     cameraControls: true,
-                    cameraOrbit: '0deg 80deg 2.5m',
+                    cameraOrbit: '0deg 75deg 4m',
                     backgroundColor: const Color(0x00000000),
                     exposure: 1.5,
+                  ),
+                ),
+                // Hint: pinch to zoom (Option+drag on simulator)
+                Positioned(
+                  right: 12,
+                  bottom: 230,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CircleFab(
+                        icon: Icons.zoom_in,
+                        tooltip: 'Zoom: Option+Drag on Sim',
+                        onTap: () {},
+                      ),
+                      const SizedBox(height: 8),
+                      _CircleFab(
+                        icon: Icons.threesixty,
+                        tooltip: 'Drag to rotate',
+                        onTap: () {},
+                      ),
+                    ],
                   ),
                 ),
                 // Agent name + type label
@@ -280,5 +301,32 @@ class _Room3DPageState extends State<Room3DPage> {
       case AgentType.social:
         return Icons.auto_awesome;
     }
+  }
+}
+
+class _CircleFab extends StatelessWidget {
+  const _CircleFab({required this.icon, required this.tooltip, required this.onTap});
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22).withValues(alpha: 0.8),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Icon(icon, color: Colors.white60, size: 18),
+        ),
+      ),
+    );
   }
 }
