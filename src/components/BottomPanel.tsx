@@ -5,6 +5,7 @@ import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
 import { useAutoQuest } from "@/hooks/useAutoQuest";
 import VotePanel from "@/components/VotePanel";
+import PaymentGate from "@/components/PaymentGate";
 import type { TimelineMessage } from "@/lib/agentConversation";
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
@@ -18,7 +19,7 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   quest:        { label: "QUEST",  Icon: Zap,           color: "hsl(43 90% 60%)",   bg: "hsl(43 90% 60% / 0.08)" },
 };
 
-type QuestStatus = "idle" | "voting" | "running" | "complete" | "error";
+type QuestStatus = "idle" | "paying" | "voting" | "running" | "complete" | "error";
 
 const BottomPanel = () => {
   const { messages: liveMessages, isLive, error: _error } = useLiveTimeline();
@@ -43,10 +44,10 @@ const BottomPanel = () => {
     clearPendingIntent();
     setQuestInput(intent.replace(/^\[AUTO\] /, ""));
     setIsAutoQuest(intent.startsWith("[AUTO] "));
-    // Show vote panel before running
+    // Show payment gate first, then vote panel
     setTimeout(() => {
       setPendingVoteIntent(intent);
-      setQuestStatus("voting");
+      setQuestStatus("paying");
     }, 150);
   }, [pendingIntent]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -116,6 +117,15 @@ const BottomPanel = () => {
     };
   };
 
+  const handlePaymentConfirmed = () => {
+    setQuestStatus("voting");
+  };
+
+  const handlePaymentDismissed = () => {
+    setPendingVoteIntent(null);
+    setQuestStatus("idle");
+  };
+
   const handleVoteApproved = () => {
     setPendingVoteIntent(null);
     if (pendingVoteIntent) runQuestWithIntent(pendingVoteIntent);
@@ -138,10 +148,10 @@ const BottomPanel = () => {
 
   const runQuest = () => {
     const trimmed = questInput.trim();
-    if (!trimmed || questStatus === "running" || questStatus === "voting") return;
+    if (!trimmed || questStatus === "running" || questStatus === "voting" || questStatus === "paying") return;
     setIsAutoQuest(false);
     setPendingVoteIntent(trimmed);
-    setQuestStatus("voting");
+    setQuestStatus("paying");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -150,6 +160,15 @@ const BottomPanel = () => {
 
   return (
     <div className="h-64 xl:h-72 glass-panel flex flex-col overflow-hidden relative">
+      {/* Payment Gate — x402 agent wage */}
+      {questStatus === "paying" && pendingVoteIntent && (
+        <PaymentGate
+          intent={pendingVoteIntent}
+          onPaid={handlePaymentConfirmed}
+          onDismiss={handlePaymentDismissed}
+        />
+      )}
+
       {/* Vote Panel Overlay */}
       {questStatus === "voting" && pendingVoteIntent && (
         <VotePanel
@@ -171,13 +190,13 @@ const BottomPanel = () => {
             onChange={(e) => setQuestInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe your intent..."
-            disabled={questStatus === "running" || questStatus === "voting"}
+            disabled={questStatus === "running" || questStatus === "voting" || questStatus === "paying"}
             className="flex-1 h-7 bg-transparent border border-gold/25 rounded px-2 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 disabled:opacity-50"
           />
 
           <button
             onClick={runQuest}
-            disabled={questStatus === "running" || questStatus === "voting" || !questInput.trim()}
+            disabled={questStatus === "running" || questStatus === "voting" || questStatus === "paying" || !questInput.trim()}
             className="shrink-0 flex items-center gap-1.5 px-3 h-7 rounded font-pixel text-[8px] disabled:opacity-40 transition-all duration-200"
             style={{
               background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
@@ -191,10 +210,16 @@ const BottomPanel = () => {
         </div>
 
         {/* Status line */}
+        {questStatus === "paying" && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+            <span className="text-[8px] font-pixel text-cyan tracking-widest animate-pulse">◈ x402 — AGENT WAGE REQUIRED...</span>
+          </div>
+        )}
         {questStatus === "voting" && (
           <div className="flex items-center gap-1.5 mt-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
-            <span className="text-[8px] font-pixel text-cyan tracking-widest animate-pulse">GUILD VOTE IN PROGRESS...</span>
+            <span className="text-[8px] font-pixel text-cyan tracking-widest animate-pulse">PIXEL VOTE IN PROGRESS...</span>
           </div>
         )}
         {questStatus === "running" && (

@@ -114,7 +114,7 @@ export default function VotePanel({ intent, onApproved, onVetoed }: VotePanelPro
         {/* Header */}
         <div className="flex items-center gap-2">
           <Shield className="w-3.5 h-3.5 text-gold" />
-          <span className="font-pixel text-[10px] text-gold tracking-wider">GUILD VOTE</span>
+          <span className="font-pixel text-[10px] text-gold tracking-wider">PIXEL VOTE</span>
           <span className="text-[9px] font-mono text-muted-foreground ml-1 truncate flex-1">
             "{intent.replace(/^\[AUTO\] /, "")}"
           </span>
