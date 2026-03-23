@@ -18,98 +18,30 @@ const rooms: Room[] = [
   { name:"ledgerarchive",label:"Ledger Archive",  x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"QuestReceipt — Immutable Log",     stats:["Receipts: 2,041","Last ID: #2041","Hash: 0xab12…"] },
 ];
 
-// Decorations — trees, shrubs, flowers, lanterns, barrels, benches
-// Corridors: top-H(y=27%), mid-H(y=54%), left-V(x=30%), right-V(x=68%), arch-V(x=50%)
-// Trees/shrubs placed in empty space OUTSIDE buildings (not blocking corridors)
+// Decorations — minimal, balanced: corner trees + corridor lanterns only
 const decorations = [
-  // ── TOP-LEFT FOREST (corner above guild, left of top-H corridor) ──
-  { x:"1%",  y:"2%",  type:"tree2" }, { x:"3%",  y:"1%",  type:"tree" },
-  { x:"5%",  y:"3%",  type:"shrub" }, { x:"2%",  y:"5%",  type:"tree2" },
-  { x:"1%",  y:"4%",  type:"shrub" },
+  // ── FOUR CORNER TREES (outside building zones) ──
+  { x:"2%",  y:"3%",  type:"tree2" }, { x:"4%",  y:"2%",  type:"tree"  },
+  { x:"96%", y:"3%",  type:"tree2" }, { x:"98%", y:"2%",  type:"tree"  },
+  { x:"2%",  y:"80%", type:"tree2" }, { x:"4%",  y:"82%", type:"tree"  },
+  { x:"96%", y:"80%", type:"tree2" }, { x:"98%", y:"82%", type:"tree"  },
 
-  // ── TOP-RIGHT FOREST (corner above vault, right of top-H corridor) ──
-  { x:"97%", y:"2%",  type:"tree2" }, { x:"95%", y:"1%",  type:"tree" },
-  { x:"98%", y:"4%",  type:"shrub" }, { x:"96%", y:"4%",  type:"tree2" },
-  { x:"99%", y:"2%",  type:"shrub" },
+  // ── LEFT WALL MID TREES (between top-left and bottom-left buildings) ──
+  { x:"2%",  y:"38%", type:"tree"  }, { x:"3%",  y:"46%", type:"shrub" },
 
-  // ── BOTTOM-LEFT CORNER (below strategy, bottom-left) ──
-  { x:"1%",  y:"76%", type:"tree2" }, { x:"3%",  y:"77%", type:"tree" },
-  { x:"2%",  y:"79%", type:"shrub" }, { x:"1%",  y:"81%", type:"tree" },
-  { x:"4%",  y:"80%", type:"shrub" }, { x:"2%",  y:"83%", type:"tree2" },
+  // ── RIGHT WALL MID TREES ──
+  { x:"98%", y:"38%", type:"tree"  }, { x:"97%", y:"46%", type:"shrub" },
 
-  // ── BOTTOM-RIGHT CORNER (below market) ──
-  { x:"97%", y:"76%", type:"tree2" }, { x:"95%", y:"78%", type:"tree" },
-  { x:"98%", y:"80%", type:"shrub" }, { x:"96%", y:"82%", type:"tree" },
-  { x:"99%", y:"79%", type:"shrub" }, { x:"97%", y:"84%", type:"tree2" },
+  // ── LANTERNS (at corridor junctions — 6 total) ──
+  { x:"30%", y:"27%", type:"lantern", color:"hsl(195 100% 50%)" },
+  { x:"68%", y:"27%", type:"lantern", color:"hsl(280 65% 65%)" },
+  { x:"30%", y:"54%", type:"lantern", color:"hsl(142 70% 45%)" },
+  { x:"68%", y:"54%", type:"lantern", color:"hsl(38 92% 50%)"  },
+  { x:"50%", y:"54%", type:"lantern", color:"hsl(43 90% 55%)"  },
+  { x:"50%", y:"69%", type:"lantern", color:"hsl(0 72% 60%)"   },
 
-  // ── BOTTOM STRIP (below archive, bottom edge) ──
-  { x:"20%", y:"97%", type:"shrub" }, { x:"30%", y:"98%", type:"tree" },
-  { x:"36%", y:"97%", type:"shrub" }, { x:"65%", y:"97%", type:"shrub" },
-  { x:"70%", y:"98%", type:"tree"  }, { x:"78%", y:"97%", type:"shrub" },
-
-  // ── TOP STRIP (above guild and vault, top edge) ──
-  { x:"14%", y:"2%",  type:"shrub" }, { x:"18%", y:"1%",  type:"tree" },
-  { x:"22%", y:"3%",  type:"shrub" },
-  { x:"78%", y:"2%",  type:"shrub" }, { x:"82%", y:"1%",  type:"tree" },
-  { x:"86%", y:"3%",  type:"shrub" },
-
-  // ── BETWEEN GUILD AND STRATEGY (left wall strip, x=1-3%) ──
-  { x:"2%",  y:"28%", type:"shrub" }, { x:"1%",  y:"32%", type:"tree2" },
-  { x:"2%",  y:"36%", type:"shrub" }, { x:"1%",  y:"41%", type:"tree"  },
-  { x:"2%",  y:"45%", type:"shrub" }, { x:"1%",  y:"49%", type:"tree2" },
-  { x:"2%",  y:"53%", type:"shrub" },
-
-  // ── BETWEEN VAULT AND MARKET (right wall strip, x=97-99%) ──
-  { x:"98%", y:"28%", type:"shrub" }, { x:"99%", y:"32%", type:"tree2" },
-  { x:"98%", y:"36%", type:"shrub" }, { x:"99%", y:"41%", type:"tree"  },
-  { x:"98%", y:"45%", type:"shrub" }, { x:"99%", y:"49%", type:"tree2" },
-  { x:"98%", y:"53%", type:"shrub" },
-
-  // ── TOP-H CORRIDOR SIDES (y≈27%, flanking trees) ──
-  { x:"29%", y:"24%", type:"tree"  }, { x:"32%", y:"24%", type:"shrub" },
-  { x:"35%", y:"24%", type:"shrub" },
-  { x:"64%", y:"24%", type:"shrub" }, { x:"67%", y:"24%", type:"tree"  },
-  { x:"71%", y:"24%", type:"shrub" },
-  { x:"29%", y:"30%", type:"shrub" }, { x:"32%", y:"30%", type:"flower"},
-  { x:"67%", y:"30%", type:"flower"}, { x:"71%", y:"30%", type:"shrub" },
-
-  // ── MID-H CORRIDOR SIDES (y≈54%, flanking trees) ──
-  { x:"29%", y:"52%", type:"shrub" }, { x:"33%", y:"52%", type:"flower"},
-  { x:"65%", y:"52%", type:"flower"}, { x:"69%", y:"52%", type:"shrub" },
-  { x:"29%", y:"56%", type:"tree"  }, { x:"33%", y:"56%", type:"shrub" },
-  { x:"65%", y:"56%", type:"shrub" }, { x:"69%", y:"56%", type:"tree"  },
-
-  // ── LEFT-V CORRIDOR SIDES (x≈30%, flanking trees) ──
-  { x:"27%", y:"30%", type:"shrub" }, { x:"27%", y:"35%", type:"tree"  },
-  { x:"27%", y:"42%", type:"shrub" }, { x:"27%", y:"48%", type:"tree2" },
-  { x:"33%", y:"30%", type:"flower"}, { x:"33%", y:"38%", type:"shrub" },
-  { x:"33%", y:"46%", type:"flower"}, { x:"33%", y:"52%", type:"shrub" },
-
-  // ── RIGHT-V CORRIDOR SIDES (x≈68%, flanking trees) ──
-  { x:"65%", y:"30%", type:"shrub" }, { x:"65%", y:"36%", type:"tree"  },
-  { x:"65%", y:"43%", type:"shrub" }, { x:"65%", y:"49%", type:"tree2" },
-  { x:"71%", y:"30%", type:"flower"}, { x:"71%", y:"38%", type:"shrub" },
-  { x:"71%", y:"46%", type:"flower"}, { x:"71%", y:"52%", type:"shrub" },
-
-  // ── ARCH-V CORRIDOR SIDES (x≈50%, between hub and archive) ──
-  { x:"46%", y:"54%", type:"shrub" }, { x:"46%", y:"60%", type:"tree2" },
-  { x:"46%", y:"67%", type:"shrub" }, { x:"46%", y:"74%", type:"flower"},
-  { x:"54%", y:"54%", type:"flower"}, { x:"54%", y:"61%", type:"shrub" },
-  { x:"54%", y:"68%", type:"tree2" }, { x:"54%", y:"75%", type:"shrub" },
-
-  // ── LANTERNS (at corridor junctions) ──
-  { x:"30%", y:"27%", type:"lantern", color:"hsl(195 100% 50%)" },  // guild-side top-H
-  { x:"68%", y:"27%", type:"lantern", color:"hsl(280 65% 65%)" },   // vault-side top-H
-  { x:"30%", y:"54%", type:"lantern", color:"hsl(142 70% 45%)" },   // strategy-side mid-H
-  { x:"68%", y:"54%", type:"lantern", color:"hsl(38 92% 50%)" },    // market-side mid-H
-  { x:"50%", y:"54%", type:"lantern", color:"hsl(43 90% 55%)" },    // archive corridor top
-  { x:"50%", y:"68%", type:"lantern", color:"hsl(0 72% 60%)" },     // archive corridor mid
-
-  // ── BARRELS & BENCHES (resting spots along corridors) ──
+  // ── SMALL ACCENTS (barrels at top corridor) ──
   { x:"31%", y:"25%", type:"barrel" }, { x:"67%", y:"25%", type:"barrel" },
-  { x:"28%", y:"44%", type:"bench"  }, { x:"34%", y:"44%", type:"bench"  },
-  { x:"64%", y:"44%", type:"bench"  }, { x:"72%", y:"44%", type:"bench"  },
-  { x:"48%", y:"61%", type:"barrel" }, { x:"53%", y:"61%", type:"barrel" },
 ];
 
 // PATROL mirrors CSS keyframe waypoints exactly (for direction detection)
@@ -414,21 +346,25 @@ const PixelMap = () => {
                 }} />
             ))}
 
-            {/* Icon + label — only text, no background */}
-            <div className="absolute bottom-1 left-0 right-0 flex flex-col items-center gap-0 pointer-events-none">
-              <span className="font-pixel text-[10px] transition-all duration-300"
+            {/* Icon + label — top-center, pill background, nowrap */}
+            <div className="absolute top-1 left-0 right-0 flex flex-col items-center gap-0.5 pointer-events-none">
+              <span
+                className="font-pixel text-[9px] whitespace-nowrap px-1.5 py-0.5 rounded transition-all duration-300"
                 style={{
-                  color: hov ? r.color : r.color + "80",
-                  textShadow: hov ? `0 0 12px ${r.color}, 0 0 24px ${r.color}80` : `0 0 4px ${r.color}40`,
+                  color: hov ? "#fff" : r.color + "ee",
+                  background: hov ? r.color + "cc" : "hsl(225 30% 6% / 0.82)",
+                  border: `1px solid ${r.color}${hov ? "aa" : "44"}`,
+                  textShadow: hov ? `0 0 8px ${r.color}` : "none",
+                  boxShadow: hov ? `0 0 10px ${r.color}60` : "none",
                 }}>
                 {r.icon} {r.label}
               </span>
-              {/* Always-visible Hedera service tag */}
-              <span className="font-pixel text-[6px] mt-0.5 px-1 rounded-sm"
+              {/* Hedera service sub-tag */}
+              <span
+                className="font-pixel text-[6px] whitespace-nowrap px-1 rounded-sm"
                 style={{
-                  color: r.color + "bb",
-                  background: r.color + "18",
-                  border: `1px solid ${r.color}30`,
+                  color: r.color + "99",
+                  background: "hsl(225 30% 5% / 0.7)",
                 }}>
                 {r.desc.split("—")[0].trim()}
               </span>
