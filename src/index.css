@@ -253,76 +253,101 @@
   88.8% { background-position: -128px 0; }  100%  { background-position: -192px 0; }
 }
 
-/* Scout — guild → hub → strategy (long patrol) */
+/* RPG-style step patrol — linear between waypoints, short pause at each stop */
+/* Scout: guild → corridor → hub → corridor → strategy → corridor → guild */
 @keyframes npc-move-1 {
-  0%   { left: 13%; top: 16%; }
-  15%  { left: 25%; top: 22%; }
-  30%  { left: 38%; top: 32%; }
-  45%  { left: 50%; top: 41%; }
-  60%  { left: 38%; top: 52%; }
-  75%  { left: 15%; top: 58%; }
-  88%  { left: 10%; top: 45%; }
-  100% { left: 13%; top: 16%; }
+  0%,   2%  { left: 10%; top: 14%; }
+  10%,  12% { left: 17%; top: 18%; }
+  20%,  22% { left: 25%; top: 22%; }
+  30%,  32% { left: 34%; top: 32%; }
+  40%,  42% { left: 44%; top: 38%; }
+  48%,  50% { left: 50%; top: 41%; }
+  56%,  58% { left: 44%; top: 48%; }
+  65%,  67% { left: 34%; top: 52%; }
+  75%,  77% { left: 17%; top: 62%; }
+  84%,  86% { left: 10%; top: 52%; }
+  93%,  95% { left: 10%; top: 40%; }
+  100%      { left: 10%; top: 14%; }
 }
 
-/* Strategist — strategy tower → hub → vault (diagonal sweep) */
+/* Strategist: strategy → hub → vault → back */
 @keyframes npc-move-2 {
-  0%   { left: 12%; top: 62%; }
-  20%  { left: 28%; top: 50%; }
-  40%  { left: 44%; top: 38%; }
-  55%  { left: 58%; top: 32%; }
-  70%  { left: 78%; top: 16%; }
-  85%  { left: 65%; top: 34%; }
-  100% { left: 12%; top: 62%; }
+  0%,   2%  { left: 10%; top: 62%; }
+  10%,  12% { left: 17%; top: 68%; }
+  18%,  20% { left: 25%; top: 62%; }
+  27%,  29% { left: 34%; top: 52%; }
+  36%,  38% { left: 44%; top: 44%; }
+  44%,  46% { left: 50%; top: 38%; }
+  52%,  54% { left: 58%; top: 32%; }
+  60%,  63% { left: 72%; top: 22%; }
+  70%,  73% { left: 82%; top: 14%; }
+  80%,  82% { left: 72%; top: 18%; }
+  88%,  90% { left: 65%; top: 28%; }
+  96%,  98% { left: 50%; top: 38%; }
+  100%      { left: 10%; top: 62%; }
 }
 
-/* Sentinel — perimeter patrol around hub */
+/* Sentinel: perimeter clockwise patrol around hub */
 @keyframes npc-move-3 {
-  0%   { left: 34%; top: 30%; }
-  16%  { left: 64%; top: 30%; }
-  33%  { left: 67%; top: 52%; }
-  50%  { left: 50%; top: 57%; }
-  66%  { left: 34%; top: 52%; }
-  83%  { left: 32%; top: 38%; }
-  100% { left: 34%; top: 30%; }
+  0%,   3%  { left: 34%; top: 32%; }
+  14%,  17% { left: 50%; top: 32%; }
+  28%,  31% { left: 65%; top: 32%; }
+  42%,  45% { left: 67%; top: 44%; }
+  55%,  58% { left: 65%; top: 52%; }
+  67%,  70% { left: 50%; top: 56%; }
+  78%,  81% { left: 34%; top: 52%; }
+  90%,  93% { left: 34%; top: 44%; }
+  100%      { left: 34%; top: 32%; }
 }
 
-/* Treasurer — vault → hub → back to vault (short back-and-forth) */
+/* Treasurer: vault room patrol, occasional trip to hub */
 @keyframes npc-move-4 {
-  0%   { left: 80%; top: 15%; }
-  25%  { left: 72%; top: 26%; }
-  45%  { left: 60%; top: 38%; }
-  55%  { left: 60%; top: 38%; }
-  75%  { left: 72%; top: 26%; }
-  100% { left: 80%; top: 15%; }
+  0%,   4%  { left: 82%; top: 12%; }
+  15%,  18% { left: 75%; top: 18%; }
+  30%,  33% { left: 65%; top: 28%; }
+  44%,  48% { left: 58%; top: 36%; }
+  60%,  63% { left: 65%; top: 28%; }
+  74%,  77% { left: 75%; top: 18%; }
+  88%,  92% { left: 82%; top: 12%; }
+  100%      { left: 82%; top: 12%; }
 }
 
-/* Executor — market gate → hub → archive (vertical sweep) */
+/* Executor: market gate → hub → archive → back */
 @keyframes npc-move-5 {
-  0%   { left: 80%; top: 62%; }
-  20%  { left: 68%; top: 55%; }
-  38%  { left: 56%; top: 47%; }
-  50%  { left: 50%; top: 54%; }
-  65%  { left: 50%; top: 72%; }
-  80%  { left: 56%; top: 80%; }
-  90%  { left: 68%; top: 70%; }
-  100% { left: 80%; top: 62%; }
+  0%,   3%  { left: 82%; top: 62%; }
+  12%,  14% { left: 75%; top: 62%; }
+  22%,  24% { left: 65%; top: 56%; }
+  32%,  34% { left: 56%; top: 48%; }
+  41%,  44% { left: 50%; top: 56%; }
+  52%,  55% { left: 50%; top: 68%; }
+  62%,  65% { left: 50%; top: 78%; }
+  72%,  74% { left: 58%; top: 82%; }
+  82%,  84% { left: 50%; top: 78%; }
+  90%,  93% { left: 65%; top: 68%; }
+  100%      { left: 82%; top: 62%; }
 }
 
-/* Archivist — archive → hub center → back (pendulum) */
+/* Archivist: archive ↔ hub pendulum */
 @keyframes npc-move-6 {
-  0%   { left: 48%; top: 88%; }
-  20%  { left: 49%; top: 80%; }
-  40%  { left: 50%; top: 65%; }
-  50%  { left: 51%; top: 52%; }
-  60%  { left: 50%; top: 65%; }
-  80%  { left: 49%; top: 80%; }
-  100% { left: 48%; top: 88%; }
+  0%,   5%  { left: 50%; top: 88%; }
+  14%,  16% { left: 50%; top: 82%; }
+  25%,  27% { left: 50%; top: 74%; }
+  36%,  40% { left: 50%; top: 65%; }
+  50%,  55% { left: 50%; top: 56%; }
+  64%,  66% { left: 52%; top: 65%; }
+  75%,  77% { left: 50%; top: 74%; }
+  86%,  88% { left: 50%; top: 82%; }
+  100%      { left: 50%; top: 88%; }
 }
 
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
+}
+
+@keyframes room-scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
 }
 
 @keyframes room-status-bar {
