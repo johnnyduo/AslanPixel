@@ -9,6 +9,12 @@
 import { JsonRpcProvider, Wallet, Contract } from "ethers";
 import { readFileSync } from "fs";
 import { join } from "path";
+import {
+  Client,
+  PrivateKey,
+  TopicMessageSubmitTransaction,
+  AccountId,
+} from "@hashgraph/sdk";
 
 const RPC_URL = "https://testnet.hashio.io/api";
 const QUEST_RECEIPT_ADDRESS = "0x444f5895D29809847E8642Df0e0f4DBdBf541C7D";
@@ -55,7 +61,36 @@ async function run(intent, success, questId) {
     receiptId = questId ?? Date.now();
   }
 
-  return { receiptId, txHash: receipt.hash ?? tx.hash };
+  const txHash = receipt.hash ?? tx.hash;
+
+  // Post HCS message and record quest results (fire-and-forget — don't block response)
+  setImmediate(async () => {
+    try {
+      const accountId = process.env.HEDERA_ACCOUNT_ID;
+      const topicId = process.env.HEDERA_HCS_TOPIC_ID;
+      if (accountId && topicId) {
+        const pk = process.env.HEDERA_PRIVATE_KEY || process.env.DEPLOY_PRIVATE_KEY;
+        const hederaClient = Client.forTestnet();
+        const hPk = pk.startsWith("0x") ? pk.slice(2) : pk;
+        hederaClient.setOperator(AccountId.fromString(accountId), PrivateKey.fromStringECDSA(hPk));
+        await new TopicMessageSubmitTransaction()
+          .setTopicId(topicId)
+          .setMessage(JSON.stringify({ event: "quest_receipt", receiptId, txHash, intent, success, ts: new Date().toISOString() }))
+          .execute(hederaClient);
+      }
+    } catch { /* non-blocking */ }
+
+    // Record quest results for all agents in AgentRegistry
+    try {
+      const agentRegistryAddr = "0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4";
+      const agentRegistryAbi = ["function recordQuestResult(string agentId, uint256 questId, bool success) nonpayable"];
+      const reg = new Contract(agentRegistryAddr, agentRegistryAbi, wallet);
+      const agentIds = ["scout", "strategist", "sentinel", "treasurer", "executor", "archivist"];
+      await Promise.allSettled(agentIds.map((id) => reg.recordQuestResult(id, receiptId, Boolean(success)).then((tx) => tx.wait())));
+    } catch { /* non-blocking */ }
+  });
+
+  return { receiptId, txHash };
 }
 
 // Vercel/Next.js style handler (req has .body, res has .status().json())

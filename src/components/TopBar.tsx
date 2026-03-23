@@ -1,24 +1,22 @@
 import { useEffect, useState } from "react";
-import { Bell, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { Bell, Wallet, TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
-
-const STATIC_PRICE = 0.0641;
+import { useHbarPrice } from "@/hooks/useHbarPrice";
 
 // MockUSDC EVM address — resolved to Hedera account ID at runtime
 const MOCK_USDC_EVM = "0x152Bf42A48677b678c658E452788ea2687525BF7";
 
-interface HbarPrice {
-  value: number;
-  change: "up" | "down" | "flat";
+interface TopBarProps {
+  onDashboardToggle?: () => void;
 }
 
-const TopBar = () => {
-  const [hbarPrice, setHbarPrice] = useState<HbarPrice>({ value: STATIC_PRICE, change: "up" });
+const TopBar = ({ onDashboardToggle }: TopBarProps) => {
   const [hbarBalance, setHbarBalance] = useState<number | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
   const [usdcTokenId, setUsdcTokenId] = useState<string | null>(null);
   const { shortAddress, isConnected, address, openModal } = useWallet();
+  const { price: hbarPriceValue, change: hbarChange } = useHbarPrice();
 
   // Resolve MockUSDC EVM → Hedera token ID once
   useEffect(() => {
@@ -86,35 +84,9 @@ const TopBar = () => {
     return () => clearInterval(interval);
   }, [isConnected, address, usdcTokenId]);
 
-  // HBAR live price ticker
-  useEffect(() => {
-    let prevPrice = STATIC_PRICE;
-
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch("/api/hedera?path=/api/v1/network/exchangerate");
-        if (!res.ok) throw new Error("non-ok");
-        const json = await res.json();
-        const rate = json?.current_rate;
-        if (rate && rate.hbar_equivalent && rate.cent_equivalent) {
-          const price = (rate.cent_equivalent / rate.hbar_equivalent) * 0.01;
-          const change: "up" | "down" | "flat" = price > prevPrice ? "up" : price < prevPrice ? "down" : "flat";
-          prevPrice = price;
-          setHbarPrice({ value: price, change });
-        }
-      } catch {
-        setHbarPrice((prev) => prev);
-      }
-    };
-
-    fetchPrice();
-    const interval = setInterval(fetchPrice, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const priceStr = hbarPrice.value.toFixed(4);
-  const TrendIcon = hbarPrice.change === "up" ? TrendingUp : hbarPrice.change === "down" ? TrendingDown : null;
-  const trendColor = hbarPrice.change === "up" ? "hsl(142 70% 50%)" : hbarPrice.change === "down" ? "hsl(0 72% 60%)" : "hsl(195 100% 55%)";
+  const priceStr = hbarPriceValue.toFixed(4);
+  const TrendIcon = hbarChange === "up" ? TrendingUp : hbarChange === "down" ? TrendingDown : null;
+  const trendColor = hbarChange === "up" ? "hsl(142 70% 50%)" : hbarChange === "down" ? "hsl(0 72% 60%)" : "hsl(195 100% 55%)";
 
   const hbarBalanceStr = hbarBalance != null
     ? hbarBalance >= 1000
@@ -169,6 +141,19 @@ const TopBar = () => {
           <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
           <span className="text-success">Testnet</span>
         </div>
+
+        {/* Dashboard toggle */}
+        {onDashboardToggle && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={onDashboardToggle}
+            title="Guild Dashboard"
+          >
+            <BarChart2 className="w-4 h-4 text-muted-foreground hover:text-gold transition-colors" />
+          </Button>
+        )}
 
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-4 h-4 text-muted-foreground" />

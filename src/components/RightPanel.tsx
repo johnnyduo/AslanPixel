@@ -1,16 +1,28 @@
 import { useState } from "react";
-import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap } from "lucide-react";
+import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENTS, STATUS_COLORS, ACTION_TYPE_COLORS, type Agent } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
+import { useAgentStats } from "@/hooks/useContracts";
 
 const RightPanel = () => {
   const [selectedId, setSelectedId] = useState<string>("scout");
   const [actionFeedback, setActionFeedback] = useState<{ type: "approve" | "reject" | "sim"; ts: number } | null>(null);
+  const { agents: onchainAgents } = useAgentStats();
   const { messages } = useLiveTimeline();
   const { setPendingIntent } = useQuestInput();
   const agent = AGENTS.find((a) => a.id === selectedId)!;
+
+  // Merge onchain data
+  const onchain = onchainAgents.find((a) => a.agentId === selectedId);
+  const isOnchain = onchain && onchain.registeredAt > 0;
+  // Reputation: contract stores 0-1000, display as 0-5 stars
+  const displayRep = isOnchain ? Math.round(onchain.reputation / 200) : agent.reputation;
+  const displayQuests = isOnchain ? onchain.completedQuests : agent.completedQuests;
+  const displaySuccessRate = isOnchain && onchain.completedQuests > 0
+    ? Math.round((onchain.successCount / onchain.completedQuests) * 100)
+    : agent.successRate;
 
   // Live recent actions from timeline for selected agent
   const liveActions = messages
@@ -119,25 +131,38 @@ const RightPanel = () => {
             </div>
           </div>
 
-          {/* Stars */}
-          <div className="flex items-center gap-1">
+          {/* Stars + onchain badge */}
+          <div className="flex items-center gap-1 flex-wrap">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
                 className="w-3 h-3"
                 style={{
-                  color: i < agent.reputation ? "hsl(43 90% 60%)" : "hsl(225 15% 25%)",
-                  fill: i < agent.reputation ? "hsl(43 90% 60%)" : "transparent",
+                  color: i < displayRep ? "hsl(43 90% 60%)" : "hsl(225 15% 25%)",
+                  fill: i < displayRep ? "hsl(43 90% 60%)" : "transparent",
                 }}
               />
             ))}
-            <span className="text-[9px] text-muted-foreground font-mono ml-1">{agent.reputation}.0 rep</span>
+            <span className="text-[9px] text-muted-foreground font-mono ml-1">
+              {isOnchain ? `${onchain!.reputation}/1000` : `${displayRep}.0 rep`}
+            </span>
+            {isOnchain && (
+              <a
+                href={`https://hashscan.io/testnet/account/0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-0.5 text-[7px] font-pixel px-1 py-0.5 rounded ml-1"
+                style={{ background: "hsl(195 100% 55% / 0.1)", color: "hsl(195 100% 55%)", border: "1px solid hsl(195 100% 55% / 0.3)" }}
+              >
+                ONCHAIN <ExternalLink className="w-2 h-2" />
+              </a>
+            )}
           </div>
 
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-1.5">
-            <StatBox label="Quests" value={agent.completedQuests.toString()} color={agent.color} />
-            <StatBox label="Success" value={`${agent.successRate}%`} color="hsl(142 70% 50%)" />
+            <StatBox label="Quests" value={displayQuests.toString()} color={agent.color} />
+            <StatBox label="Success" value={`${displaySuccessRate}%`} color="hsl(142 70% 50%)" />
             <StatBox label="Focus" value={agent.specialization} color={agent.color} small />
           </div>
         </div>

@@ -65,6 +65,7 @@ async function routeRequest(path, nodeReq, nodeRes) {
     else if (route === "/api/hedera") handler = (await import("./api/hedera.js?t=" + Date.now())).default;
     else if (route === "/api/saucerswap") handler = (await import("./api/saucerswap.js?t=" + Date.now())).default;
     else if (route === "/api/store-receipt") handler = (await import("./api/store-receipt.js?t=" + Date.now())).default;
+    else if (route === "/api/agent-register") handler = (await import("./api/agent-register.js?t=" + Date.now())).default;
     else { nodeRes.writeHead(404); nodeRes.end("Not found"); return; }
   } catch (e) {
     console.error("Import error:", e.message);

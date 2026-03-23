@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send } from "lucide-react";
+import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send, Bot } from "lucide-react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
+import { useAutoQuest } from "@/hooks/useAutoQuest";
+import VotePanel from "@/components/VotePanel";
 import type { TimelineMessage } from "@/lib/agentConversation";
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
@@ -16,7 +18,7 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   quest:        { label: "QUEST",  Icon: Zap,           color: "hsl(43 90% 60%)",   bg: "hsl(43 90% 60% / 0.08)" },
 };
 
-type QuestStatus = "idle" | "running" | "complete" | "error";
+type QuestStatus = "idle" | "voting" | "running" | "complete" | "error";
 
 const BottomPanel = () => {
   const { messages: liveMessages, isLive, error: _error } = useLiveTimeline();
@@ -25,52 +27,54 @@ const BottomPanel = () => {
   const [questMessages, setQuestMessages] = useState<TimelineMessage[]>([]);
   const [lastReceiptId, setLastReceiptId] = useState<string | null>(null);
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
+  const [pendingVoteIntent, setPendingVoteIntent] = useState<string | null>(null);
+  const [isAutoQuest, setIsAutoQuest] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const { pendingIntent, clearPendingIntent } = useQuestInput();
 
-  // Listen for intents dispatched from LeftPanel "Deploy" button
+  // Activate auto quest scheduler
+  useAutoQuest();
+
+  // Listen for intents dispatched from LeftPanel / autoQuest
   useEffect(() => {
     if (!pendingIntent) return;
-    setQuestInput(pendingIntent);
+    const intent = pendingIntent;
     clearPendingIntent();
-    // Slight delay so input is visible before running
-    const t = setTimeout(() => {
-      runQuestWithIntent(pendingIntent);
+    setQuestInput(intent.replace(/^\[AUTO\] /, ""));
+    setIsAutoQuest(intent.startsWith("[AUTO] "));
+    // Show vote panel before running
+    setTimeout(() => {
+      setPendingVoteIntent(intent);
+      setQuestStatus("voting");
     }, 150);
-    return () => clearTimeout(t);
   }, [pendingIntent]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Merge quest messages on top of live messages, newest first
   const allMessages: TimelineMessage[] = [...questMessages, ...liveMessages].slice(0, 60);
 
-  // Auto-scroll to top when new messages arrive (newest first)
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [allMessages.length]);
 
   const runQuestWithIntent = (intent: string) => {
-    if (!intent.trim() || questStatus === "running") return;
+    const cleanIntent = intent.replace(/^\[AUTO\] /, "").trim();
+    if (!cleanIntent || questStatus === "running") return;
 
     setQuestStatus("running");
     setQuestMessages([]);
     setLastReceiptId(null);
     setLastTxHash(null);
 
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+    if (eventSourceRef.current) eventSourceRef.current.close();
 
-    const url = `/api/quest?intent=${encodeURIComponent(intent.trim())}`;
+    const url = `/api/quest?intent=${encodeURIComponent(cleanIntent)}`;
     const es = new EventSource(url);
     eventSourceRef.current = es;
 
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as Partial<TimelineMessage> & { receiptId?: string; done?: boolean };
-        if (data.done) return; // handled by "done" named event listener
+        if (data.done) return;
         const msg: TimelineMessage = {
           id: data.id ?? `quest_${Date.now()}_${Math.random()}`,
           time: data.time ?? new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -91,7 +95,6 @@ const BottomPanel = () => {
       }
     };
 
-    // Listen for named "done" event from server
     es.addEventListener("done", (event) => {
       try {
         const data = JSON.parse((event as MessageEvent).data);
@@ -103,14 +106,37 @@ const BottomPanel = () => {
     });
 
     es.onerror = () => {
-      // Only set error if we haven't already completed
       setQuestStatus((prev) => prev === "running" ? "error" : prev);
       es.close();
     };
   };
 
+  const handleVoteApproved = () => {
+    setPendingVoteIntent(null);
+    if (pendingVoteIntent) runQuestWithIntent(pendingVoteIntent);
+  };
+
+  const handleVoteVetoed = (reason: string) => {
+    setPendingVoteIntent(null);
+    setQuestStatus("error");
+    // Show veto reason as a timeline message
+    const msg: TimelineMessage = {
+      id: `veto_${Date.now()}`,
+      time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      type: "policy",
+      agentId: "sentinel",
+      content: `VETO: ${reason}`,
+    };
+    setQuestMessages((prev) => [msg, ...prev]);
+    console.log("[Vote] Vetoed:", reason);
+  };
+
   const runQuest = () => {
-    runQuestWithIntent(questInput.trim());
+    const trimmed = questInput.trim();
+    if (!trimmed || questStatus === "running" || questStatus === "voting") return;
+    setIsAutoQuest(false);
+    setPendingVoteIntent(trimmed);
+    setQuestStatus("voting");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -118,36 +144,40 @@ const BottomPanel = () => {
   };
 
   return (
-    <div className="h-64 xl:h-72 glass-panel flex flex-col overflow-hidden">
+    <div className="h-64 xl:h-72 glass-panel flex flex-col overflow-hidden relative">
+      {/* Vote Panel Overlay */}
+      {questStatus === "voting" && pendingVoteIntent && (
+        <VotePanel
+          intent={pendingVoteIntent}
+          onApproved={handleVoteApproved}
+          onVetoed={handleVoteVetoed}
+        />
+      )}
 
       {/* ── Quest Input Bar ── */}
       <div className="shrink-0 px-3 pt-2.5 pb-2 border-b border-gold/20"
         style={{ background: "hsl(225 28% 6% / 0.8)" }}>
         <div className="flex items-center gap-2">
-          {/* Label */}
           <span className="font-pixel text-[8px] text-gold shrink-0 tracking-wider">QUEST:</span>
 
-          {/* Input */}
           <input
             type="text"
             value={questInput}
             onChange={(e) => setQuestInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe your intent..."
-            disabled={questStatus === "running"}
+            disabled={questStatus === "running" || questStatus === "voting"}
             className="flex-1 h-7 bg-transparent border border-gold/25 rounded px-2 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 disabled:opacity-50"
           />
 
-          {/* Run Quest button */}
           <button
             onClick={runQuest}
-            disabled={questStatus === "running" || !questInput.trim()}
+            disabled={questStatus === "running" || questStatus === "voting" || !questInput.trim()}
             className="shrink-0 flex items-center gap-1.5 px-3 h-7 rounded font-pixel text-[8px] disabled:opacity-40 transition-all duration-200"
             style={{
               background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
               border: "1px solid hsl(43 90% 55% / 0.6)",
               color: "hsl(225 30% 6%)",
-              textShadow: "none",
             }}
           >
             <Send className="w-2.5 h-2.5" />
@@ -156,14 +186,24 @@ const BottomPanel = () => {
         </div>
 
         {/* Status line */}
+        {questStatus === "voting" && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+            <span className="text-[8px] font-pixel text-cyan tracking-widest animate-pulse">GUILD VOTE IN PROGRESS...</span>
+          </div>
+        )}
         {questStatus === "running" && (
           <div className="flex items-center gap-1.5 mt-1.5">
+            {isAutoQuest && <Bot className="w-2.5 h-2.5 text-purple-400" />}
             <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-            <span className="text-[8px] font-pixel text-gold tracking-widest animate-pulse">AGENTS MOBILIZING...</span>
+            <span className="text-[8px] font-pixel text-gold tracking-widest animate-pulse">
+              {isAutoQuest ? "AUTO QUEST — AGENTS MOBILIZING..." : "AGENTS MOBILIZING..."}
+            </span>
           </div>
         )}
         {questStatus === "complete" && (
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            {isAutoQuest && <Bot className="w-2.5 h-2.5 text-purple-400 shrink-0" />}
             <div className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
             <span className="text-[8px] font-pixel text-success">
               QUEST COMPLETE{lastReceiptId ? ` — Receipt #${lastReceiptId}` : ""}
@@ -195,7 +235,6 @@ const BottomPanel = () => {
           <h2 className="font-pixel text-[10px] text-gold tracking-wider">ACTIVITY TIMELINE</h2>
         </div>
         <div className="flex items-center gap-4">
-          {/* Agent color legend — compact */}
           <div className="hidden xl:flex items-center gap-2">
             {AGENTS.map((a) => (
               <div key={a.id} className="flex items-center gap-1">
@@ -205,7 +244,6 @@ const BottomPanel = () => {
             ))}
           </div>
           <div className="flex items-center gap-1.5">
-            {/* AI badge — shows when Gemini is responding */}
             {isLive && (
               <div className="flex items-center gap-1 px-1 py-0.5 rounded" style={{ background: "hsl(280 65% 68% / 0.15)", border: "1px solid hsl(280 65% 68% / 0.4)" }}>
                 <Zap className="w-2.5 h-2.5 animate-pulse" style={{ color: "hsl(280 65% 68%)" }} />
@@ -224,6 +262,7 @@ const BottomPanel = () => {
           const meta = TYPE_META[item.type] ?? TYPE_META.conversation;
           const agent = AGENTS.find((a) => a.id === item.agentId);
           const Icon = meta.Icon;
+          const isAuto = item.content?.startsWith("[AUTO]") || false;
           return (
             <div
               key={item.id}
@@ -234,35 +273,22 @@ const BottomPanel = () => {
                 animationDelay: `${i * 40}ms`,
               }}
             >
-              {/* Time */}
               <span className="text-[9px] text-muted-foreground font-mono w-14 shrink-0 pt-[1px]">{item.time}</span>
-
-              {/* Type icon */}
               <Icon className="w-3 h-3 shrink-0 mt-[2px]" style={{ color: meta.color }} />
-
-              {/* Type label */}
-              <span
-                className="text-[8px] font-pixel uppercase w-11 shrink-0 pt-[2px]"
-                style={{ color: meta.color }}
-              >
+              <span className="text-[8px] font-pixel uppercase w-11 shrink-0 pt-[2px]" style={{ color: meta.color }}>
                 {meta.label}
               </span>
-
-              {/* Agent name pill */}
+              {isAuto && (
+                <span className="text-[7px] font-pixel px-1 py-0.5 rounded shrink-0" style={{ background: "hsl(280 65% 68% / 0.15)", color: "hsl(280 65% 68%)", border: "1px solid hsl(280 65% 68% / 0.3)" }}>AUTO</span>
+              )}
               {agent && (
                 <span
                   className="text-[8px] font-pixel px-1 py-0.5 rounded shrink-0"
-                  style={{
-                    background: agent.color + "18",
-                    color: agent.color,
-                    border: `1px solid ${agent.color}35`,
-                  }}
+                  style={{ background: agent.color + "18", color: agent.color, border: `1px solid ${agent.color}35` }}
                 >
                   {agent.icon} {agent.name}
                 </span>
               )}
-
-              {/* Content */}
               <span className="text-[10px] font-mono text-secondary-foreground leading-snug">{item.content}</span>
             </div>
           );
