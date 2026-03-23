@@ -1,16 +1,7 @@
 {
-  "framework": "vite",
-  "buildCommand": "yarn build",
-  "outputDirectory": "dist",
-  "functions": {
-    "api/quest.js":      { "runtime": "edge" },
-    "api/stream.js":     { "runtime": "edge" },
-    "api/saucerswap.js": { "runtime": "edge" },
-    "api/hedera.js":     { "runtime": "edge" }
-  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)",     "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
