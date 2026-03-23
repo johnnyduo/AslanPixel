@@ -24,6 +24,7 @@ const BottomPanel = () => {
   const [questStatus, setQuestStatus] = useState<QuestStatus>("idle");
   const [questMessages, setQuestMessages] = useState<TimelineMessage[]>([]);
   const [lastReceiptId, setLastReceiptId] = useState<string | null>(null);
+  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const { pendingIntent, clearPendingIntent } = useQuestInput();
@@ -56,6 +57,7 @@ const BottomPanel = () => {
     setQuestStatus("running");
     setQuestMessages([]);
     setLastReceiptId(null);
+    setLastTxHash(null);
 
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -68,12 +70,7 @@ const BottomPanel = () => {
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as Partial<TimelineMessage> & { receiptId?: string; done?: boolean };
-        if (data.done) {
-          if (data.receiptId) setLastReceiptId(data.receiptId);
-          setQuestStatus("complete");
-          es.close();
-          return;
-        }
+        if (data.done) return; // handled by "done" named event listener
         const msg: TimelineMessage = {
           id: data.id ?? `quest_${Date.now()}_${Math.random()}`,
           time: data.time ?? new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -94,8 +91,20 @@ const BottomPanel = () => {
       }
     };
 
+    // Listen for named "done" event from server
+    es.addEventListener("done", (event) => {
+      try {
+        const data = JSON.parse((event as MessageEvent).data);
+        if (data.receiptId) setLastReceiptId(String(data.receiptId));
+        if (data.txHash) setLastTxHash(String(data.txHash));
+      } catch {}
+      setQuestStatus("complete");
+      es.close();
+    });
+
     es.onerror = () => {
-      setQuestStatus("error");
+      // Only set error if we haven't already completed
+      setQuestStatus((prev) => prev === "running" ? "error" : prev);
       es.close();
     };
   };
@@ -154,11 +163,21 @@ const BottomPanel = () => {
           </div>
         )}
         {questStatus === "complete" && (
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-success" />
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <div className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
             <span className="text-[8px] font-pixel text-success">
-              QUEST COMPLETE{lastReceiptId ? ` — Receipt #${lastReceiptId} stored` : ""}
+              QUEST COMPLETE{lastReceiptId ? ` — Receipt #${lastReceiptId}` : ""}
             </span>
+            {lastTxHash && (
+              <a
+                href={`https://hashscan.io/testnet/tx/${lastTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[8px] font-mono text-cyan underline hover:text-gold transition-colors"
+              >
+                {lastTxHash.slice(0, 10)}…{lastTxHash.slice(-6)} ↗
+              </a>
+            )}
           </div>
         )}
         {questStatus === "error" && (

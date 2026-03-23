@@ -137,6 +137,7 @@ export default async function handler(req) {
 
       // Store receipt onchain via Node.js endpoint (fire-and-forget, non-blocking)
       let receiptId = String(questId).slice(-6);
+      let onchainTxHash = null;
 
       // Call /api/store-receipt asynchronously — do not await, do not block the stream
       const baseUrl = process.env.VERCEL_URL
@@ -151,6 +152,7 @@ export default async function handler(req) {
           if (r.ok) {
             const data = await r.json().catch(() => ({}));
             if (data.receiptId) receiptId = String(data.receiptId);
+            if (data.txHash) onchainTxHash = data.txHash;
             if (data.txHash) {
               push("message", {
                 id: `${questId}-onchain`,
@@ -167,7 +169,7 @@ export default async function handler(req) {
       push("message", { id: `${questId}-done`, time: ts(), type: "quest", agentId: "archivist",
         content: `Quest #${receiptId} complete. All agents stood down. Receipt archived to ledger.` });
 
-      push("done", { questId, receiptId, status: "completed", done: true });
+      push("done", { questId, receiptId, txHash: onchainTxHash, status: "completed", done: true });
       controller.close();
     },
   });
