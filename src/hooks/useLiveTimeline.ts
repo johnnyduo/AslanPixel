@@ -150,6 +150,8 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
+  const esRef = useRef<EventSource | null>(null);
+  const backendConnected = useRef(false);
 
   // On mount: load from storage, fall back to seeds
   useEffect(() => {
@@ -175,6 +177,11 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
     const delay = 8000 + Math.random() * 4000;
     timerRef.current = setTimeout(async () => {
       if (!isMounted.current) return;
+      // Skip if backend SSE is handling messages
+      if (backendConnected.current) {
+        scheduleNext();
+        return;
+      }
 
       setIsLive(true);
       setError(null);
@@ -206,6 +213,51 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
 
       scheduleNext();
     }, delay);
+  }, []);
+
+  // When deployed (not localhost), try /api/stream backend SSE first
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isDeployed = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+    if (!isDeployed) return;
+
+    const es = new EventSource("/api/stream");
+    esRef.current = es;
+
+    // Give 5s for connection to establish
+    const timeout = setTimeout(() => {
+      if (!backendConnected.current) {
+        // Backend not sending — close and fall through to Gemini
+        es.close();
+      }
+    }, 5000);
+
+    es.onmessage = (event) => {
+      if (!isMounted.current) return;
+      try {
+        const data = JSON.parse(event.data) as TimelineMessage;
+        if (!data.id || !data.content) return;
+        backendConnected.current = true;
+        clearTimeout(timeout);
+        setMessages((prev) => {
+          const combined = [data, ...prev];
+          return combined.slice(0, MAX_MESSAGES);
+        });
+      } catch {
+        // Ignore parse errors
+      }
+    };
+
+    es.onerror = () => {
+      backendConnected.current = false;
+      es.close();
+    };
+
+    return () => {
+      clearTimeout(timeout);
+      es.close();
+      backendConnected.current = false;
+    };
   }, []);
 
   useEffect(() => {

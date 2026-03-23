@@ -10,12 +10,12 @@ interface Room {
 const rooms: Room[] = [
   // Positions sized to match pixel art buildings exactly, leaving corridors clear
   // Corridors: top-H(y=27%), mid-H(y=54%), left-V(x=30%), right-V(x=68%), arch-V(x=50%)
-  { name:"consensushub", label:"Consensus Hub",   x:36, y:32, w:28, h:18, color:"hsl(43 90% 55%)",   icon:"⬡", desc:"HCS — Hedera Consensus",  stats:["HCS Topic #0.0.1234","847 msgs/min","LIVE"] },
-  { name:"tokenforge",   label:"Token Forge",     x: 5, y: 6, w:21, h:17, color:"hsl(195 100% 50%)", icon:"◈", desc:"HTS Token Operations",    stats:["HTS Tokens: 12","3 Pending Mint","ONLINE"] },
-  { name:"mirrorvault",  label:"Mirror Vault",    x:74, y: 6, w:21, h:17, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Mirror Node State",       stats:["12,847.50 HBAR","Slot: 4,192,441","SYNCED"] },
-  { name:"smartspire",   label:"Smart Spire",     x: 5, y:57, w:21, h:17, color:"hsl(142 70% 45%)",  icon:"▲", desc:"EVM Smart Contracts",     stats:["3 Contracts","Risk: LOW","DEPLOYED"] },
-  { name:"dexgate",      label:"DEX Gate",        x:74, y:57, w:21, h:17, color:"hsl(38 92% 50%)",   icon:"▶", desc:"SaucerSwap Execution",    stats:["412 TX Done","0 Pending","READY"] },
-  { name:"ledgerarchive",label:"Ledger Archive",  x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"Onchain Receipts",        stats:["Receipt #2041","Mirror: CONFIRMED","IMMUTABLE"] },
+  { name:"consensushub", label:"Consensus Hub",   x:36, y:32, w:28, h:18, color:"hsl(43 90% 55%)",   icon:"⬡", desc:"HCS — Hedera Consensus Service",  stats:["HCS Topic #0.0.1234","847 msgs/min","Last Seq #4,192"] },
+  { name:"tokenforge",   label:"Token Forge",     x: 5, y: 6, w:21, h:17, color:"hsl(195 100% 50%)", icon:"◈", desc:"HTS — Hedera Token Service",       stats:["HTS Tokens: 12","3 Pending Mints","Total Supply: 1.2M"] },
+  { name:"mirrorvault",  label:"Mirror Vault",    x:74, y: 6, w:21, h:17, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Mirror Node — Real-time State",    stats:["12,847.50 HBAR","Slot: 4,192,441","Sync: LIVE"] },
+  { name:"smartspire",   label:"Smart Spire",     x: 5, y:57, w:21, h:17, color:"hsl(142 70% 45%)",  icon:"▲", desc:"EVM — Smart Contracts",            stats:["3 Contracts Deployed","Gas: 2,115 tinyhbar","Audit: PASS"] },
+  { name:"dexgate",      label:"DEX Gate",        x:74, y:57, w:21, h:17, color:"hsl(38 92% 50%)",   icon:"▶", desc:"SaucerSwap — DeFi Execution",      stats:["Vol 24h: $48,291","Top: HBAR/USDC","Slippage: 0.12%"] },
+  { name:"ledgerarchive",label:"Ledger Archive",  x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"QuestReceipt — Immutable Log",     stats:["Receipts: 2,041","Last ID: #2041","Hash: 0xab12…"] },
 ];
 
 // Decorations — trees, shrubs, flowers, lanterns, barrels, benches
@@ -422,6 +422,15 @@ const PixelMap = () => {
                   textShadow: hov ? `0 0 12px ${r.color}, 0 0 24px ${r.color}80` : `0 0 4px ${r.color}40`,
                 }}>
                 {r.icon} {r.label}
+              </span>
+              {/* Always-visible Hedera service tag */}
+              <span className="font-pixel text-[6px] mt-0.5 px-1 rounded-sm"
+                style={{
+                  color: r.color + "bb",
+                  background: r.color + "18",
+                  border: `1px solid ${r.color}30`,
+                }}>
+                {r.desc.split("—")[0].trim()}
               </span>
             </div>
 

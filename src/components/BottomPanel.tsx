@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
-import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send } from "lucide-react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
+import type { TimelineMessage } from "@/lib/agentConversation";
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
   conversation: { label: "CHAT",   Icon: MessageSquare, color: "hsl(195 100% 55%)", bg: "hsl(195 100% 55% / 0.05)" },
@@ -11,23 +12,149 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   alert:        { label: "ALERT",  Icon: AlertTriangle, color: "hsl(38 92% 55%)",   bg: "hsl(38 92% 55% / 0.06)" },
   policy:       { label: "POLICY", Icon: Shield,        color: "hsl(142 70% 50%)",  bg: "hsl(142 70% 50% / 0.05)" },
   receipt:      { label: "RCPT",   Icon: BookOpen,      color: "hsl(0 72% 62%)",    bg: "hsl(0 72% 62% / 0.06)" },
+  quest:        { label: "QUEST",  Icon: Zap,           color: "hsl(43 90% 60%)",   bg: "hsl(43 90% 60% / 0.08)" },
 };
 
+type QuestStatus = "idle" | "running" | "complete" | "error";
+
 const BottomPanel = () => {
-  const { messages, isLive, error: _error } = useLiveTimeline();
+  const { messages: liveMessages, isLive, error: _error } = useLiveTimeline();
+  const [questInput, setQuestInput] = useState("");
+  const [questStatus, setQuestStatus] = useState<QuestStatus>("idle");
+  const [questMessages, setQuestMessages] = useState<TimelineMessage[]>([]);
+  const [lastReceiptId, setLastReceiptId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Merge quest messages on top of live messages, newest first
+  const allMessages: TimelineMessage[] = [...questMessages, ...liveMessages].slice(0, 60);
 
   // Auto-scroll to top when new messages arrive (newest first)
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-  }, [messages.length]);
+  }, [allMessages.length]);
+
+  const runQuest = () => {
+    if (!questInput.trim() || questStatus === "running") return;
+
+    setQuestStatus("running");
+    setQuestMessages([]);
+    setLastReceiptId(null);
+
+    // Close any existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    const url = `/api/quest?intent=${encodeURIComponent(questInput.trim())}`;
+    const es = new EventSource(url);
+    eventSourceRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as Partial<TimelineMessage> & { receiptId?: string; done?: boolean };
+        if (data.done) {
+          if (data.receiptId) setLastReceiptId(data.receiptId);
+          setQuestStatus("complete");
+          es.close();
+          return;
+        }
+        const msg: TimelineMessage = {
+          id: data.id ?? `quest_${Date.now()}_${Math.random()}`,
+          time: data.time ?? new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          type: data.type ?? "quest",
+          agentId: data.agentId ?? "scout",
+          content: data.content ?? String(event.data),
+        };
+        setQuestMessages((prev) => [msg, ...prev].slice(0, 30));
+      } catch {
+        // Plain text line — wrap as quest message
+        const msg: TimelineMessage = {
+          id: `quest_${Date.now()}_${Math.random()}`,
+          time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          type: "quest",
+          agentId: "scout",
+          content: event.data,
+        };
+        setQuestMessages((prev) => [msg, ...prev].slice(0, 30));
+      }
+    };
+
+    es.onerror = () => {
+      setQuestStatus("error");
+      es.close();
+    };
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") runQuest();
+  };
 
   return (
-    <div className="h-52 xl:h-60 glass-panel flex flex-col overflow-hidden">
+    <div className="h-64 xl:h-72 glass-panel flex flex-col overflow-hidden">
+
+      {/* ── Quest Input Bar ── */}
+      <div className="shrink-0 px-3 pt-2.5 pb-2 border-b border-gold/20"
+        style={{ background: "hsl(225 28% 6% / 0.8)" }}>
+        <div className="flex items-center gap-2">
+          {/* Label */}
+          <span className="font-pixel text-[8px] text-gold shrink-0 tracking-wider">QUEST:</span>
+
+          {/* Input */}
+          <input
+            type="text"
+            value={questInput}
+            onChange={(e) => setQuestInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe your intent..."
+            disabled={questStatus === "running"}
+            className="flex-1 h-7 bg-transparent border border-gold/25 rounded px-2 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 disabled:opacity-50"
+          />
+
+          {/* Run Quest button */}
+          <button
+            onClick={runQuest}
+            disabled={questStatus === "running" || !questInput.trim()}
+            className="shrink-0 flex items-center gap-1.5 px-3 h-7 rounded font-pixel text-[8px] disabled:opacity-40 transition-all duration-200"
+            style={{
+              background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
+              border: "1px solid hsl(43 90% 55% / 0.6)",
+              color: "hsl(225 30% 6%)",
+              textShadow: "none",
+            }}
+          >
+            <Send className="w-2.5 h-2.5" />
+            RUN QUEST
+          </button>
+        </div>
+
+        {/* Status line */}
+        {questStatus === "running" && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+            <span className="text-[8px] font-pixel text-gold tracking-widest animate-pulse">AGENTS MOBILIZING...</span>
+          </div>
+        )}
+        {questStatus === "complete" && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-success" />
+            <span className="text-[8px] font-pixel text-success">
+              QUEST COMPLETE{lastReceiptId ? ` — Receipt #${lastReceiptId} stored` : ""}
+            </span>
+          </div>
+        )}
+        {questStatus === "error" && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+            <span className="text-[8px] font-pixel text-destructive">QUEST FAILED — check connection</span>
+          </div>
+        )}
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2">
           <Terminal className="w-3.5 h-3.5 text-gold" />
           <h2 className="font-pixel text-[10px] text-gold tracking-wider">ACTIVITY TIMELINE</h2>
@@ -58,7 +185,7 @@ const BottomPanel = () => {
 
       {/* Timeline */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-3 py-1.5 space-y-0.5">
-        {messages.map((item, i) => {
+        {allMessages.map((item, i) => {
           const meta = TYPE_META[item.type] ?? TYPE_META.conversation;
           const agent = AGENTS.find((a) => a.id === item.agentId);
           const Icon = meta.Icon;

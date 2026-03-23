@@ -1,7 +1,48 @@
-import { Wifi, Bell, Wallet } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const STATIC_PRICE = 0.0641;
+
+interface HbarPrice {
+  value: number;
+  change: "up" | "down" | "flat";
+}
+
 const TopBar = () => {
+  const [hbarPrice, setHbarPrice] = useState<HbarPrice>({ value: STATIC_PRICE, change: "up" });
+
+  useEffect(() => {
+    let prevPrice = STATIC_PRICE;
+
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("/api/hedera?path=/api/v1/network/exchangerate");
+        if (!res.ok) throw new Error("non-ok");
+        const json = await res.json();
+        // Hedera exchange rate: current_rate.cent_equivalent / current_rate.hbar_equivalent * 0.01
+        const rate = json?.current_rate;
+        if (rate && rate.hbar_equivalent && rate.cent_equivalent) {
+          const price = (rate.cent_equivalent / rate.hbar_equivalent) * 0.01;
+          const change: "up" | "down" | "flat" = price > prevPrice ? "up" : price < prevPrice ? "down" : "flat";
+          prevPrice = price;
+          setHbarPrice({ value: price, change });
+        }
+      } catch {
+        // Backend unavailable — keep static fallback
+        setHbarPrice((prev) => prev);
+      }
+    };
+
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const priceStr = hbarPrice.value.toFixed(4);
+  const TrendIcon = hbarPrice.change === "up" ? TrendingUp : hbarPrice.change === "down" ? TrendingDown : null;
+  const trendColor = hbarPrice.change === "up" ? "hsl(142 70% 50%)" : hbarPrice.change === "down" ? "hsl(0 72% 60%)" : "hsl(195 100% 55%)";
+
   return (
     <header className="h-14 glass-panel-strong flex items-center justify-between px-5 rounded-none border-x-0 border-t-0">
       <div className="flex items-center gap-3">
@@ -17,6 +58,12 @@ const TopBar = () => {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* HBAR live price ticker */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
+          {TrendIcon && <TrendIcon className="w-3 h-3" style={{ color: trendColor }} />}
+          <span className="text-gold font-mono font-medium">HBAR ${priceStr}</span>
+        </div>
+
         <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
           <span className="text-success">Mainnet</span>
