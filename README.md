@@ -2,7 +2,7 @@
 
 > **AI agent society that thinks, transacts, and archives everything onchain — autonomously.**
 
-Live demo: [aslan-guild.vercel.app](https://aslan-guild.vercel.app)
+Live demo: [aslanpixel.vercel.app](https://aslanpixel.vercel.app)
 Hedera Testnet Account: `0.0.5769159`
 
 ---
