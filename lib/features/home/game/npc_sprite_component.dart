@@ -18,20 +18,22 @@ enum NpcDirection { south, north, east, west }
 // NpcSpriteComponent
 // ---------------------------------------------------------------------------
 
-/// A Flame component that renders an NPC sprite loaded from
-/// `assets/sprites/npcs/{name}_{direction}.png`.
+/// A Flame component that renders an NPC sprite.
 ///
 /// Sprite priority:
-///   1. `{name}_{direction}.png` (directional variant, e.g. `_south.png`)
-///   2. `{name}_idle.png` — fallback used when all directional assets are absent
+///   1. LPC spritesheet at `assets/sprites/lpc_npcs/{name}_walk.png`
+///      (576×256, 9 cols × 4 rows, 64×64 frames)
+///   2. PixelLab individual PNGs at `assets/sprites/npcs/{name}_{direction}.png`
+///      (48×48 directional variants)
+///   3. `{name}_idle.png` — last-resort fallback
 ///
 /// Features:
 ///   - 4-direction facing via [setDirection] (hot-swaps the active sprite).
 ///   - Idle bob: ±2 px vertical oscillation over a 1.5 s period (only when not walking).
-///   - Walk animation: per-direction 4-frame sprite animation via [startWalking] / [stopWalking].
+///   - Walk animation: per-direction sprite animation via [startWalking] / [stopWalking].
 ///   - Name label rendered below the sprite.
 ///
-/// [spriteWidth] and [spriteHeight] default to 48 × 48 logical pixels.
+/// [spriteWidth] and [spriteHeight] are auto-detected: 64 for LPC, 48 for PixelLab.
 /// The anchor is [Anchor.center].
 class NpcSpriteComponent extends PositionComponent
     with HasGameReference<FlameGame> {
@@ -39,22 +41,20 @@ class NpcSpriteComponent extends PositionComponent
     required this.npcName,
     required Vector2 position,
     this.initialDirection = NpcDirection.south,
-    this.spriteWidth = 48.0,
-    this.spriteHeight = 48.0,
   }) : super(
           position: position,
-          size: Vector2(spriteWidth, spriteHeight),
+          // Start with LPC default size; adjusted in onLoad if PixelLab loads.
+          size: Vector2(64.0, 64.0),
           anchor: Anchor.center,
         );
 
   final String npcName;
   NpcDirection initialDirection;
 
-  /// Width of the sprite render area in logical pixels.
-  final double spriteWidth;
-
-  /// Height of the sprite render area in logical pixels.
-  final double spriteHeight;
+  /// Actual sprite frame dimensions — set during [_preloadSprites].
+  /// LPC = 64, PixelLab = 48.
+  double _frameWidth = 64.0;
+  double _frameHeight = 64.0;
 
   // Per-direction sprite cache — populated lazily in onLoad.
   final Map<NpcDirection, Sprite?> _sprites = {};
@@ -92,6 +92,9 @@ class NpcSpriteComponent extends PositionComponent
     // Pre-load all available directional sprites, idle fallback, and walk frames.
     await _preloadSprites();
 
+    // Update component size to match detected sprite dimensions.
+    size = Vector2(_frameWidth, _frameHeight);
+
     _currentSprite = _sprites[_direction] ?? _sprites[NpcDirection.south];
 
     // If no sprite loaded at all, skip visual component (graceful degradation).
@@ -100,7 +103,7 @@ class NpcSpriteComponent extends PositionComponent
     // Sprite sub-component — sits at (0,0) relative to this component.
     _spriteComponent = SpriteComponent(
       sprite: _currentSprite!,
-      size: Vector2(spriteWidth, spriteHeight),
+      size: Vector2(_frameWidth, _frameHeight),
       anchor: Anchor.topLeft,
       position: Vector2.zero(),
     );
@@ -111,7 +114,7 @@ class NpcSpriteComponent extends PositionComponent
     if (firstWalkAnim != null) {
       _walkComponent = SpriteAnimationComponent(
         animation: firstWalkAnim,
-        size: Vector2(spriteWidth, spriteHeight),
+        size: Vector2(_frameWidth, _frameHeight),
         position: Vector2.zero(),
         playing: false,
       );
@@ -122,7 +125,7 @@ class NpcSpriteComponent extends PositionComponent
     // Name label below the sprite.
     _labelComponent = TextComponent(
       text: _displayName(npcName),
-      position: Vector2(spriteWidth / 2, spriteHeight + 4),
+      position: Vector2(_frameWidth / 2, _frameHeight + 4),
       anchor: Anchor.topCenter,
       textRenderer: TextPaint(
         style: const TextStyle(
@@ -269,6 +272,70 @@ class NpcSpriteComponent extends PositionComponent
   }
 
   Future<void> _preloadSprites() async {
+    // -----------------------------------------------------------------------
+    // Strategy 1: LPC spritesheet (576×256, 9 cols × 4 rows, 64×64 frames)
+    // -----------------------------------------------------------------------
+    final lpcPath = 'assets/sprites/lpc_npcs/${npcName}_walk.png';
+    try {
+      final data = await rootBundle.load(lpcPath);
+      final bytes = data.buffer.asUint8List();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final sheetImage = frame.image;
+
+      // LPC layout: 9 cols × 4 rows, each frame 64×64
+      const frameW = 64.0;
+      const frameH = 64.0;
+      const cols = 9;
+
+      _frameWidth = frameW;
+      _frameHeight = frameH;
+
+      // Map rows to directions: 0=north, 1=west, 2=south, 3=east
+      final rowMap = {
+        NpcDirection.north: 0,
+        NpcDirection.west: 1,
+        NpcDirection.south: 2,
+        NpcDirection.east: 3,
+      };
+
+      for (final entry in rowMap.entries) {
+        final dir = entry.key;
+        final row = entry.value;
+
+        // Static sprite = first frame of that row
+        _sprites[dir] = Sprite(
+          sheetImage,
+          srcPosition: Vector2(0, row * frameH),
+          srcSize: Vector2(frameW, frameH),
+        );
+
+        // Walk animation = all 9 frames in that row
+        final frames = <Sprite>[];
+        for (var col = 0; col < cols; col++) {
+          frames.add(Sprite(
+            sheetImage,
+            srcPosition: Vector2(col * frameW, row * frameH),
+            srcSize: Vector2(frameW, frameH),
+          ));
+        }
+        _walkAnimations[dir] = SpriteAnimation.spriteList(
+          frames,
+          stepTime: 0.1, // 10 FPS walk cycle
+        );
+      }
+
+      return; // LPC loaded successfully — skip PixelLab fallback
+    } catch (_) {
+      // LPC spritesheet not found — fall through to PixelLab loading.
+    }
+
+    // -----------------------------------------------------------------------
+    // Strategy 2 (fallback): PixelLab individual PNGs (48×48)
+    // -----------------------------------------------------------------------
+    _frameWidth = 48.0;
+    _frameHeight = 48.0;
+
     // Attempt to load all four directional sprites.
     for (final dir in NpcDirection.values) {
       final path = 'assets/sprites/npcs/${npcName}_${dir.name}.png';

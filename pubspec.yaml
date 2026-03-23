@@ -115,6 +115,7 @@ flutter:
     - assets/sprites/agents/
     - assets/sprites/avatars/
     - assets/sprites/npcs/
+    - assets/sprites/lpc_npcs/
     - assets/sprites/room_backgrounds/
     - assets/sprites/room_items/furniture/
     - assets/sprites/room_items/decorations/
