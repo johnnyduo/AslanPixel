@@ -114,14 +114,19 @@ function loadFromStorage(): TimelineMessage[] {
   }
 }
 
+const STORAGE_MAX_LINES = 30; // hard cap — prevents QuotaExceededError crash
+
 function appendToStorage(messages: TimelineMessage[]): void {
   try {
     const existing = localStorage.getItem(STORAGE_KEY) ?? "";
-    const newLines = messages.map((m) => JSON.stringify(m)).join("\n");
-    const updated = existing ? `${existing}\n${newLines}` : newLines;
-    localStorage.setItem(STORAGE_KEY, updated);
+    const existingLines = existing ? existing.trim().split("\n").filter(Boolean) : [];
+    const newLines = messages.map((m) => JSON.stringify(m));
+    // Keep only last STORAGE_MAX_LINES lines total
+    const combined = [...existingLines, ...newLines].slice(-STORAGE_MAX_LINES);
+    localStorage.setItem(STORAGE_KEY, combined.join("\n"));
   } catch {
-    // Storage full or unavailable — ignore
+    // Storage full — clear and start fresh rather than crashing
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   }
 }
 
