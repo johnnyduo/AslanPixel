@@ -325,6 +325,12 @@
   50% { opacity: 1; }
 }
 
+@keyframes room-status-bar {
+  0%   { opacity: 0.3; width: 20%; }
+  50%  { opacity: 1;   width: 100%; }
+  100% { opacity: 0.3; width: 20%; }
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
