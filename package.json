@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node api-dev-server.mjs & vite",
+    "dev": "concurrently -k \"node api-dev-server.mjs\" \"vite\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
@@ -78,6 +78,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "dotenv": "^17.3.1",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",

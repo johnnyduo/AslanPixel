@@ -5,7 +5,7 @@
 
 export const config = { runtime: "edge" };
 
-const MODEL = "gemini-2.0-flash-lite-preview-02-05";
+const MODEL = "gemini-3.1-flash-lite-preview";
 
 const PERSONAS = {
   scout: {
@@ -135,36 +135,34 @@ export default async function handler(req) {
         });
       }
 
-      // Store receipt onchain via Node.js endpoint (fire-and-forget, non-blocking)
+      // Store receipt onchain — await so txHash is available for done event
       let receiptId = String(questId).slice(-6);
       let onchainTxHash = null;
 
-      // Call /api/store-receipt asynchronously — do not await, do not block the stream
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : (process.env.NEXT_PUBLIC_BASE_URL || "");
-      fetch(`${baseUrl}/api/store-receipt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intent, success: true, questId }),
-      })
-        .then(async (r) => {
-          if (r.ok) {
-            const data = await r.json().catch(() => ({}));
-            if (data.receiptId) receiptId = String(data.receiptId);
-            if (data.txHash) onchainTxHash = data.txHash;
-            if (data.txHash) {
-              push("message", {
-                id: `${questId}-onchain`,
-                time: ts(),
-                type: "receipt",
-                agentId: "archivist",
-                content: `QuestReceipt #${data.receiptId} stored onchain — TX: ${data.txHash} — HashScan: hashscan.io/testnet/tx/${data.txHash}`,
-              });
-            }
+      try {
+        const baseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : (process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001");
+        const r = await fetch(`${baseUrl}/api/store-receipt`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ intent, success: true, questId }),
+        });
+        if (r.ok) {
+          const data = await r.json().catch(() => ({}));
+          if (data.receiptId) receiptId = String(data.receiptId);
+          if (data.txHash) {
+            onchainTxHash = data.txHash;
+            push("message", {
+              id: `${questId}-onchain`,
+              time: ts(),
+              type: "receipt",
+              agentId: "archivist",
+              content: `QuestReceipt #${data.receiptId} stored onchain — TX: ${data.txHash} — HashScan: hashscan.io/testnet/tx/${data.txHash}`,
+            });
           }
-        })
-        .catch(() => {});
+        }
+      } catch {}
 
       push("message", { id: `${questId}-done`, time: ts(), type: "quest", agentId: "archivist",
         content: `Quest #${receiptId} complete. All agents stood down. Receipt archived to ledger.` });

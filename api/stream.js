@@ -6,7 +6,7 @@
 
 export const config = { runtime: "edge" };
 
-const MODEL = "gemini-2.0-flash-lite-preview-02-05";
+const MODEL = "gemini-3.1-flash-lite-preview";
 
 const AGENTS = {
   scout:      { name: "Nexus",  system: "You are Nexus, Hedera HCS intelligence agent. Mention HCS topic IDs, sequence numbers, Mirror Node data. Short, data-driven. Max 2 sentences." },
