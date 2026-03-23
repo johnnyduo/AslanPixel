@@ -18,30 +18,48 @@ const rooms: Room[] = [
   { name:"ledgerarchive",label:"Ledger Archive",  x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"QuestReceipt — Immutable Log",     stats:["Receipts: 2,041","Last ID: #2041","Hash: 0xab12…"] },
 ];
 
-// Decorations — minimal, balanced: corner trees + corridor lanterns only
+// ── HEDERA KINGDOM DECORATIONS ──────────────────────────────────────────────
+// All trees removed. Pure cyber-fantasy: crystals, nodes, orbs, towers, runes.
 const decorations = [
-  // ── FOUR CORNER TREES (outside building zones) ──
-  { x:"2%",  y:"3%",  type:"tree2" }, { x:"4%",  y:"2%",  type:"tree"  },
-  { x:"96%", y:"3%",  type:"tree2" }, { x:"98%", y:"2%",  type:"tree"  },
-  { x:"2%",  y:"80%", type:"tree2" }, { x:"4%",  y:"82%", type:"tree"  },
-  { x:"96%", y:"80%", type:"tree2" }, { x:"98%", y:"82%", type:"tree"  },
+  // ── FOUR CORNER CRYSTAL PILLARS ──
+  { x:"2.5%", y:"6%",  type:"crystal", color:"#00e5ff" },
+  { x:"97.5%",y:"6%",  type:"crystal", color:"#a78bfa" },
+  { x:"2.5%", y:"82%", type:"crystal", color:"#34d399" },
+  { x:"97.5%",y:"82%", type:"crystal", color:"#fb923c" },
 
-  // ── LEFT WALL MID TREES (between top-left and bottom-left buildings) ──
-  { x:"2%",  y:"38%", type:"tree"  }, { x:"3%",  y:"46%", type:"shrub" },
+  // ── LEFT WALL: Hedera Nodes (between Token Forge & Smart Spire) ──
+  { x:"2.5%", y:"38%", type:"hnode",   color:"#00e5ff" },
+  { x:"2.5%", y:"50%", type:"hnode",   color:"#34d399" },
 
-  // ── RIGHT WALL MID TREES ──
-  { x:"98%", y:"38%", type:"tree"  }, { x:"97%", y:"46%", type:"shrub" },
+  // ── RIGHT WALL: Hedera Nodes (between Mirror Vault & DEX Gate) ──
+  { x:"97.5%",y:"38%", type:"hnode",   color:"#a78bfa" },
+  { x:"97.5%",y:"50%", type:"hnode",   color:"#fb923c" },
 
-  // ── LANTERNS (at corridor junctions — 6 total) ──
-  { x:"30%", y:"27%", type:"lantern", color:"hsl(195 100% 50%)" },
-  { x:"68%", y:"27%", type:"lantern", color:"hsl(280 65% 65%)" },
-  { x:"30%", y:"54%", type:"lantern", color:"hsl(142 70% 45%)" },
-  { x:"68%", y:"54%", type:"lantern", color:"hsl(38 92% 50%)"  },
-  { x:"50%", y:"54%", type:"lantern", color:"hsl(43 90% 55%)"  },
-  { x:"50%", y:"69%", type:"lantern", color:"hsl(0 72% 60%)"   },
+  // ── TOP CORRIDOR: Energy Orbs flanking (y≈27% corridor) ──
+  { x:"31%",  y:"22%", type:"orb",     color:"#00e5ff" },
+  { x:"69%",  y:"22%", type:"orb",     color:"#a78bfa" },
 
-  // ── SMALL ACCENTS (barrels at top corridor) ──
-  { x:"31%", y:"25%", type:"barrel" }, { x:"67%", y:"25%", type:"barrel" },
+  // ── MID CORRIDOR: Rune Stones flanking (y≈54% corridor) ──
+  { x:"31%",  y:"49%", type:"rune",    color:"#34d399" },
+  { x:"69%",  y:"49%", type:"rune",    color:"#fb923c" },
+
+  // ── ARCH CORRIDOR: Data Towers (x≈50%, between Hub & Archive) ──
+  { x:"46%",  y:"62%", type:"tower",   color:"#06b6d4" },
+  { x:"54%",  y:"62%", type:"tower",   color:"#f59e0b" },
+
+  // ── JUNCTION LANTERNS — glowing wayposts at every corridor cross ──
+  { x:"30%",  y:"27%", type:"lantern", color:"#00bfff"  },
+  { x:"68%",  y:"27%", type:"lantern", color:"#c084fc"  },
+  { x:"30%",  y:"54%", type:"lantern", color:"#4ade80"  },
+  { x:"68%",  y:"54%", type:"lantern", color:"#fb923c"  },
+  { x:"50%",  y:"54%", type:"lantern", color:"#fbbf24"  },
+  { x:"50%",  y:"70%", type:"lantern", color:"#f87171"  },
+
+  // ── TOP EDGE: Mini Orbs accent ──
+  { x:"50%",  y:"4%",  type:"orb",     color:"#fbbf24" },
+
+  // ── BOTTOM EDGE: Mini Orbs accent ──
+  { x:"50%",  y:"95%", type:"orb",     color:"#f87171" },
 ];
 
 // PATROL mirrors CSS keyframe waypoints exactly (for direction detection)
@@ -128,99 +146,140 @@ function getAgentDir(id:string, t:number): "s"|"n"|"e"|"w" {
   return getDir(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
 }
 
-// Tree pixel art SVG (tall pine)
-const TreeSVG = () => (
-  <svg width="16" height="22" viewBox="0 0 16 22" style={{ imageRendering:"pixelated" }}>
-    <rect x="7" y="16" width="2" height="6" fill="#3d2a1a"/>
-    <rect x="4" y="12" width="8" height="6" fill="#1a3d1a"/>
-    <rect x="3" y="8"  width="10" height="6" fill="#1e4d1e"/>
-    <rect x="4" y="5"  width="8"  height="5" fill="#256325"/>
-    <rect x="5" y="2"  width="6"  height="5" fill="#2d7a2d"/>
-    <rect x="6" y="0"  width="4"  height="3" fill="#38963a"/>
-    <rect x="7" y="0"  width="2"  height="1" fill="#4ab04c"/>
+// ── HEDERA KINGDOM DECORATIONS ──────────────────────────────────────────────
+
+// Crystal Pillar — tall glowing obelisk
+const CrystalPillarSVG = ({ color = "#00e5ff" }: { color?: string }) => (
+  <svg width="18" height="32" viewBox="0 0 18 32" style={{ imageRendering:"pixelated" }}>
+    {/* base */}
+    <rect x="3" y="28" width="12" height="4" fill="#1a2240"/>
+    <rect x="2" y="27" width="14" height="2" fill="#243060"/>
+    {/* shaft */}
+    <rect x="5" y="8"  width="8"  height="20" fill="#0d1630"/>
+    <rect x="6" y="8"  width="6"  height="20" fill={color} opacity="0.18"/>
+    {/* facets */}
+    <rect x="5" y="10" width="2"  height="16" fill={color} opacity="0.35"/>
+    <rect x="11" y="10" width="2" height="16" fill={color} opacity="0.20"/>
+    {/* cap */}
+    <rect x="6" y="4"  width="6"  height="5"  fill={color} opacity="0.6"/>
+    <rect x="7" y="2"  width="4"  height="3"  fill={color} opacity="0.8"/>
+    <rect x="8" y="0"  width="2"  height="3"  fill="#fff"  opacity="0.9"/>
+    {/* inner glow line */}
+    <rect x="8" y="5"  width="2"  height="22" fill="#fff"  opacity="0.12"/>
   </svg>
 );
 
-// Tree2 — wider oak-style
-const Tree2SVG = () => (
-  <svg width="20" height="18" viewBox="0 0 20 18" style={{ imageRendering:"pixelated" }}>
-    <rect x="9"  y="13" width="2"  height="5"  fill="#3d2a1a"/>
-    <rect x="8"  y="11" width="4"  height="3"  fill="#4a3320"/>
-    <rect x="2"  y="5"  width="16" height="8"  fill="#1a3d1a"/>
-    <rect x="0"  y="6"  width="20" height="6"  fill="#1e4d1e"/>
-    <rect x="2"  y="4"  width="16" height="4"  fill="#256325"/>
-    <rect x="4"  y="2"  width="12" height="5"  fill="#2d7a2d"/>
-    <rect x="6"  y="0"  width="8"  height="4"  fill="#38963a"/>
-    <rect x="3"  y="7"  width="2"  height="2"  fill="#38963a" opacity="0.6"/>
-    <rect x="15" y="7"  width="2"  height="2"  fill="#38963a" opacity="0.6"/>
+// Hedera Node — floating hex beacon
+const HederaNodeSVG = ({ color = "#8b5cf6" }: { color?: string }) => (
+  <svg width="24" height="28" viewBox="0 0 24 28" style={{ imageRendering:"pixelated" }}>
+    {/* pole */}
+    <rect x="11" y="16" width="2" height="12" fill="#1a2240"/>
+    <rect x="10" y="26" width="4" height="2"  fill="#243060"/>
+    {/* hex body */}
+    <polygon points="12,2 20,7 20,17 12,22 4,17 4,7" fill="#0d1630"/>
+    <polygon points="12,4 18,8 18,16 12,20 6,16 6,8"  fill={color} opacity="0.25"/>
+    {/* H rune */}
+    <rect x="9"  y="8"  width="2" height="8"  fill={color} opacity="0.9"/>
+    <rect x="13" y="8"  width="2" height="8"  fill={color} opacity="0.9"/>
+    <rect x="9"  y="11" width="6" height="2"  fill={color} opacity="0.9"/>
+    {/* rim glow */}
+    <polygon points="12,2 20,7 20,17 12,22 4,17 4,7" fill="none"
+      stroke={color} strokeWidth="1" opacity="0.7"/>
   </svg>
 );
 
-// Shrub — low bush
-const ShrubSVG = () => (
-  <svg width="14" height="10" viewBox="0 0 14 10" style={{ imageRendering:"pixelated" }}>
-    <rect x="5"  y="7"  width="4"  height="3"  fill="#3d2a1a"/>
-    <rect x="0"  y="4"  width="14" height="5"  fill="#1e4d1e"/>
-    <rect x="1"  y="2"  width="12" height="5"  fill="#256325"/>
-    <rect x="2"  y="0"  width="10" height="4"  fill="#2d7a2d"/>
-    <rect x="4"  y="1"  width="2"  height="2"  fill="#38963a"/>
-    <rect x="8"  y="1"  width="2"  height="2"  fill="#38963a"/>
+// Energy Orb — pulsing sphere on pedestal
+const EnergyOrbSVG = ({ color = "#f59e0b" }: { color?: string }) => (
+  <svg width="20" height="26" viewBox="0 0 20 26" style={{ imageRendering:"pixelated" }}>
+    {/* pedestal */}
+    <rect x="7"  y="22" width="6"  height="4"  fill="#1a2240"/>
+    <rect x="6"  y="20" width="8"  height="3"  fill="#243060"/>
+    <rect x="8"  y="18" width="4"  height="3"  fill="#2d3a70"/>
+    {/* orb outer */}
+    <rect x="4"  y="4"  width="12" height="12" fill={color} opacity="0.15" rx="6"/>
+    <rect x="5"  y="5"  width="10" height="10" fill={color} opacity="0.30" rx="5"/>
+    <rect x="6"  y="6"  width="8"  height="8"  fill={color} opacity="0.55" rx="4"/>
+    {/* orb core */}
+    <rect x="8"  y="8"  width="4"  height="4"  fill="#fff"  opacity="0.8"/>
+    <rect x="9"  y="9"  width="2"  height="2"  fill="#fff"  opacity="1.0"/>
+    {/* sparkles */}
+    <rect x="3"  y="7"  width="2"  height="2"  fill={color} opacity="0.6"/>
+    <rect x="15" y="9"  width="2"  height="2"  fill={color} opacity="0.5"/>
+    <rect x="9"  y="1"  width="2"  height="2"  fill={color} opacity="0.7"/>
   </svg>
 );
 
-// Flower — small colorful ground cover
-const FlowerSVG = () => (
-  <svg width="12" height="10" viewBox="0 0 12 10" style={{ imageRendering:"pixelated" }}>
-    <rect x="5"  y="5"  width="2"  height="5"  fill="#2d6e2d"/>
-    <rect x="3"  y="6"  width="6"  height="2"  fill="#2d6e2d"/>
-    <rect x="5"  y="2"  width="2"  height="4"  fill="#e86a4a"/>
-    <rect x="4"  y="3"  width="4"  height="2"  fill="#f08060"/>
-    <rect x="5"  y="3"  width="2"  height="2"  fill="#ffdd44"/>
-    <rect x="2"  y="4"  width="2"  height="2"  fill="#e86a4a" opacity="0.7"/>
-    <rect x="8"  y="4"  width="2"  height="2"  fill="#6ab0e8" opacity="0.8"/>
+// Rune Stone — ancient monolith with glowing sigils
+const RuneStoneSVG = ({ color = "#10b981" }: { color?: string }) => (
+  <svg width="20" height="28" viewBox="0 0 20 28" style={{ imageRendering:"pixelated" }}>
+    {/* base slab */}
+    <rect x="2"  y="24" width="16" height="4"  fill="#111827"/>
+    {/* stone body */}
+    <rect x="4"  y="4"  width="12" height="22" fill="#1e293b"/>
+    <rect x="3"  y="5"  width="14" height="20" fill="#243050"/>
+    {/* top arch */}
+    <rect x="5"  y="2"  width="10" height="4"  fill="#2d3a6a"/>
+    <rect x="7"  y="0"  width="6"  height="4"  fill="#3a4880"/>
+    {/* rune glyphs */}
+    <rect x="8"  y="7"  width="4"  height="1"  fill={color} opacity="0.9"/>
+    <rect x="9"  y="8"  width="2"  height="4"  fill={color} opacity="0.9"/>
+    <rect x="8"  y="12" width="4"  height="1"  fill={color} opacity="0.9"/>
+    <rect x="7"  y="15" width="6"  height="1"  fill={color} opacity="0.7"/>
+    <rect x="8"  y="16" width="4"  height="3"  fill={color} opacity="0.5"/>
+    <rect x="9"  y="19" width="2"  height="2"  fill={color} opacity="0.8"/>
+    {/* edge glow */}
+    <rect x="3"  y="5"  width="1"  height="20" fill={color} opacity="0.15"/>
+    <rect x="16" y="5"  width="1"  height="20" fill={color} opacity="0.10"/>
   </svg>
 );
 
-// Lantern pixel art SVG
+// Data Tower — antenna mast broadcasting consensus
+const DataTowerSVG = ({ color = "#06b6d4" }: { color?: string }) => (
+  <svg width="22" height="34" viewBox="0 0 22 34" style={{ imageRendering:"pixelated" }}>
+    {/* base */}
+    <rect x="4"  y="30" width="14" height="4"  fill="#111827"/>
+    <rect x="6"  y="28" width="10" height="3"  fill="#1a2240"/>
+    {/* legs */}
+    <rect x="6"  y="18" width="2"  height="12" fill="#243060"/>
+    <rect x="14" y="18" width="2"  height="12" fill="#243060"/>
+    <rect x="8"  y="22" width="6"  height="2"  fill="#2d3a70"/>
+    {/* mast */}
+    <rect x="10" y="4"  width="2"  height="16" fill="#334080"/>
+    {/* dishes */}
+    <rect x="5"  y="10" width="6"  height="2"  fill={color} opacity="0.8"/>
+    <rect x="5"  y="9"  width="2"  height="1"  fill={color} opacity="0.6"/>
+    <rect x="11" y="14" width="6"  height="2"  fill={color} opacity="0.8"/>
+    <rect x="15" y="13" width="2"  height="1"  fill={color} opacity="0.6"/>
+    {/* signal rings */}
+    <rect x="8"  y="1"  width="6"  height="1"  fill={color} opacity="0.4"/>
+    <rect x="7"  y="0"  width="8"  height="1"  fill={color} opacity="0.25"/>
+    {/* tip beacon */}
+    <rect x="10" y="2"  width="2"  height="3"  fill="#fff"  opacity="0.9"/>
+  </svg>
+);
+
+// Lantern — kept for junction markers
 const LanternSVG = ({ color }: { color: string }) => (
-  <svg width="10" height="18" viewBox="0 0 10 18" style={{ imageRendering:"pixelated" }}>
-    <rect x="4" y="0" width="2" height="3" fill="#888"/>
-    <rect x="3" y="3" width="4" height="1" fill="#aaa"/>
-    <rect x="2" y="4" width="6" height="8" fill="#222" rx="1"/>
-    <rect x="3" y="5" width="4" height="6" fill={color} opacity="0.85"/>
-    <rect x="2" y="12" width="6" height="2" fill="#aaa"/>
-    <rect x="3" y="14" width="4" height="2" fill="#888"/>
-  </svg>
-);
-
-// Barrel SVG
-const BarrelSVG = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" style={{ imageRendering:"pixelated" }}>
-    <rect x="2" y="1" width="8" height="10" fill="#5a3a1a" rx="2"/>
-    <rect x="1" y="3" width="10" height="1" fill="#8a5a2a"/>
-    <rect x="1" y="7" width="10" height="1" fill="#8a5a2a"/>
-    <rect x="0" y="4" width="12" height="3" fill="#6b4422" opacity="0.3"/>
-  </svg>
-);
-
-// Bench SVG
-const BenchSVG = () => (
-  <svg width="18" height="10" viewBox="0 0 18 10" style={{ imageRendering:"pixelated" }}>
-    <rect x="0" y="3" width="18" height="3" fill="#6b4422"/>
-    <rect x="2" y="6" width="2" height="4" fill="#5a3a1a"/>
-    <rect x="14" y="6" width="2" height="4" fill="#5a3a1a"/>
-    <rect x="0" y="2" width="18" height="1" fill="#8a5a2a"/>
+  <svg width="12" height="22" viewBox="0 0 12 22" style={{ imageRendering:"pixelated" }}>
+    <rect x="5" y="0"  width="2"  height="4"  fill="#556"/>
+    <rect x="3" y="4"  width="6"  height="1"  fill="#778"/>
+    <rect x="2" y="5"  width="8"  height="10" fill="#111827"/>
+    <rect x="3" y="6"  width="6"  height="8"  fill={color} opacity="0.75"/>
+    <rect x="4" y="7"  width="4"  height="6"  fill={color} opacity="0.4"/>
+    <rect x="5" y="8"  width="2"  height="4"  fill="#fff"  opacity="0.35"/>
+    <rect x="2" y="15" width="8"  height="2"  fill="#778"/>
+    <rect x="4" y="17" width="4"  height="3"  fill="#556"/>
+    <rect x="5" y="20" width="2"  height="2"  fill="#334"/>
   </svg>
 );
 
 const DECO_COMPONENTS: Record<string, (color?:string) => JSX.Element> = {
-  tree:    () => <TreeSVG />,
-  tree2:   () => <Tree2SVG />,
-  shrub:   () => <ShrubSVG />,
-  flower:  () => <FlowerSVG />,
-  lantern: (c) => <LanternSVG color={c||"#fff"} />,
-  barrel:  () => <BarrelSVG />,
-  bench:   () => <BenchSVG />,
+  crystal:   (c) => <CrystalPillarSVG color={c||"#00e5ff"} />,
+  hnode:     (c) => <HederaNodeSVG    color={c||"#8b5cf6"} />,
+  orb:       (c) => <EnergyOrbSVG     color={c||"#f59e0b"} />,
+  rune:      (c) => <RuneStoneSVG     color={c||"#10b981"} />,
+  tower:     (c) => <DataTowerSVG     color={c||"#06b6d4"} />,
+  lantern:   (c) => <LanternSVG       color={c||"#fff"}    />,
 };
 
 const PixelMap = () => {
@@ -262,7 +321,19 @@ const PixelMap = () => {
   }, []);
 
   return (
-    <div className="flex-1 glass-panel relative overflow-hidden select-none" style={{ minHeight: 0 }}>
+    <div className="flex-1 relative overflow-hidden select-none" style={{
+      minHeight: 0,
+      background: "hsl(225 30% 5% / 0.9)",
+      border: "1px solid hsl(43 90% 55% / 0.22)",
+      borderRadius: "12px",
+      animation: "kingdom-border 4s ease-in-out infinite",
+      boxShadow: `
+        inset 0 0 80px hsl(225 35% 3% / 0.6),
+        0 0 0 1px hsl(43 90% 55% / 0.10),
+        0 8px 40px -8px hsl(225 35% 3% / 0.9),
+        0 0 60px -20px hsl(43 90% 55% / 0.15)
+      `,
+    }}>
 
       {/* ── PIXEL ART MAP BACKGROUND ── */}
       <div className="absolute inset-0" style={{
@@ -271,29 +342,57 @@ const PixelMap = () => {
         backgroundPosition: "center",
         imageRendering: "pixelated",
       }} />
-      {/* Subtle dark vignette only at edges */}
+
+      {/* Hedera Kingdom: deep vignette + ambient color wash */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        background: "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 50%, hsl(225 30% 4% / 0.5) 100%)",
+        background: `
+          radial-gradient(ellipse 90% 85% at 50% 50%, transparent 45%, hsl(225 35% 3% / 0.6) 100%),
+          radial-gradient(ellipse 30% 20% at 15% 15%, hsl(195 100% 50% / 0.06) 0%, transparent 70%),
+          radial-gradient(ellipse 30% 20% at 85% 15%, hsl(280 65% 65% / 0.06) 0%, transparent 70%),
+          radial-gradient(ellipse 30% 20% at 15% 85%, hsl(142 70% 45% / 0.06) 0%, transparent 70%),
+          radial-gradient(ellipse 30% 20% at 85% 85%, hsl(38 92% 50% / 0.06) 0%, transparent 70%),
+          radial-gradient(ellipse 20% 15% at 50% 40%, hsl(43 90% 55% / 0.05) 0%, transparent 70%)
+        `,
       }} />
 
-      {/* ── CORRIDOR DECORATIONS ── */}
+      {/* Subtle scanline overlay — makes it feel more pixel-art authentic */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, hsl(225 35% 3% / 0.08) 3px, hsl(225 35% 3% / 0.08) 4px)",
+        mixBlendMode: "multiply",
+      }} />
+
+      {/* ── KINGDOM DECORATIONS ── */}
       {decorations.map((d, i) => {
         const Component = DECO_COMPONENTS[d.type];
         if (!Component) return null;
-        const isLantern = d.type === "lantern";
+        const col = (d as any).color || "#00e5ff";
+        const glowSizes: Record<string,number> = { crystal:48, hnode:56, orb:44, rune:36, tower:52, lantern:32 };
+        const glowSize = glowSizes[d.type] || 40;
+        const glowOpacity = d.type === "lantern" ? 0.45 : 0.55;
+        const animDur = 1.8 + (i % 7) * 0.4;
         return (
           <div key={i} className="absolute pointer-events-none z-10"
             style={{ left: d.x, top: d.y, transform: "translate(-50%,-100%)" }}>
-            {Component((d as any).color)}
-            {/* Lantern glow */}
-            {isLantern && (
+            {/* Radial glow bloom behind decoration */}
+            <div className="absolute" style={{
+              width: glowSize, height: glowSize,
+              left: "50%", bottom: 0,
+              transform: "translate(-50%, 40%)",
+              background: `radial-gradient(circle, ${col}bb 0%, ${col}44 40%, transparent 70%)`,
+              opacity: glowOpacity,
+              animation: `pulse-glow ${animDur}s ease-in-out infinite`,
+              borderRadius: "50%",
+              filter: "blur(2px)",
+            }} />
+            {Component(col)}
+            {/* Extra sparkle for nodes and crystals */}
+            {(d.type === "hnode" || d.type === "crystal") && (
               <div className="absolute" style={{
-                width: 28, height: 28,
-                left: "50%", top: "60%",
-                transform: "translate(-50%,-50%)",
-                background: `radial-gradient(circle, ${(d as any).color} 0%, transparent 70%)`,
-                opacity: 0.35,
-                animation: `pulse-glow ${2.5 + i * 0.3}s ease-in-out infinite`,
+                width: glowSize * 1.6, height: glowSize * 1.6,
+                left: "50%", bottom: "20%",
+                transform: "translate(-50%, 50%)",
+                background: `radial-gradient(circle, ${col}30 0%, transparent 65%)`,
+                animation: `pulse-glow ${animDur + 0.7}s ease-in-out infinite reverse`,
                 borderRadius: "50%",
               }} />
             )}
@@ -310,20 +409,18 @@ const PixelMap = () => {
             onMouseEnter={() => setHoveredRoom(r.name)}
             onMouseLeave={() => setHoveredRoom(null)}
           >
-            {/* Outer glow bloom — scales with room size via vw units */}
-            <div className="absolute pointer-events-none transition-all duration-500"
+            {/* Outer glow bloom — idle glow + bright on hover */}
+            <div className="absolute pointer-events-none"
               style={{
-                // Extend glow slightly beyond room bounds
-                inset: hov ? `${-r.h * 0.08}%` : "0%",
-                borderRadius: "10px",
+                inset: hov ? `${-r.h * 0.06}%` : "-2px",
+                borderRadius: "8px",
+                border: hov ? `2px solid ${r.color}ee` : `1px solid ${r.color}50`,
                 boxShadow: hov
-                  ? `0 0 ${r.w * 0.4}px ${r.color}55, 0 0 ${r.w * 0.8}px ${r.color}25, inset 0 0 ${r.w * 0.3}px ${r.color}10`
-                  : `0 0 0px transparent`,
-                border: hov ? `2px solid ${r.color}cc` : `1px solid ${r.color}15`,
-                transition: "all 0.35s ease",
-                // Pixel-art scanline overlay on hover
+                  ? `0 0 ${r.w*0.5}px ${r.color}66, 0 0 ${r.w}px ${r.color}22, inset 0 0 ${r.w*0.3}px ${r.color}15`
+                  : `0 0 ${r.w*0.15}px ${r.color}30, 0 0 ${r.w*0.3}px ${r.color}10`,
+                transition: "all 0.4s ease",
                 backgroundImage: hov
-                  ? `repeating-linear-gradient(0deg, transparent, transparent 3px, ${r.color}04 3px, ${r.color}04 4px)`
+                  ? `repeating-linear-gradient(0deg, transparent, transparent 3px, ${r.color}06 3px, ${r.color}06 4px)`
                   : "none",
               }} />
 
