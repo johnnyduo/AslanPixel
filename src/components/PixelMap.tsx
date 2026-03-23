@@ -8,12 +8,12 @@ interface Room {
 }
 
 const rooms: Room[] = [
-  { name:"hub",      label:"Town Square",    x:33, y:30, w:34, h:22, color:"hsl(43 90% 55%)",   icon:"◈", desc:"Central Command",    stats:["6 Agents Active","24 Quests","LIVE"] },
-  { name:"guild",    label:"Guild Hall",      x: 4, y: 8, w:26, h:20, color:"hsl(195 100% 50%)", icon:"⬡", desc:"Agent Coordination", stats:["Intel Feed","318 Ops","ONLINE"] },
-  { name:"vault",    label:"Vault House",     x:70, y: 8, w:26, h:20, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Treasury & Assets",   stats:["12,847 HBAR","3 Tokens","SECURED"] },
-  { name:"strategy", label:"Strategy Tower",  x: 4, y:55, w:26, h:20, color:"hsl(142 70% 45%)",  icon:"▲", desc:"Planning Operations", stats:["Risk: LOW","241 Plans","RUNNING"] },
-  { name:"market",   label:"Market Gate",     x:70, y:55, w:26, h:20, color:"hsl(38 92% 50%)",   icon:"◉", desc:"Execution Hub",       stats:["412 TX Done","0 Pending","READY"] },
-  { name:"archive",  label:"Archive Library", x:33, y:78, w:34, h:18, color:"hsl(0 72% 60%)",    icon:"▣", desc:"Onchain Records",     stats:["Receipt #2041","509 Logs","IMMUTABLE"] },
+  { name:"hub",      label:"Town Square",    x:36, y:32, w:28, h:18, color:"hsl(43 90% 55%)",   icon:"◈", desc:"Central Command",    stats:["6 Agents Active","24 Quests","LIVE"] },
+  { name:"guild",    label:"Guild Hall",      x: 4, y: 6, w:22, h:17, color:"hsl(195 100% 50%)", icon:"⬡", desc:"Agent Coordination", stats:["Intel Feed","318 Ops","ONLINE"] },
+  { name:"vault",    label:"Vault House",     x:74, y: 6, w:22, h:17, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Treasury & Assets",   stats:["12,847 HBAR","3 Tokens","SECURED"] },
+  { name:"strategy", label:"Strategy Tower",  x: 4, y:57, w:22, h:17, color:"hsl(142 70% 45%)",  icon:"▲", desc:"Planning Operations", stats:["Risk: LOW","241 Plans","RUNNING"] },
+  { name:"market",   label:"Market Gate",     x:74, y:57, w:22, h:17, color:"hsl(38 92% 50%)",   icon:"◉", desc:"Execution Hub",       stats:["412 TX Done","0 Pending","READY"] },
+  { name:"archive",  label:"Archive Library", x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"Onchain Records",     stats:["Receipt #2041","509 Logs","IMMUTABLE"] },
 ];
 
 // Decorations along corridors: trees, lanterns, signs, barrels
@@ -40,14 +40,14 @@ const decorations = [
   { x:"48%", y:"65%", type:"barrel" },
 ];
 
-// NPC patrol waypoints — step positions matching real room locations
+// PATROL mirrors CSS keyframe positions exactly (for direction detection)
 const PATROL: Record<string, { x:number; y:number }[]> = {
-  scout:      [{x:10,y:14},{x:17,y:18},{x:25,y:22},{x:34,y:32},{x:44,y:38},{x:50,y:41},{x:44,y:48},{x:34,y:52},{x:17,y:62},{x:10,y:52},{x:10,y:40},{x:10,y:14}],
-  strategist: [{x:10,y:62},{x:17,y:68},{x:25,y:62},{x:34,y:52},{x:44,y:44},{x:50,y:38},{x:58,y:32},{x:72,y:22},{x:82,y:14},{x:72,y:18},{x:65,y:28},{x:50,y:38},{x:34,y:52},{x:10,y:62}],
-  sentinel:   [{x:34,y:32},{x:50,y:32},{x:65,y:32},{x:67,y:44},{x:65,y:52},{x:50,y:56},{x:34,y:52},{x:34,y:44},{x:34,y:32}],
-  treasurer:  [{x:82,y:12},{x:75,y:18},{x:65,y:28},{x:58,y:36},{x:65,y:28},{x:75,y:18},{x:82,y:12}],
-  executor:   [{x:82,y:62},{x:75,y:62},{x:65,y:56},{x:56,y:48},{x:50,y:56},{x:50,y:68},{x:50,y:78},{x:58,y:82},{x:50,y:78},{x:50,y:68},{x:65,y:56},{x:82,y:62}],
-  archivist:  [{x:50,y:88},{x:50,y:82},{x:50,y:74},{x:50,y:65},{x:50,y:56},{x:52,y:65},{x:50,y:74},{x:50,y:82},{x:50,y:88}],
+  scout:      [{x:14,y:18},{x:14,y:18},{x:33,y:18},{x:50,y:32},{x:50,y:44},{x:36,y:52},{x:17,y:57},{x:14,y:65},{x:14,y:65},{x:17,y:45},{x:14,y:18}],
+  strategist: [{x:14,y:65},{x:17,y:57},{x:36,y:52},{x:50,y:41},{x:64,y:41},{x:70,y:28},{x:85,y:18},{x:85,y:18},{x:70,y:28},{x:64,y:41},{x:17,y:57},{x:14,y:65}],
+  sentinel:   [{x:37,y:32},{x:64,y:32},{x:64,y:50},{x:37,y:50},{x:37,y:32},{x:50,y:41},{x:64,y:32},{x:37,y:32}],
+  treasurer:  [{x:85,y:18},{x:85,y:18},{x:70,y:28},{x:66,y:41},{x:66,y:41},{x:70,y:28},{x:85,y:18},{x:85,y:18}],
+  executor:   [{x:85,y:65},{x:85,y:57},{x:66,y:50},{x:50,y:50},{x:50,y:65},{x:50,y:80},{x:50,y:80},{x:50,y:65},{x:66,y:50},{x:85,y:57},{x:85,y:65}],
+  archivist:  [{x:50,y:88},{x:50,y:80},{x:50,y:65},{x:50,y:50},{x:50,y:41},{x:50,y:41},{x:50,y:50},{x:50,y:65},{x:50,y:80},{x:50,y:88}],
 };
 
 function getDir(dx:number, dy:number): "s"|"n"|"e"|"w" {
@@ -285,7 +285,7 @@ const PixelMap = () => {
         const dir   = agentDirs[agent.id] || "e";
         return (
           <div key={agent.id} className="absolute z-30"
-            style={{ animation:`npc-move-${agent.animIndex} ${22+agent.animIndex*4}s steps(1, end) infinite` }}
+            style={{ animation:`npc-move-${agent.animIndex} ${30+agent.animIndex*5}s linear infinite` }}
             onMouseEnter={() => setHoveredAgent(agent.id)}
             onMouseLeave={() => setHoveredAgent(null)}
           >
@@ -367,7 +367,7 @@ const PixelMap = () => {
             <div key={`mm-${a.id}`} className="absolute w-[5px] h-[5px] rounded-full"
               style={{
                 background:a.color, boxShadow:`0 0 4px ${a.color}`,
-                animation:`npc-move-${a.animIndex} ${22+a.animIndex*4}s cubic-bezier(0.45,0,0.55,1) infinite`,
+                animation:`npc-move-${a.animIndex} ${30+a.animIndex*5}s linear infinite`,
               }}/>
           ))}
         </div>
