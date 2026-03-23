@@ -126,66 +126,14 @@ export function generateLocalMessage(agentId: string, _type: string): string {
   return pickRandom(messages);
 }
 
+// Gemini is called server-side only via /api/stream and /api/quest (Vercel Edge).
+// Frontend never holds the API key — no VITE_GEMINI_API_KEY needed.
 export async function generateAgentMessage(
   agentId: string,
-  context: ConversationContext
+  _context: ConversationContext
 ): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-  if (!apiKey) {
-    return generateLocalMessage(agentId, "conversation");
-  }
-
-  const personality = AGENT_PERSONALITIES[agentId] ?? "Professional agent in a Hedera DeFi guild.";
-
-  const agentNames: Record<string, string> = {
-    scout: "Nexus", strategist: "Oryn", sentinel: "Drax",
-    treasurer: "Lyss", executor: "Vex", archivist: "Kael",
-  };
-  const agentDisplayName = agentNames[agentId] ?? agentId;
-
-  const systemInstruction = `You are an AI agent named ${agentDisplayName} (agent ID: ${agentId}) in an agentic Hedera DeFi guild called AslanGuild. Your personality: ${personality}
-
-Respond AS this agent — prefix every message with your name (e.g. "${agentDisplayName}:"). Keep to 1-2 sentences MAX. Stay completely in character. Context: Hedera blockchain operations — HCS topics, HTS tokens, EVM contracts, mirror node queries, tinyhbar gas costs. Use specific Hedera identifiers: topic IDs (0.0.xxxx), TX IDs (0.0.xxx@timestamp), slot numbers, mirror node URLs. Never break character.`;
-
-  const userPrompt = `Trigger: ${context.trigger}. Generate a realistic in-character message for agent ${agentId}.`;
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
-
-  const body = {
-    system_instruction: {
-      parts: [{ text: systemInstruction }],
-    },
-    contents: [
-      {
-        parts: [{ text: userPrompt }],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.9,
-      maxOutputTokens: 150,
-    },
-  };
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
-  const data = (await response.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!text) {
-    throw new Error("Empty response from Gemini");
-  }
-
-  return text;
+  // Always use local fallback — real AI comes through SSE from server
+  return generateLocalMessage(agentId, "conversation");
 }
 
 const WORKFLOW_STEPS: Array<{ agentId: string; type: MessageType }> = [

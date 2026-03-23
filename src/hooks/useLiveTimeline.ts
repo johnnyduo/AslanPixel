@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   type TimelineMessage,
-  generateGroupConversation,
   makeLocalGroupConversation,
 } from "@/lib/agentConversation";
 
@@ -93,18 +92,6 @@ const SEED_MESSAGES: TimelineMessage[] = [
   },
 ];
 
-const TRIGGERS = [
-  "HCS Topic #0.0.1234 sequence gap detected — Nexus investigating",
-  "HTS token #0.0.887432 mint threshold reached — Lyss reviewing allocation",
-  "EVM contract 0x00000000000000000000000000000000004f89a2 upgrade detected — Drax re-auditing",
-  "Mirror node slot 4,192,441 confirmed — Kael archiving receipt bundle",
-  "SaucerSwap HBAR/USDC slippage spike to 0.31% — Drax enforcing cap",
-  "Vex: batch of 3 EVM TXs queued — gas at 2,115 tinyhbar/unit optimal window",
-  "Oryn: HTS yield strategy branch B activated — confidence 87%",
-  "Mirror node lag +420ms — Nexus flagging consensus timestamp skew",
-  "Treasury reconciliation cycle — Lyss verifying 12,847.50 HBAR balance",
-  "New HCS topic subscription — Nexus tracking sequence numbers from #0",
-];
 
 function loadFromStorage(): TimelineMessage[] {
   try {
@@ -147,7 +134,6 @@ export interface UseLiveTimelineReturn {
 export function useLiveTimeline(): UseLiveTimelineReturn {
   const [messages, setMessages] = useState<TimelineMessage[]>([]);
   const [isLive, setIsLive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
   const esRef = useRef<EventSource | null>(null);
@@ -171,92 +157,66 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
     }
   }, []);
 
+  // Local fallback ticker — only fires when SSE is NOT connected
   const scheduleNext = useCallback(() => {
     if (!isMounted.current) return;
-    // Randomize between 8-12 seconds
     const delay = 8000 + Math.random() * 4000;
-    timerRef.current = setTimeout(async () => {
+    timerRef.current = setTimeout(() => {
       if (!isMounted.current) return;
-      // Skip if backend SSE is handling messages
-      if (backendConnected.current) {
-        scheduleNext();
-        return;
-      }
+      if (backendConnected.current) { scheduleNext(); return; }
 
-      setIsLive(true);
-      setError(null);
-
-      const trigger = TRIGGERS[Math.floor(Math.random() * TRIGGERS.length)];
-      let newMessages: TimelineMessage[];
-
-      try {
-        newMessages = await generateGroupConversation(trigger);
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : "Unknown error";
-        setError(errMsg);
-        newMessages = makeLocalGroupConversation();
-      }
-
-      if (!isMounted.current) return;
-
-      setIsLive(false);
-
-      // Slice to 2-4 messages for the batch
-      const batch = newMessages.slice(0, 2 + Math.floor(Math.random() * 3));
-
+      const batch = makeLocalGroupConversation();
       appendToStorage(batch);
-
-      setMessages((prev) => {
-        const combined = [...batch, ...prev];
-        return combined.slice(0, MAX_MESSAGES);
-      });
-
+      setMessages((prev) => [...batch, ...prev].slice(0, MAX_MESSAGES));
       scheduleNext();
     }, delay);
   }, []);
 
-  // When deployed (not localhost), try /api/stream backend SSE first
+  // Always connect to /api/stream SSE — works on Vercel Edge (all envs)
+  // Key stays server-side, browser never sees GEMINI_API_KEY
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const isDeployed = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
-    if (!isDeployed) return;
 
-    const es = new EventSource("/api/stream");
-    esRef.current = es;
+    let es: EventSource;
+    let retryTimeout: ReturnType<typeof setTimeout>;
 
-    // Give 5s for connection to establish
-    const timeout = setTimeout(() => {
-      if (!backendConnected.current) {
-        // Backend not sending — close and fall through to Gemini
-        es.close();
-      }
-    }, 5000);
+    const connect = () => {
+      es = new EventSource("/api/stream");
+      esRef.current = es;
 
-    es.onmessage = (event) => {
-      if (!isMounted.current) return;
-      try {
-        const data = JSON.parse(event.data) as TimelineMessage;
-        if (!data.id || !data.content) return;
+      es.addEventListener("ping", () => {
         backendConnected.current = true;
-        clearTimeout(timeout);
-        setMessages((prev) => {
-          const combined = [data, ...prev];
-          return combined.slice(0, MAX_MESSAGES);
-        });
-      } catch {
-        // Ignore parse errors
-      }
+        setIsLive(true);
+      });
+
+      es.addEventListener("message", (event) => {
+        if (!isMounted.current) return;
+        try {
+          const data = JSON.parse(event.data) as TimelineMessage;
+          if (!data.id || !data.content) return;
+          backendConnected.current = true;
+          setIsLive(true);
+          appendToStorage([data]);
+          setMessages((prev) => [data, ...prev].slice(0, MAX_MESSAGES));
+        } catch { /* ignore */ }
+      });
+
+      es.onerror = () => {
+        backendConnected.current = false;
+        setIsLive(false);
+        es.close();
+        // Retry after 15s
+        retryTimeout = setTimeout(connect, 15000);
+      };
     };
 
-    es.onerror = () => {
-      backendConnected.current = false;
-      es.close();
-    };
+    connect();
 
     return () => {
-      clearTimeout(timeout);
-      es.close();
+      clearTimeout(retryTimeout);
+      es?.close();
       backendConnected.current = false;
+      setIsLive(false);
     };
   }, []);
 
@@ -271,5 +231,5 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
     };
   }, [scheduleNext]);
 
-  return { messages, isLive, error };
+  return { messages, isLive, error: null };
 }
