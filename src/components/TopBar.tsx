@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Wallet, TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
+import { JsonRpcProvider, Contract } from "ethers";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
 import { useHbarPrice } from "@/hooks/useHbarPrice";
 
-// MockUSDC Hedera token ID (EVM: 0x152Bf42A48677b678c658E452788ea2687525BF7)
-const MOCK_USDC_TOKEN_ID = "0.0.5769177";
+// MockUSDC EVM address on Hedera testnet (6 decimals)
+const MOCK_USDC_EVM = "0x152Bf42A48677b678c658E452788ea2687525BF7";
+const ERC20_BALANCE_ABI = ["function balanceOf(address) view returns (uint256)"];
+const HEDERA_TESTNET_RPC = "https://testnet.hashio.io/api";
 
 interface TopBarProps {
   onDashboardToggle?: () => void;
@@ -28,35 +31,29 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
     }
 
     const fetchBalances = async () => {
-      // HBAR balance
+      const provider = new JsonRpcProvider(HEDERA_TESTNET_RPC);
+
+      // HBAR balance via eth_getBalance (in wei = tinybar on Hedera)
       try {
-        const res = await fetch(`/api/hedera?path=/api/v1/accounts/${address}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.balance?.balance != null) {
-            setHbarBalance(json.balance.balance / 1e8);
-          }
-        }
+        const weiBalance = await provider.getBalance(address);
+        // Hedera: 1 HBAR = 1e8 tinybar, but eth_getBalance returns tinybar as wei-equivalent
+        setHbarBalance(Number(weiBalance) / 1e8);
       } catch {
-        // ignore
+        // fallback to mirror node
+        try {
+          const res = await fetch(`/api/hedera?path=/api/v1/accounts/${address}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.balance?.balance != null) setHbarBalance(json.balance.balance / 1e8);
+          }
+        } catch { /* ignore */ }
       }
 
-      // USDC balance via Mirror Node token list
+      // USDC balance via ERC-20 balanceOf (always correct regardless of token association)
       try {
-        const res = await fetch(
-          `https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}/tokens`
-        );
-        if (res.ok) {
-          const json = await res.json();
-          const tokens: { token_id: string; balance: number }[] = json?.tokens ?? [];
-          const found = tokens.find((t) => t.token_id === MOCK_USDC_TOKEN_ID);
-          if (found) {
-            // MockUSDC has 6 decimals
-            setUsdcBalance(found.balance / 1e6);
-          } else {
-            setUsdcBalance(0);
-          }
-        }
+        const usdc = new Contract(MOCK_USDC_EVM, ERC20_BALANCE_ABI, provider);
+        const raw: bigint = await usdc.balanceOf(address);
+        setUsdcBalance(Number(raw) / 1e6);
       } catch {
         // ignore
       }

@@ -1,18 +1,26 @@
 /**
  * PaymentGate — x402-style agent wage payment modal
  * Shown before vote panel. Requires 1 USDC to activate agents.
- * If wallet connected on Hedera testnet → real USDC transfer via HTS
+ * If wallet connected on Hedera testnet (MetaMask/EVM) → real ERC-20 USDC transfer
  * Otherwise → demo mode bypass (shows payment simulation)
  */
 import { useState } from "react";
 import { Zap, CheckCircle, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
-import { useAppKitAccount, useAppKitState } from "@reown/appkit/react";
+import { useAppKitAccount, useAppKitState, useAppKitProvider } from "@reown/appkit/react";
+import { BrowserProvider, Contract } from "ethers";
 import { useHbarPrice } from "@/hooks/useHbarPrice";
 
-// MockUSDC token on Hedera testnet
-const MOCK_USDC_TOKEN_ID = "0.0.5769177";
-const AGENT_TREASURY = "0.0.5769159"; // receives wages
+// MockUSDC EVM address on Hedera testnet (6 decimals)
+const MOCK_USDC_EVM = "0x152Bf42A48677b678c658E452788ea2687525BF7";
+// Treasury EVM address (AgentRegistry deployer / receives wages)
+const TREASURY_EVM  = "0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4";
 const WAGE_USDC = "1.00";
+const WAGE_RAW  = 1_000_000n; // 1 USDC · 6 decimals
+
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address) view returns (uint256)",
+];
 
 interface PaymentGateProps {
   intent: string;
@@ -33,50 +41,56 @@ type PayState = "idle" | "signing" | "broadcasting" | "confirmed" | "demo";
 
 export default function PaymentGate({ intent, onPaid, onDismiss }: PaymentGateProps) {
   const [payState, setPayState] = useState<PayState>("idle");
-  const [txId, setTxId] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
   const { isConnected, address } = useAppKitAccount();
   const { selectedNetworkId } = useAppKitState();
+  const { walletProvider } = useAppKitProvider("eip155");
   const { price } = useHbarPrice();
   const isHedera = selectedNetworkId === "eip155:296";
   const usdcInHbar = price > 0 ? (1 / price).toFixed(1) : "~15";
 
   const handlePay = async () => {
-    if (!isConnected || !isHedera) {
+    setErrMsg(null);
+
+    if (!isConnected || !isHedera || !walletProvider) {
       // Demo mode — simulate payment
       setPayState("demo");
       setTimeout(() => {
-        setTxId(`0.0.5769159@${Math.floor(Date.now() / 1000)}.000000000`);
+        setTxHash(`0x${Array.from({length:64},()=>Math.floor(Math.random()*16).toString(16)).join("")}`);
         setTimeout(() => onPaid(), 1400);
       }, 1200);
       return;
     }
 
-    // Real payment via Hedera SDK (requires HashPack / MetaMask)
-    setPayState("signing");
     try {
-      // Submit via our backend proxy to avoid CORS + use server-side HTS transfer
-      const res = await fetch("/api/pay-wage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from: address, tokenId: MOCK_USDC_TOKEN_ID, amount: 1_000_000 }),
-      });
-      setPayState("broadcasting");
-      if (res.ok) {
-        const data = await res.json();
-        setTxId(data.transactionId ?? null);
-        setPayState("confirmed");
-        setTimeout(() => onPaid(), 1200);
-      } else {
-        // Fallback to demo if API not configured
-        setPayState("demo");
-        setTimeout(() => {
-          setTxId(`demo-${Date.now()}`);
-          setTimeout(() => onPaid(), 1200);
-        }, 800);
+      setPayState("signing");
+      const provider  = new BrowserProvider(walletProvider as Parameters<typeof BrowserProvider>[0]);
+      const signer    = await provider.getSigner();
+      const usdc      = new Contract(MOCK_USDC_EVM, ERC20_ABI, signer);
+
+      // Check balance first
+      const bal: bigint = await usdc.balanceOf(address);
+      if (bal < WAGE_RAW) {
+        setErrMsg(`Insufficient USDC — you have ${(Number(bal) / 1e6).toFixed(2)}, need 1.00`);
+        setPayState("idle");
+        return;
       }
-    } catch {
-      setPayState("demo");
-      setTimeout(() => onPaid(), 1800);
+
+      setPayState("broadcasting");
+      const tx = await usdc.transfer(TREASURY_EVM, WAGE_RAW);
+      setTxHash(tx.hash);
+      await tx.wait();
+      setPayState("confirmed");
+      setTimeout(() => onPaid(), 1200);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("user rejected") || msg.includes("ACTION_REJECTED")) {
+        setErrMsg("Transaction rejected by user");
+      } else {
+        setErrMsg(msg.slice(0, 80));
+      }
+      setPayState("idle");
     }
   };
 
@@ -153,16 +167,18 @@ export default function PaymentGate({ intent, onPaid, onDismiss }: PaymentGatePr
         </div>
 
         {/* Status / TX confirmed */}
-        {isDone && txId && (
+        {isDone && txHash && (
           <div className="flex items-center gap-2 px-2 py-1.5 rounded"
             style={{ background: "hsl(142 70% 50% / 0.08)", border: "1px solid hsl(142 70% 50% / 0.3)" }}>
             <CheckCircle className="w-3 h-3 text-success shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-[8px] font-pixel text-success">PAYMENT CONFIRMED</p>
-              <p className="text-[8px] font-mono text-muted-foreground truncate mt-0.5">{txId}</p>
+              <p className="text-[8px] font-mono text-muted-foreground truncate mt-0.5">
+                {txHash.slice(0,10)}…{txHash.slice(-8)}
+              </p>
             </div>
-            {!txId.startsWith("demo") && (
-              <a href={`https://hashscan.io/testnet/transaction/${txId}`}
+            {txHash.startsWith("0x") && txHash.length === 66 && (
+              <a href={`https://hashscan.io/testnet/transaction/${txHash}`}
                 target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-3 h-3 text-cyan" />
               </a>
@@ -170,7 +186,16 @@ export default function PaymentGate({ intent, onPaid, onDismiss }: PaymentGatePr
           </div>
         )}
 
-        {/* Wallet status hint */}
+        {/* Error */}
+        {errMsg && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded"
+            style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.3)" }}>
+            <AlertTriangle className="w-3 h-3 shrink-0 text-destructive" />
+            <p className="text-[8px] font-mono text-destructive leading-snug">{errMsg}</p>
+          </div>
+        )}
+
+        {/* Wallet status hints */}
         {!isConnected && payState === "idle" && (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded"
             style={{ background: "hsl(38 92% 55% / 0.08)", border: "1px solid hsl(38 92% 55% / 0.25)" }}>
