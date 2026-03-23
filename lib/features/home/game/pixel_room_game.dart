@@ -120,26 +120,24 @@ class PixelAgentComponent extends PositionComponent
   }
 
   Future<void> _loadStatusSprite() async {
-    final agentName = _agentSpriteName(agentType);
-    final statusName = _statusSpriteName(_agentStatus);
-    final path = 'assets/sprites/agents/agent_${agentName}_$statusName.png';
+    // Try LPC walk spritesheet first (576×256 = 9 cols × 4 rows × 64×64)
+    final lpcName = _agentLpcName(agentType);
+    final lpcPath = 'assets/sprites/lpc_npcs/agent_${lpcName}_walk.png';
 
     try {
-      final data = await rootBundle.load(path);
+      final data = await rootBundle.load(lpcPath);
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       final sheetImg = frame.image;
 
-      // Agent sprites are sprite sheets (e.g. 64×16 = 4 frames of 16×16).
-      // Use Sprite's built-in srcPosition/srcSize to crop the first frame
-      // instead of PictureRecorder which can fail on some devices.
-      final frameH = sheetImg.height.toDouble();
-      final frameW = frameH; // Each frame is square (16×16)
+      // LPC layout: row 2 = south (facing camera), col 0 = first frame
+      const frameW = 64.0;
+      const frameH = 64.0;
 
       final sprite = Sprite(
         sheetImg,
-        srcPosition: Vector2(0, 0),
+        srcPosition: Vector2(0, 2 * frameH), // row 2 = south
         srcSize: Vector2(frameW, frameH),
       );
 
@@ -153,8 +151,8 @@ class PixelAgentComponent extends PositionComponent
         );
         await add(_spriteComp!);
       }
-    } catch (e) {
-      // Fallback to colored circle if sprite fails
+    } catch (_) {
+      // Fallback to colored circle
       if (_spriteComp == null) {
         final circle = CircleComponent(
           radius: _spriteSize / 2,
@@ -164,6 +162,15 @@ class PixelAgentComponent extends PositionComponent
         );
         await add(circle);
       }
+    }
+  }
+
+  String _agentLpcName(AgentType type) {
+    switch (type) {
+      case AgentType.analyst: return 'analyst';
+      case AgentType.scout: return 'scout';
+      case AgentType.risk: return 'risk';
+      case AgentType.social: return 'social';
     }
   }
 
