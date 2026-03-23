@@ -48,9 +48,10 @@ async function run(intent, success, questId) {
 
   const inputHash  = await sha256Hex(intent);
   const outputHash = await sha256Hex(intent + (questId ?? Date.now()));
-  const txHashBytes = "0x" + "00".repeat(32);
+  // Use zero bytes as placeholder — real txHash is returned after receipt confirmed
+  const txHashPlaceholder = "0x" + "00".repeat(32);
 
-  const tx = await contract.storeReceipt(inputHash, outputHash, txHashBytes, intent, Boolean(success));
+  const tx = await contract.storeReceipt(inputHash, outputHash, txHashPlaceholder, intent, Boolean(success));
   const receipt = await tx.wait();
 
   let receiptId = questId;

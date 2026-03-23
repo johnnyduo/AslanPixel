@@ -96,6 +96,49 @@ function PixelGrid() {
   );
 }
 
+// Pixel lion head — pure CSS pixel art
+function PixelLion() {
+  // 16x16 grid, each cell is 0 (transparent), 1 (mane/gold), 2 (face/tan), 3 (dark/shadow), 4 (eye/white), 5 (nose/pink)
+  const G = [
+    [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,1,1,1,2,2,2,2,2,2,2,2,1,1,1,0],
+    [1,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1],
+    [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],
+    [1,1,2,2,4,3,2,2,2,2,3,4,2,2,1,1],
+    [1,1,2,2,4,3,2,2,2,2,3,4,2,2,1,1],
+    [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],
+    [1,1,2,2,2,5,5,2,2,5,5,2,2,2,1,1],
+    [1,1,2,2,2,2,3,3,3,3,2,2,2,2,1,1],
+    [1,1,1,2,2,2,2,2,2,2,2,2,2,1,1,1],
+    [0,1,1,1,2,2,2,2,2,2,2,2,1,1,1,0],
+    [0,1,1,1,1,2,2,2,2,2,2,1,1,1,1,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ];
+  const COLORS = ["transparent","#f59e0b","#fcd28d","#92400e","#fffbf0","#f97316"];
+  const SIZE = 14; // px per cell
+
+  return (
+    <div className="relative z-10 mb-6 flex justify-center" style={{ filter: "drop-shadow(0 0 24px rgba(245,158,11,0.5))" }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(16, ${SIZE}px)`, imageRendering: "pixelated" }}>
+        {G.flat().map((v, i) => (
+          <div
+            key={i}
+            style={{
+              width: SIZE,
+              height: SIZE,
+              background: COLORS[v],
+              animation: v === 4 ? "pulse 2s ease-in-out infinite" : undefined,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Scrolling live feed
 function LiveFeed() {
   const [lines, setLines] = useState<typeof LIVE_EVENTS>([]);
@@ -168,10 +211,19 @@ export default function Landing() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(43,131,255,0.06) 0%, transparent 70%)" }} />
 
-        {/* Hedera badge */}
-        <div className="relative z-10 mb-6 flex items-center gap-2 border border-amber-500/30 rounded px-3 py-1 bg-amber-500/5">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          <span className="text-amber-400 text-xs tracking-widest uppercase">Built on Hedera Testnet</span>
+        {/* Pixel lion mascot */}
+        <PixelLion />
+
+        {/* Hedera AgentKit badge */}
+        <div className="relative z-10 mb-4 flex flex-wrap justify-center items-center gap-2">
+          <div className="flex items-center gap-2 border border-amber-500/30 rounded px-3 py-1 bg-amber-500/5">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-amber-400 text-xs tracking-widest uppercase">Built on Hedera Testnet</span>
+          </div>
+          <div className="flex items-center gap-2 border border-purple-500/40 rounded px-3 py-1 bg-purple-500/5">
+            <span className="text-purple-300 text-xs">⚡</span>
+            <span className="text-purple-300 text-xs tracking-widest uppercase font-bold">Powered by Hedera AgentKit</span>
+          </div>
         </div>
 
         {/* Title */}
@@ -179,7 +231,7 @@ export default function Landing() {
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-2"
             style={{ textShadow: "0 0 40px rgba(43,131,255,0.4)" }}>
             <span className="text-amber-400">Aslan</span>
-            <span className="text-white">Guild</span>
+            <span className="text-white"> Pixel</span>
           </h1>
           <p className="text-lg md:text-xl text-slate-400 tracking-widest uppercase">
             Agentic AI Society on Hedera
@@ -200,13 +252,13 @@ export default function Landing() {
           className="relative z-10 group px-10 py-4 text-base font-bold tracking-widest uppercase border-2 border-amber-500 text-amber-400 hover:bg-amber-500 hover:text-black transition-all duration-200 cursor-pointer"
           style={{ imageRendering: "pixelated" }}
         >
-          <span className="group-hover:opacity-0 transition-opacity">▶ Enter the Guild</span>
+          <span className="group-hover:opacity-0 transition-opacity">▶ Enter the Pixel</span>
           <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            Entering...
+            Entering Pixel...
           </span>
         </button>
 
-        <p className="relative z-10 mt-4 text-slate-600 text-xs">Live demo — Hedera Testnet — No signup needed</p>
+        <p className="relative z-10 mt-4 text-slate-600 text-xs">Live demo — Hedera Testnet — No signup needed · Powered by Hedera AgentKit</p>
 
         {/* Stats */}
         <div className="relative z-10 mt-14 grid grid-cols-2 md:grid-cols-4 gap-px border border-slate-800 bg-slate-800">
@@ -375,14 +427,15 @@ export default function Landing() {
           onClick={handleEnter}
           className="group px-12 py-5 text-base font-bold tracking-widest uppercase border-2 border-amber-500 text-amber-400 hover:bg-amber-500 hover:text-black transition-all duration-200 cursor-pointer"
         >
-          ▶ Enter the Guild
+          ▶ Enter the Pixel
         </button>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-slate-900 py-8 px-4 text-center text-slate-700 text-xs">
-        <p>AslanGuild — Hedera Testnet — Account 0.0.5769159</p>
+        <p>Aslan Pixel — Hedera Testnet — Account 0.0.5769159</p>
         <p className="mt-1">QuestReceipt.sol · AgentRegistry.sol · PolicyManager.sol · MockUSDC · USDCFaucet</p>
+        <p className="mt-2 text-purple-800">⚡ Powered by Hedera AgentKit</p>
       </footer>
     </div>
   );
