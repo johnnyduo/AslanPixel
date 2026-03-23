@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { AGENTS } from "@/data/agents";
+import { useLiveTimeline } from "@/hooks/useLiveTimeline";
+import type { TimelineMessage } from "@/lib/agentConversation";
 
 interface Room {
   name: string; label: string;
@@ -282,25 +284,77 @@ const DECO_COMPONENTS: Record<string, (color?:string) => JSX.Element> = {
   lantern:   (c) => <LanternSVG       color={c||"#fff"}    />,
 };
 
+// Strip "AgentName: " prefix from message content for cleaner bubble display
+function stripPrefix(content: string): string {
+  return content.replace(/^[A-Za-z]+:\s*/, "");
+}
+
 const PixelMap = () => {
   const [hoveredRoom,  setHoveredRoom]  = useState<string|null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
-  const [activeQuote,  setActiveQuote]  = useState<{id:string;quote:string}|null>(null);
+  // activeBubble: one agent speaks, then a reply agent responds
+  const [activeBubble, setActiveBubble] = useState<{
+    speakerId: string;
+    msg: TimelineMessage;
+    replyId?: string;
+    replyMsg?: TimelineMessage;
+  } | null>(null);
   const [agentDirs,    setAgentDirs]    = useState<Record<string,"s"|"n"|"e"|"w">>({});
-  const timerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const bubbleTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
   const startRef = useRef(Date.now());
 
-  // Quote cycling
+  // Pull live messages from the shared timeline hook
+  const { messages: liveMessages } = useLiveTimeline();
+
+  // Build per-agent latest message map
+  const latestByAgent = useRef<Record<string, TimelineMessage>>({});
   useEffect(() => {
-    const cycle = () => {
-      const a = AGENTS[Math.floor(Math.random() * AGENTS.length)];
-      setActiveQuote({ id: a.id, quote: a.quote });
-      timerRef.current = setTimeout(() => setActiveQuote(null), 3500);
+    const map: Record<string, TimelineMessage> = {};
+    // liveMessages is newest-first; iterate to get latest per agent
+    for (const m of [...liveMessages].reverse()) {
+      map[m.agentId] = m;
+    }
+    latestByAgent.current = map;
+  }, [liveMessages]);
+
+  // Conversation cycling — pick a speaker from latest messages, then find a "reply" agent
+  useEffect(() => {
+    const showNext = () => {
+      const msgs = liveMessages;
+      if (msgs.length === 0) return;
+
+      // Pick a random recent message as the "speaker"
+      const pool = msgs.slice(0, Math.min(msgs.length, 12));
+      const speakerMsg = pool[Math.floor(Math.random() * pool.length)];
+      const speakerId = speakerMsg.agentId;
+
+      // Find a different agent's message as "reply"
+      const replyPool = pool.filter(m => m.agentId !== speakerId);
+      const replyMsg = replyPool.length > 0
+        ? replyPool[Math.floor(Math.random() * replyPool.length)]
+        : undefined;
+
+      setActiveBubble({
+        speakerId,
+        msg: speakerMsg,
+        replyId: replyMsg?.agentId,
+        replyMsg,
+      });
+
+      // Show for 4.5s then clear
+      if (bubbleTimerRef.current) clearTimeout(bubbleTimerRef.current);
+      bubbleTimerRef.current = setTimeout(() => setActiveBubble(null), 4500);
     };
-    const iv = setInterval(cycle, 6000);
-    const init = setTimeout(cycle, 800);
-    return () => { clearInterval(iv); clearTimeout(init); if (timerRef.current) clearTimeout(timerRef.current); };
-  }, []);
+
+    // Start quickly, then repeat every 6s
+    const init = setTimeout(showNext, 1200);
+    const iv = setInterval(showNext, 6000);
+    return () => {
+      clearTimeout(init);
+      clearInterval(iv);
+      if (bubbleTimerRef.current) clearTimeout(bubbleTimerRef.current);
+    };
+  }, [liveMessages]);
 
   // Direction tracking — durations must match CSS @keyframes npc-move-N exactly
   // animIndex: scout=1(35s), strategist=2(40s), sentinel=3(45s), treasurer=4(50s), executor=5(55s), archivist=6(60s)
@@ -507,36 +561,81 @@ const PixelMap = () => {
 
       {/* ── NPCs ── */}
       {AGENTS.map((agent) => {
-        const isHov = hoveredAgent === agent.id;
-        const isQ   = activeQuote?.id === agent.id;
-        const dir   = agentDirs[agent.id] || "e";
+        const isHov     = hoveredAgent === agent.id;
+        const isSpeaker = activeBubble?.speakerId === agent.id;
+        const isReplier = activeBubble?.replyId    === agent.id;
+        const dir       = agentDirs[agent.id] || "e";
+
+        // Determine what to show in bubble
+        const showBubble = isHov || isSpeaker || isReplier;
+        const bubbleMsg  = isHov
+          ? (latestByAgent.current[agent.id]?.content ?? agent.quote)
+          : isSpeaker
+          ? activeBubble!.msg.content
+          : isReplier
+          ? activeBubble!.replyMsg!.content
+          : "";
+        const msgType = isHov
+          ? (latestByAgent.current[agent.id]?.type ?? "conversation")
+          : isSpeaker
+          ? activeBubble!.msg.type
+          : activeBubble?.replyMsg?.type ?? "conversation";
+
+        const TYPE_COLORS: Record<string,string> = {
+          conversation:"#60a5fa", tool_call:"#fbbf24", decision:"#60a5fa",
+          transaction:"#4ade80", alert:"#fb923c", policy:"#4ade80",
+          receipt:"#f87171", quest:"#fbbf24",
+        };
+        const typeColor = TYPE_COLORS[msgType] ?? agent.color;
+
         return (
           <div key={agent.id} className="absolute z-30"
             style={{ animation:`npc-move-${agent.animIndex} ${[35,40,45,50,55,60][agent.animIndex-1]??35}s linear infinite` }}
             onMouseEnter={() => setHoveredAgent(agent.id)}
             onMouseLeave={() => setHoveredAgent(null)}
           >
-            {/* Speech bubble */}
-            {(isHov || isQ) && (
+            {/* Speech bubble — live message content */}
+            {showBubble && bubbleMsg && (
               <div className="absolute z-40 pointer-events-none"
                 style={{
-                  bottom:"calc(100% + 6px)", left:"32px", transform:"translateX(-50%)",
-                  width:148, padding:"5px 8px", borderRadius:6,
-                  background:"hsl(225 28% 9% / 0.98)",
-                  border:`1px solid ${agent.color}55`,
-                  boxShadow:`0 0 20px ${agent.color}25`,
-                  animation:"timeline-enter 0.15s ease-out",
+                  bottom:"calc(100% + 8px)",
+                  left: "50%", transform:"translateX(-50%)",
+                  width: 170, padding:"6px 10px", borderRadius: 8,
+                  background:"hsl(225 32% 8% / 0.97)",
+                  border:`1px solid ${agent.color}66`,
+                  boxShadow:`0 0 24px ${agent.color}30, 0 4px 16px hsl(225 35% 3%/0.8)`,
+                  backdropFilter:"blur(8px)",
+                  animation:"timeline-enter 0.18s ease-out",
                 }}>
-                {isHov && (
-                  <div className="font-pixel text-[7px] mb-1" style={{ color: agent.color }}>
-                    {agent.name} · {agent.role}
+                {/* Agent name + type badge */}
+                <div className="flex items-center justify-between mb-1 gap-1">
+                  <span className="font-pixel text-[7px]" style={{ color: agent.color }}>
+                    {agent.name}
+                  </span>
+                  <span className="font-pixel text-[6px] px-1 rounded-sm"
+                    style={{ color: typeColor, background: typeColor + "18", border:`1px solid ${typeColor}30` }}>
+                    {msgType.replace("_"," ").toUpperCase()}
+                  </span>
+                </div>
+                {/* Message content — strip agent name prefix */}
+                <p className="text-[8px] font-mono leading-relaxed"
+                  style={{ color: agent.color + "ee" }}>
+                  {stripPrefix(bubbleMsg).slice(0, 120)}{bubbleMsg.length > 120 ? "…" : ""}
+                </p>
+                {/* Reply indicator */}
+                {isReplier && (
+                  <div className="flex items-center gap-1 mt-1 pt-1 border-t"
+                    style={{ borderColor: agent.color + "25" }}>
+                    <span className="text-[6px] font-pixel" style={{ color: agent.color + "70" }}>
+                      ↩ replying
+                    </span>
                   </div>
                 )}
-                <p className="text-[8px] font-mono leading-snug" style={{ color: agent.color+"dd" }}>
-                  "{agent.quote}"
-                </p>
+                {/* Tail */}
                 <div className="absolute top-full left-1/2 -translate-x-1/2"
-                  style={{ width:0, height:0, borderLeft:"4px solid transparent", borderRight:"4px solid transparent", borderTop:`4px solid ${agent.color}55` }}/>
+                  style={{ width:0, height:0,
+                    borderLeft:"5px solid transparent", borderRight:"5px solid transparent",
+                    borderTop:`5px solid ${agent.color}55` }}/>
               </div>
             )}
             {/* Sprite */}
