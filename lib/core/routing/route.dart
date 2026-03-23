@@ -66,10 +66,8 @@ class _RootPageState extends State<RootPage> {
           body: Center(child: CircularProgressIndicator()),
         );
       case AuthStatus.notloggedin:
-        return BlocProvider<AuthBloc>(
-          create: (_) => AuthBloc(repository: FirebaseAuthDatasource()),
-          child: const SignInPage(),
-        );
+        // Skip login — go straight to home for development/demo
+        return MainTabsPage(tabIndex: widget.tabIndex ?? 0);
       case AuthStatus.loggedin:
         if (!currentUser.onboardingComplete) {
           return const OnboardingPage();

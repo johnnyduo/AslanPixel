@@ -111,30 +111,34 @@ class RoomCollisionMap {
   }
 
   // ---------------------------------------------------------------------------
-  // Default room layout for "starter" room (Stardew Valley–style pixel art)
+  // Default room layout — NPCs can walk freely across most of the room.
   //
   // 10 columns × 20 rows (400×800 px)
   //
-  // Legend:
-  //   . = walkable floor
-  //   # = blocked (wall/furniture/decoration)
-  //
-  // Row 0-9:   Wall + desk + furniture + bookshelves — ALL BLOCKED
-  // Row 10-17: Open walkable floor (main NPC walking area), edges blocked
-  // Row 18-19: Bottom wall / border — ALL BLOCKED
+  // Only blocked: outer edges (walls) + top 5 rows (desk/furniture area)
   // ---------------------------------------------------------------------------
 
   static List<List<bool>> _buildDefaultGrid() {
-    // Start with everything blocked
+    // Start with everything walkable
     final grid = List.generate(
       kGridRows,
-      (_) => List.filled(kGridCols, false),
+      (_) => List.filled(kGridCols, true),
     );
 
-    // Only rows 10-17, columns 1-8 are walkable (open floor area)
-    for (int r = 10; r <= 17; r++) {
-      for (int c = 1; c <= 8; c++) {
-        grid[r][c] = true;
+    // Block outer edges (walls)
+    for (int c = 0; c < kGridCols; c++) {
+      grid[0][c] = false;  // top wall
+      grid[kGridRows - 1][c] = false; // bottom wall
+    }
+    for (int r = 0; r < kGridRows; r++) {
+      grid[r][0] = false;  // left wall
+      grid[r][kGridCols - 1] = false; // right wall
+    }
+
+    // Block furniture zone (top area: rows 1-5, desk/monitor/bookshelf)
+    for (int r = 1; r <= 5; r++) {
+      for (int c = 1; c < kGridCols - 1; c++) {
+        grid[r][c] = false;
       }
     }
 

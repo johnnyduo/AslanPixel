@@ -268,17 +268,18 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     // NPCs spread across the walkable area (bottom half of room).
     // Top half (0-400): room furniture area — BLOCKED
     // Bottom half (400-750): open floor / NPC walking area
+    // NPCs spread across entire walkable area (rows 6-18, cols 1-8 = y:240-720, x:40-360)
     final npcConfigs = [
-      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  500), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_trader',         position: Vector2(200, 520), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_champion',       position: Vector2(320, 480), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_merchant',       position: Vector2(160, 580), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_sysbot',         position: Vector2(280, 550), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 620), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(240, 600), direction: NpcDirection.east),
-      _NpcConfig(name: 'npc_hacker',         position: Vector2(300, 640), direction: NpcDirection.west),
-      _NpcConfig(name: 'npc_oracle',         position: Vector2(180, 460), direction: NpcDirection.south),
-      _NpcConfig(name: 'npc_intern',         position: Vector2(120, 680), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_banker',         position: Vector2(80,  300), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_trader',         position: Vector2(300, 350), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_champion',       position: Vector2(200, 280), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_merchant',       position: Vector2(160, 450), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_sysbot',         position: Vector2(320, 500), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_pixelcat',       position: Vector2(100, 550), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_analyst_senior', position: Vector2(250, 400), direction: NpcDirection.east),
+      _NpcConfig(name: 'npc_hacker',         position: Vector2(340, 620), direction: NpcDirection.west),
+      _NpcConfig(name: 'npc_oracle',         position: Vector2(180, 650), direction: NpcDirection.south),
+      _NpcConfig(name: 'npc_intern',         position: Vector2(120, 700), direction: NpcDirection.south),
     ];
 
     // Create shared collision map for NPC pathfinding.
