@@ -435,7 +435,7 @@ function stripPrefix(content: string): string {
   return content.replace(/^[A-Za-z]+:\s*/, "");
 }
 
-const PixelMap = () => {
+const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
   const [rooms, setRooms] = useState<Room[]>(BASE_ROOMS);
   const [hoveredRoom,  setHoveredRoom]  = useState<string|null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
@@ -768,8 +768,8 @@ const PixelMap = () => {
         );
       })}
 
-      {/* ── NPCs — hidden when wallet modal is open ── */}
-      {!walletModalOpen && AGENTS.map((agent) => {
+      {/* ── NPCs — hidden when wallet modal or dashboard is open ── */}
+      {!walletModalOpen && !hideAgents && AGENTS.map((agent) => {
         const isHov     = hoveredAgent === agent.id;
         const isSpeaker = activeBubble?.speakerId === agent.id;
         const isReplier = activeBubble?.replyId    === agent.id;

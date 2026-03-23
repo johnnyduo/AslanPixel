@@ -29,7 +29,7 @@ const Index = () => {
 
         {/* Center + Bottom */}
         <div className="flex-1 flex flex-col overflow-hidden p-1 gap-1">
-          <PixelMap />
+          <PixelMap hideAgents={dashOpen} />
           <BottomPanel />
         </div>
 
