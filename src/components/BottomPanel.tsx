@@ -1,25 +1,7 @@
-import { MessageSquare, Terminal, ArrowRightLeft, Cpu, CheckCircle2, AlertTriangle, Shield, Database, BookOpen, Zap } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap } from "lucide-react";
 import { AGENTS } from "@/data/agents";
-
-interface TimelineItem {
-  time: string;
-  type: "conversation" | "tool_call" | "decision" | "transaction" | "alert" | "policy" | "receipt";
-  agentId: string;
-  content: string;
-}
-
-const timelineItems: TimelineItem[] = [
-  { time: "14:32:01", type: "conversation", agentId: "scout",      content: "Scanning HBAR/USDC depth across SaucerSwap, Pangolin, HeliSwap — pulling 24h volume + slippage data." },
-  { time: "14:32:04", type: "tool_call",    agentId: "scout",      content: "API.fetchPoolData({ pairs: ['HBAR/USDC'], dexes: 3, resolution: '1m' }) → 847 data points" },
-  { time: "14:32:07", type: "conversation", agentId: "strategist", content: "Generating weighted allocation model: 40% HBAR liquidity, 35% stablecoin buffer, 25% yield farm." },
-  { time: "14:32:09", type: "decision",     agentId: "strategist", content: "SaucerSwap selected — lowest slippage 0.12%, deepest liquidity $2.4M. Plan confidence: 91%." },
-  { time: "14:32:11", type: "policy",       agentId: "sentinel",   content: "Enforcing: max position 5%, slippage cap 0.25%, contract audit required. All checks PASS." },
-  { time: "14:32:14", type: "conversation", agentId: "treasurer",  content: "Treasury balance confirmed: 12,847.50 HBAR. Reserving 500 HBAR gas buffer. Committing 100 HBAR for swap." },
-  { time: "14:32:17", type: "tool_call",    agentId: "executor",   content: "simulateTx({ from: wallet, to: SaucerSwap, amount: 100, gasEstimate: 92400 }) → SAFE" },
-  { time: "14:32:19", type: "transaction",  agentId: "executor",   content: "TX 0x7a3f…2e1c submitted — 100 HBAR → 12.47 USDC — Gas: 0.0092 HBAR — Status: CONFIRMED ✓" },
-  { time: "14:32:22", type: "alert",        agentId: "sentinel",   content: "Volatility spike +2.4% detected post-swap. Recommending hold on sequential swaps. Monitoring." },
-  { time: "14:32:25", type: "receipt",      agentId: "archivist",  content: "Receipt #2041 stored → QuestReceipt.sol — inputHash: 0xab12…, outputHash: 0xcd34…, agents: 5" },
-];
+import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
   conversation: { label: "CHAT",   Icon: MessageSquare, color: "hsl(195 100% 55%)", bg: "hsl(195 100% 55% / 0.05)" },
@@ -32,6 +14,16 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
 };
 
 const BottomPanel = () => {
+  const { messages, isLive, error: _error } = useLiveTimeline();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to top when new messages arrive (newest first)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [messages.length]);
+
   return (
     <div className="h-52 xl:h-60 glass-panel flex flex-col overflow-hidden">
       {/* Header */}
@@ -51,6 +43,13 @@ const BottomPanel = () => {
             ))}
           </div>
           <div className="flex items-center gap-1.5">
+            {/* AI badge — shows when Gemini is responding */}
+            {isLive && (
+              <div className="flex items-center gap-1 px-1 py-0.5 rounded" style={{ background: "hsl(280 65% 68% / 0.15)", border: "1px solid hsl(280 65% 68% / 0.4)" }}>
+                <Zap className="w-2.5 h-2.5 animate-pulse" style={{ color: "hsl(280 65% 68%)" }} />
+                <span className="text-[7px] font-pixel" style={{ color: "hsl(280 65% 68%)" }}>AI</span>
+              </div>
+            )}
             <span className="text-[9px] text-muted-foreground font-mono">LIVE</span>
             <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
           </div>
@@ -58,14 +57,14 @@ const BottomPanel = () => {
       </div>
 
       {/* Timeline */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-1.5 space-y-0.5">
-        {timelineItems.map((item, i) => {
-          const meta = TYPE_META[item.type];
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-3 py-1.5 space-y-0.5">
+        {messages.map((item, i) => {
+          const meta = TYPE_META[item.type] ?? TYPE_META.conversation;
           const agent = AGENTS.find((a) => a.id === item.agentId);
           const Icon = meta.Icon;
           return (
             <div
-              key={i}
+              key={item.id}
               className="flex items-start gap-2 px-2.5 py-1.5 rounded-md transition-colors hover:bg-secondary/20 animate-timeline-enter group"
               style={{
                 background: meta.bg,
