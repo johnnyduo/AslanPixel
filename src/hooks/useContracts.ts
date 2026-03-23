@@ -112,8 +112,8 @@ export interface AgentStat {
   active: boolean;
 }
 
-// The 6 canonical agent IDs registered in AgentRegistry
-const AGENT_IDS = ["scout", "strategist", "sentinel", "treasurer", "executor", "archivist"];
+// The 6 canonical agent IDs — used as fallback when contract is unreachable
+const CANONICAL_AGENT_IDS = ["scout", "strategist", "sentinel", "treasurer", "executor", "archivist"];
 
 // ---------------------------------------------------------------------------
 // Hook: useQuestReceipts — polls every 30 s
@@ -169,7 +169,7 @@ export function useQuestReceipts(): { receipts: Receipt[]; count: number; loadin
 }
 
 // ---------------------------------------------------------------------------
-// Hook: useAgentStats — polls every 60 s
+// Hook: useAgentStats — polls every 60 s, fetches ALL registered agents dynamically
 // ---------------------------------------------------------------------------
 export function useAgentStats(): { agents: AgentStat[]; loading: boolean } {
   const [agents, setAgents] = useState<AgentStat[]>([]);
@@ -180,17 +180,31 @@ export function useAgentStats(): { agents: AgentStat[]; loading: boolean } {
       const provider = getReadProvider();
       const contract = new Contract(ADDRESSES.AgentRegistry, AGENT_REGISTRY_ABI, provider);
 
+      // First get count of registered agents
+      let agentCount = CANONICAL_AGENT_IDS.length;
+      try {
+        const rawCount: bigint = await contract.getAgentCount();
+        agentCount = Math.max(Number(rawCount), CANONICAL_AGENT_IDS.length);
+      } catch { /* fall back to canonical 6 */ }
+
+      // Collect all agent IDs: canonical 6 + any custom ones from localStorage
+      const storedCustom: string[] = (() => {
+        try {
+          return JSON.parse(localStorage.getItem("aslan_custom_agent_ids") || "[]");
+        } catch { return []; }
+      })();
+      const allIds = Array.from(new Set([...CANONICAL_AGENT_IDS, ...storedCustom]));
+
       const results = await Promise.allSettled(
-        AGENT_IDS.map((id) => contract.getAgent(id))
+        allIds.map((id) => contract.getAgent(id))
       );
 
       const parsed: AgentStat[] = results
         .map((r, i) => {
           if (r.status === "rejected") {
-            // Return a placeholder so all 6 agents always appear
             return {
-              agentId:        AGENT_IDS[i],
-              name:           AGENT_IDS[i],
+              agentId:        allIds[i],
+              name:           allIds[i],
               reputation:     0,
               completedQuests: 0,
               successCount:   0,
@@ -210,6 +224,8 @@ export function useAgentStats(): { agents: AgentStat[]; loading: boolean } {
           } as AgentStat;
         });
 
+      // Surface how many agents the contract has (for cap display)
+      (parsed as any)._agentCount = agentCount;
       setAgents(parsed);
     } catch (err) {
       console.warn("[useAgentStats] fetch error:", err);
@@ -225,6 +241,18 @@ export function useAgentStats(): { agents: AgentStat[]; loading: boolean } {
   }, [fetchData]);
 
   return { agents, loading };
+}
+
+// ---------------------------------------------------------------------------
+// Function: deactivateAgent — calls deactivateAgent on AgentRegistry via MetaMask
+// ---------------------------------------------------------------------------
+export async function deactivateAgentOnchain(agentId: string): Promise<string> {
+  const provider = await getWriteProvider();
+  const signer = await provider.getSigner();
+  const contract = new Contract(ADDRESSES.AgentRegistry, AGENT_REGISTRY_ABI, signer);
+  const tx = await contract.deactivateAgent(agentId);
+  await tx.wait();
+  return tx.hash as string;
 }
 
 // ---------------------------------------------------------------------------

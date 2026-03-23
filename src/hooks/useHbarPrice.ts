@@ -2,7 +2,7 @@
  * useHbarPrice — shared hook for live HBAR price from Hedera Mirror Node
  * Used by TopBar and DashboardPanel to avoid duplicate fetches
  */
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { create } from "zustand";
 
 interface HbarPriceStore {
@@ -19,7 +19,7 @@ export const useHbarPriceStore = create<HbarPriceStore>((set) => ({
 
 export function useHbarPrice() {
   const { price, change, setPrice } = useHbarPriceStore();
-  const [prevPrice, setPrevPrice] = useState(0.0641);
+  const prevPriceRef = useRef(0.0641);
 
   useEffect(() => {
     const fetchPrice = async () => {
@@ -31,8 +31,8 @@ export function useHbarPrice() {
         if (rate?.hbar_equivalent && rate?.cent_equivalent) {
           const newPrice = (rate.cent_equivalent / rate.hbar_equivalent) * 0.01;
           const newChange: "up" | "down" | "flat" =
-            newPrice > prevPrice ? "up" : newPrice < prevPrice ? "down" : "flat";
-          setPrevPrice(newPrice);
+            newPrice > prevPriceRef.current ? "up" : newPrice < prevPriceRef.current ? "down" : "flat";
+          prevPriceRef.current = newPrice;
           setPrice(newPrice, newChange);
         }
       } catch { /* ignore */ }
@@ -40,7 +40,7 @@ export function useHbarPrice() {
     fetchPrice();
     const id = setInterval(fetchPrice, 30_000);
     return () => clearInterval(id);
-  }, [setPrice, prevPrice]);
+  }, [setPrice]);
 
   return { price, change };
 }

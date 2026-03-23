@@ -85,25 +85,41 @@ async function postHCSMessage(client, topicId, payload) {
   }
 }
 
-async function registerAgents(wallet) {
+const MAX_AGENTS = 20;
+
+async function registerAgents(wallet, customAgentId, customName, customTrait) {
   const contract = new Contract(AGENT_REGISTRY_ADDRESS, AGENT_REGISTRY_ABI, wallet);
   const registered = [];
   const skipped = [];
-  // txHashes: agentId -> EVM tx hash (only for newly registered agents)
   const txHashes = {};
 
-  for (const agent of AGENTS) {
+  // Check current agent count — enforce cap
+  let currentCount = 0;
+  try {
+    currentCount = Number(await contract.getAgentCount());
+  } catch { /* ignore — contract may not support */ }
+
+  // Build agent list: custom single agent or all 6 defaults
+  const agentsToRegister = customAgentId
+    ? [{ id: customAgentId, name: customName || customAgentId, role: customTrait || "Custom Agent" }]
+    : AGENTS;
+
+  for (const agent of agentsToRegister) {
+    if (currentCount >= MAX_AGENTS) {
+      skipped.push(agent.id);
+      continue;
+    }
     try {
       const tx = await contract.registerAgent(agent.id, agent.name, agent.role, wallet.address);
       const receipt = await tx.wait();
       registered.push(agent.id);
       txHashes[agent.id] = receipt?.hash ?? tx.hash;
+      currentCount++;
     } catch (err) {
-      // "exists" revert is expected — agent already registered
       skipped.push(agent.id);
     }
   }
-  return { registered, skipped, txHashes };
+  return { registered, skipped, txHashes, agentCount: currentCount };
 }
 
 async function recordAllQuestResults(wallet, questId, success) {
@@ -116,7 +132,7 @@ async function recordAllQuestResults(wallet, questId, success) {
   return results.filter((r) => r.status === "fulfilled").length;
 }
 
-async function run(mode, questId, success) {
+async function run(mode, questId, success, customAgentId, customName, customTrait) {
   const pk = process.env.HEDERA_PRIVATE_KEY || process.env.DEPLOY_PRIVATE_KEY;
   if (!pk) throw new Error("HEDERA_PRIVATE_KEY not configured");
 
@@ -142,7 +158,7 @@ async function run(mode, questId, success) {
   }
 
   // Default: register agents
-  const { registered, skipped, txHashes } = await registerAgents(wallet);
+  const { registered, skipped, txHashes, agentCount } = await registerAgents(wallet, customAgentId, customName, customTrait);
 
   // Post HCS message for registration
   const seqNum = await postHCSMessage(hederaClient, topicId, {
@@ -154,7 +170,7 @@ async function run(mode, questId, success) {
     project: "Aslan Pixel",
   });
 
-  return { topicId, registeredAgents: registered, skippedAgents: skipped, txHashes, hcsSeq: seqNum };
+  return { topicId, registeredAgents: registered, skippedAgents: skipped, txHashes, hcsSeq: seqNum, agentCount, maxAgents: MAX_AGENTS };
 }
 
 export default async function handler(req, res) {
@@ -162,7 +178,7 @@ export default async function handler(req, res) {
   if (req instanceof Request || typeof req.json === "function") {
     try {
       const body = await req.json().catch(() => ({}));
-      const result = await run(body.mode, body.questId, body.success);
+      const result = await run(body.mode, body.questId, body.success, body.agentId, body.name, body.trait);
       return new Response(JSON.stringify(result), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -179,7 +195,7 @@ export default async function handler(req, res) {
   }
   try {
     const body = req.body ?? {};
-    const result = await run(body.mode, body.questId, body.success);
+    const result = await run(body.mode, body.questId, body.success, body.agentId, body.name, body.trait);
     return res.status(200).json(result);
   } catch (err) {
     console.error("[agent-register]", err.message);

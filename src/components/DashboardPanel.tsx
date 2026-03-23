@@ -47,7 +47,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-gold" />
-            <h2 className="font-pixel text-sm text-gold tracking-wider">GUILD DASHBOARD</h2>
+            <h2 className="font-pixel text-sm text-gold tracking-wider">PIXEL DASHBOARD</h2>
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ background: "hsl(142 70% 50% / 0.1)", border: "1px solid hsl(142 70% 50% / 0.3)" }}>
               <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
               <span className="text-[7px] font-pixel text-success">LIVE</span>
@@ -87,8 +87,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                     <stop offset="95%" stopColor="hsl(43 90% 55%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="time" tick={{ fontSize: 8, fill: "hsl(215 12% 45%)", fontFamily: "JetBrains Mono" }} />
-                <YAxis hide />
+                <XAxis dataKey="name" tick={{ fontSize: 8, fill: "hsl(215 12% 45%)", fontFamily: "JetBrains Mono" }} />
+                <YAxis hide domain={[0, 1]} />
                 <Tooltip
                   contentStyle={{
                     background: "hsl(225 25% 10%)",
@@ -98,11 +98,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                     fontFamily: "JetBrains Mono",
                     color: "hsl(43 90% 65%)",
                   }}
-                  formatter={(val, name) => [val === 1 ? "✓ SUCCESS" : "✗ FAILED", `Quest #${name}`]}
+                  formatter={(val: number, _name: string, props: { payload?: { id?: number } }) => [
+                    val === 1 ? "✓ SUCCESS" : "✗ FAILED",
+                    `Quest #${props?.payload?.id ?? ""}`,
+                  ]}
                 />
                 <Area
                   type="monotone"
-                  dataKey="id"
+                  dataKey="success"
                   stroke="hsl(43 90% 55%)"
                   strokeWidth={1.5}
                   fill="url(#questGrad)"

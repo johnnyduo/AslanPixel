@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuestReceipts } from "@/hooks/useContracts";
 
 const AGENTS = [
   { id: "nexus",  symbol: "◈", name: "Nexus",  role: "HCS Intelligence",      color: "#00d4ff", delay: 0 },
@@ -23,11 +24,11 @@ const LIVE_EVENTS = [
   { agent: "Lyss ◉",   color: "#22c55e", msg: "30% USDC buffer locked — treasury rebalanced" },
 ];
 
-const STATS = [
-  { value: "6", label: "AI Agents" },
-  { value: "238+", label: "Quests Onchain" },
-  { value: "1,428", label: "HCS Messages" },
-  { value: "3", label: "Smart Contracts" },
+const BASE_STATS = [
+  { key: "agents",    value: "6",     label: "AI Agents" },
+  { key: "quests",    value: "238+",  label: "Quests Onchain" },
+  { key: "hcs",       value: "1,428", label: "HCS Messages" },
+  { key: "contracts", value: "3",     label: "Smart Contracts" },
 ];
 
 const HEDERA_BADGES = [
@@ -142,18 +143,16 @@ function PixelLion() {
 // Scrolling live feed
 function LiveFeed() {
   const [lines, setLines] = useState<typeof LIVE_EVENTS>([]);
-  const [idx, setIdx] = useState(0);
+  const idxRef = useRef(0);
 
   useEffect(() => {
     const t = setInterval(() => {
-      setLines(prev => {
-        const next = [...prev, LIVE_EVENTS[idx % LIVE_EVENTS.length]];
-        return next.slice(-6);
-      });
-      setIdx(i => i + 1);
+      const i = idxRef.current;
+      setLines(prev => [...prev, LIVE_EVENTS[i % LIVE_EVENTS.length]].slice(-6));
+      idxRef.current = i + 1;
     }, 1400);
     return () => clearInterval(t);
-  }, [idx]);
+  }, []);
 
   return (
     <div className="font-mono text-[11px] space-y-1 h-[108px] overflow-hidden">
@@ -177,6 +176,13 @@ export default function Landing() {
   const navigate = useNavigate();
   const [entered, setEntered] = useState(false);
   const [voteStep, setVoteStep] = useState(-1);
+  const { count: questCount } = useQuestReceipts();
+
+  const STATS = BASE_STATS.map(s =>
+    s.key === "quests" && questCount > 0
+      ? { ...s, value: questCount >= 1000 ? `${(questCount / 1000).toFixed(1)}k+` : `${questCount}+` }
+      : s
+  );
 
   // Run vote animation loop
   useEffect(() => {

@@ -423,6 +423,84 @@
   100% { left: 47%; top: 88%; }  /* ↓ enter archive */
 }
 
+/* Custom agents 7-10: patrol hub area with varied routes */
+@keyframes npc-move-7 {
+  0%   { left: 50%; top: 41%; }  /* hub center */
+  12%  { left: 37%; top: 41%; }  /* ← west across hub */
+  24%  { left: 37%; top: 32%; }  /* ↑ hub top-left */
+  36%  { left: 50%; top: 32%; }  /* → hub top-center */
+  48%  { left: 63%; top: 32%; }  /* → hub top-right */
+  60%  { left: 63%; top: 50%; }  /* ↓ hub bottom-right */
+  72%  { left: 50%; top: 50%; }  /* ← hub bottom-center */
+  84%  { left: 50%; top: 41%; }  /* ↑ back to center */
+  100% { left: 50%; top: 41%; }  /* stay center */
+}
+@keyframes npc-sprite-7 {
+  0%  { background-position: -64px 0; }     11.1% { background-position: -128px 0; }
+  22.2% { background-position: -192px 0; }  33.3% { background-position: -256px 0; }
+  44.4% { background-position: -320px 0; }  55.5% { background-position: -384px 0; }
+  66.6% { background-position: -448px 0; }  77.7% { background-position: -512px 0; }
+  88.8% { background-position: 0px 0; }     100%  { background-position: -64px 0; }
+}
+
+@keyframes npc-move-8 {
+  0%   { left: 30%; top: 41%; }  /* left corridor */
+  14%  { left: 30%; top: 27%; }  /* ↑ go north */
+  28%  { left: 50%; top: 27%; }  /* → east along top-H */
+  42%  { left: 68%; top: 27%; }  /* → continue east */
+  56%  { left: 68%; top: 41%; }  /* ↓ south on right-V */
+  70%  { left: 50%; top: 41%; }  /* ← west through hub */
+  84%  { left: 30%; top: 41%; }  /* ← back to left corridor */
+  100% { left: 30%; top: 41%; }
+}
+@keyframes npc-sprite-8 {
+  0%  { background-position: -192px 0; }    11.1% { background-position: -256px 0; }
+  22.2% { background-position: -320px 0; }  33.3% { background-position: -384px 0; }
+  44.4% { background-position: -448px 0; }  55.5% { background-position: -512px 0; }
+  66.6% { background-position: 0px 0; }     77.7% { background-position: -64px 0; }
+  88.8% { background-position: -128px 0; }  100%  { background-position: -192px 0; }
+}
+
+@keyframes npc-move-9 {
+  0%   { left: 50%; top: 65%; }  /* mid-corridor south */
+  10%  { left: 50%; top: 54%; }  /* ↑ north to mid-H */
+  22%  { left: 37%; top: 54%; }  /* ← west along mid-H */
+  34%  { left: 37%; top: 41%; }  /* ↑ north into hub */
+  46%  { left: 50%; top: 41%; }  /* → east in hub */
+  58%  { left: 50%; top: 54%; }  /* ↓ exit south */
+  70%  { left: 63%; top: 54%; }  /* → east along mid-H */
+  82%  { left: 63%; top: 65%; }  /* ↓ south to market area */
+  92%  { left: 50%; top: 65%; }  /* ← back center */
+  100% { left: 50%; top: 65%; }
+}
+@keyframes npc-sprite-9 {
+  0%  { background-position: -320px 0; }    11.1% { background-position: -384px 0; }
+  22.2% { background-position: -448px 0; }  33.3% { background-position: -512px 0; }
+  44.4% { background-position: 0px 0; }     55.5% { background-position: -64px 0; }
+  66.6% { background-position: -128px 0; }  77.7% { background-position: -192px 0; }
+  88.8% { background-position: -256px 0; }  100%  { background-position: -320px 0; }
+}
+
+@keyframes npc-move-10 {
+  0%   { left: 68%; top: 65%; }  /* right-V south */
+  12%  { left: 68%; top: 54%; }  /* ↑ north to mid-H */
+  24%  { left: 68%; top: 41%; }  /* ↑ continue to hub level */
+  36%  { left: 63%; top: 41%; }  /* ← enter hub east */
+  48%  { left: 37%; top: 41%; }  /* ← cross hub to west */
+  60%  { left: 37%; top: 50%; }  /* ↓ exit hub south-west */
+  72%  { left: 50%; top: 50%; }  /* → east to center */
+  84%  { left: 68%; top: 50%; }  /* → east to right-V */
+  94%  { left: 68%; top: 65%; }  /* ↓ south back to start */
+  100% { left: 68%; top: 65%; }
+}
+@keyframes npc-sprite-10 {
+  0%  { background-position: -448px 0; }    11.1% { background-position: -512px 0; }
+  22.2% { background-position: 0px 0; }     33.3% { background-position: -64px 0; }
+  44.4% { background-position: -128px 0; }  55.5% { background-position: -192px 0; }
+  66.6% { background-position: -256px 0; }  77.7% { background-position: -320px 0; }
+  88.8% { background-position: -384px 0; }  100%  { background-position: -448px 0; }
+}
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50%       { opacity: 1;   transform: scale(1.08); }

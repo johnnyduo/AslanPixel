@@ -21,10 +21,20 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
 
 type QuestStatus = "idle" | "paying" | "voting" | "running" | "complete" | "error";
 
+const TABS = [
+  { id: "all",          label: "ALL" },
+  { id: "conversation", label: "CHAT" },
+  { id: "tool_call",    label: "TOOL" },
+  { id: "transaction",  label: "TX" },
+  { id: "alert",        label: "ALERT" },
+] as const;
+type TabId = typeof TABS[number]["id"];
+
 const BottomPanel = () => {
   const { messages: liveMessages, isLive, error: _error } = useLiveTimeline();
   const [questInput, setQuestInput] = useState("");
   const [questStatus, setQuestStatus] = useState<QuestStatus>("idle");
+  const [activeTab, setActiveTab] = useState<TabId>("all");
   const [questMessages, setQuestMessages] = useState<TimelineMessage[]>([]);
   const [lastReceiptId, setLastReceiptId] = useState<string | null>(null);
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
@@ -52,6 +62,7 @@ const BottomPanel = () => {
   }, [pendingIntent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allMessages: TimelineMessage[] = [...questMessages, ...liveMessages].slice(0, 60);
+  const filteredMessages = activeTab === "all" ? allMessages : allMessages.filter((m) => m.type === activeTab);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -127,8 +138,9 @@ const BottomPanel = () => {
   };
 
   const handleVoteApproved = () => {
+    const intent = pendingVoteIntent;
     setPendingVoteIntent(null);
-    if (pendingVoteIntent) runQuestWithIntent(pendingVoteIntent);
+    if (intent) runQuestWithIntent(intent);
   };
 
   const handleVoteVetoed = (reason: string) => {
@@ -258,39 +270,61 @@ const BottomPanel = () => {
         )}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-3.5 h-3.5 text-gold" />
-          <h2 className="font-pixel text-[10px] text-gold tracking-wider">ACTIVITY TIMELINE</h2>
+      {/* Tab bar */}
+      <div className="flex items-center gap-0 px-3 pt-1.5 border-b border-border/30 shrink-0 overflow-hidden">
+        <Terminal className="w-3 h-3 text-gold shrink-0 mr-2" />
+        <div className="flex items-center gap-0 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+          {TABS.map((tab) => {
+            const count = tab.id === "all" ? allMessages.length : allMessages.filter((m) => m.type === tab.id).length;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-[8px] font-pixel tracking-wider transition-all duration-150 border-b-2 whitespace-nowrap"
+                style={{
+                  borderBottomColor: isActive ? "hsl(43 90% 55%)" : "transparent",
+                  color: isActive ? "hsl(43 90% 65%)" : "hsl(215 12% 40%)",
+                  background: isActive ? "hsl(43 90% 55% / 0.06)" : "transparent",
+                }}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className="text-[7px] font-mono px-1 rounded-full leading-none py-0.5"
+                    style={{
+                      background: isActive ? "hsl(43 90% 55% / 0.2)" : "hsl(225 15% 20%)",
+                      color: isActive ? "hsl(43 90% 65%)" : "hsl(215 12% 45%)",
+                    }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex items-center gap-4">
-          <div className="hidden xl:flex items-center gap-2">
-            {AGENTS.map((a) => (
-              <div key={a.id} className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: a.color }} />
-                <span className="text-[8px] font-pixel" style={{ color: a.color + "99" }}>{a.name}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {isLive && (
-              <div className="flex items-center gap-1 px-1 py-0.5 rounded" style={{ background: "hsl(280 65% 68% / 0.15)", border: "1px solid hsl(280 65% 68% / 0.4)" }}>
-                <Zap className="w-2.5 h-2.5 animate-pulse" style={{ color: "hsl(280 65% 68%)" }} />
-                <span className="text-[7px] font-pixel" style={{ color: "hsl(280 65% 68%)" }}>AI</span>
-              </div>
-            )}
-            <span className="text-[9px] text-muted-foreground font-mono">LIVE</span>
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
-          </div>
+        {/* Live indicator — right side */}
+        <div className="flex items-center gap-1.5 shrink-0 pl-2">
+          {isLive && (
+            <div className="flex items-center gap-1 px-1 py-0.5 rounded"
+              style={{ background: "hsl(280 65% 68% / 0.15)", border: "1px solid hsl(280 65% 68% / 0.4)" }}>
+              <Zap className="w-2 h-2 animate-pulse" style={{ color: "hsl(280 65% 68%)" }} />
+              <span className="text-[7px] font-pixel" style={{ color: "hsl(280 65% 68%)" }}>AI</span>
+            </div>
+          )}
+          <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-glow" />
         </div>
       </div>
 
       {/* Timeline */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-3 py-1.5 space-y-0.5">
-        {allMessages.map((item, i) => {
+        {filteredMessages.length === 0 && (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-[8px] font-pixel text-muted-foreground/40 tracking-wider">NO {activeTab.toUpperCase()} EVENTS</p>
+          </div>
+        )}
+        {filteredMessages.map((item, i) => {
           const meta = TYPE_META[item.type] ?? TYPE_META.conversation;
-          const agent = AGENTS.find((a) => a.id === item.agentId);
+          const agentData = AGENTS.find((a) => a.id === item.agentId);
           const Icon = meta.Icon;
           const isAuto = item.content?.startsWith("[AUTO]") || false;
           return (
@@ -299,7 +333,7 @@ const BottomPanel = () => {
               className="flex items-start gap-2 px-2.5 py-1.5 rounded-md transition-colors hover:bg-secondary/20 animate-timeline-enter group"
               style={{
                 background: meta.bg,
-                borderLeft: `2px solid ${agent?.color ?? meta.color}40`,
+                borderLeft: `2px solid ${agentData?.color ?? meta.color}40`,
                 animationDelay: `${i * 40}ms`,
               }}
             >
@@ -311,12 +345,12 @@ const BottomPanel = () => {
               {isAuto && (
                 <span className="text-[7px] font-pixel px-1 py-0.5 rounded shrink-0" style={{ background: "hsl(280 65% 68% / 0.15)", color: "hsl(280 65% 68%)", border: "1px solid hsl(280 65% 68% / 0.3)" }}>AUTO</span>
               )}
-              {agent && (
+              {agentData && (
                 <span
                   className="text-[8px] font-pixel px-1 py-0.5 rounded shrink-0"
-                  style={{ background: agent.color + "18", color: agent.color, border: `1px solid ${agent.color}35` }}
+                  style={{ background: agentData.color + "18", color: agentData.color, border: `1px solid ${agentData.color}35` }}
                 >
-                  {agent.icon} {agent.name}
+                  {agentData.icon} {agentData.name}
                 </span>
               )}
               <span className="text-[10px] font-mono text-secondary-foreground leading-snug">{item.content}</span>

@@ -143,6 +143,7 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
   const isMounted = useRef(true);
   const esRef = useRef<EventSource | null>(null);
   const backendConnected = useRef(false);
+  const retryCountRef = useRef(0);
 
   // On mount: load from storage, fall back to seeds
   useEffect(() => {
@@ -191,6 +192,7 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
 
       es.addEventListener("ping", () => {
         backendConnected.current = true;
+        retryCountRef.current = 0;
         setIsLive(true);
       });
 
@@ -200,6 +202,7 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
           const data = JSON.parse(event.data) as TimelineMessage;
           if (!data.id || !data.content) return;
           backendConnected.current = true;
+          retryCountRef.current = 0;
           setIsLive(true);
           appendToStorage([data]);
           setMessages((prev) => [data, ...prev].slice(0, MAX_MESSAGES));
@@ -210,8 +213,10 @@ export function useLiveTimeline(): UseLiveTimelineReturn {
         backendConnected.current = false;
         setIsLive(false);
         es.close();
-        // Retry after 15s
-        retryTimeout = setTimeout(connect, 15000);
+        // Exponential backoff: 15s, 30s, 60s, cap at 120s
+        const delay = Math.min(15000 * Math.pow(2, retryCountRef.current), 120000);
+        retryCountRef.current = Math.min(retryCountRef.current + 1, 3);
+        retryTimeout = setTimeout(connect, delay);
       };
     };
 

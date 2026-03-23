@@ -5,6 +5,7 @@
  * Otherwise → demo mode bypass (shows payment simulation)
  */
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Zap, CheckCircle, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { useAppKitAccount, useAppKitState, useAppKitProvider } from "@reown/appkit/react";
 import { BrowserProvider, Contract } from "ethers";
@@ -97,10 +98,12 @@ export default function PaymentGate({ intent, onPaid, onDismiss }: PaymentGatePr
   const isProcessing = payState === "signing" || payState === "broadcasting";
   const isDone = payState === "confirmed" || payState === "demo";
 
-  return (
+  if (typeof document === "undefined" || !document.body) return null;
+
+  return createPortal(
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center p-4"
-      style={{ background: "hsl(225 30% 6% / 0.96)", backdropFilter: "blur(4px)" }}
+      className="fixed inset-0 z-[9998] flex items-center justify-center p-4"
+      style={{ background: "hsl(225 30% 4% / 0.92)", backdropFilter: "blur(6px)" }}
     >
       <div
         className="w-full max-w-sm glass-panel p-4 space-y-3 animate-timeline-enter"
@@ -158,7 +161,7 @@ export default function PaymentGate({ intent, onPaid, onDismiss }: PaymentGatePr
           style={{ background: "hsl(195 100% 55% / 0.06)", border: "1px solid hsl(195 100% 55% / 0.25)" }}>
           <div>
             <p className="text-[8px] font-pixel text-muted-foreground">TOTAL WAGE</p>
-            <p className="text-[9px] font-mono text-muted-foreground mt-0.5">≈ {usdcInHbar} HBAR · {MOCK_USDC_TOKEN_ID}</p>
+            <p className="text-[9px] font-mono text-muted-foreground mt-0.5">≈ {usdcInHbar} HBAR · 0.0.5769177</p>
           </div>
           <div className="text-right">
             <p className="text-lg font-mono font-bold text-cyan leading-none">{WAGE_USDC}</p>
@@ -250,9 +253,10 @@ export default function PaymentGate({ intent, onPaid, onDismiss }: PaymentGatePr
 
         {/* Footer */}
         <p className="text-[7px] font-mono text-muted-foreground/50 text-center">
-          x402 · HTTP Payment Standard · Hedera Testnet · USDC {MOCK_USDC_TOKEN_ID}
+          x402 · HTTP Payment Standard · Hedera Testnet · USDC 0.0.5769177
         </p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { JsonRpcProvider, Contract } from "ethers";
 import { useAppKitState } from "@reown/appkit/react";
 import { AGENTS } from "@/data/agents";
+import type { Agent } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
+import { useAgentStats } from "@/hooks/useContracts";
 import type { TimelineMessage } from "@/lib/agentConversation";
 
 // ── MAP THEMES ───────────────────────────────────────────────────────────────
@@ -435,13 +437,57 @@ function stripPrefix(content: string): string {
   return content.replace(/^[A-Za-z]+:\s*/, "");
 }
 
+// Durations per animIndex (1-10)
+const NPC_ANIM_DURATIONS: Record<number, number> = {
+  1:35000, 2:40000, 3:45000, 4:50000, 5:55000, 6:60000,
+  7:38000, 8:42000, 9:47000, 10:52000,
+};
+
+// Custom agent colors palette for agents 7+
+const CUSTOM_AGENT_COLORS = [
+  "hsl(310 70% 60%)", "hsl(170 80% 50%)", "hsl(55 90% 55%)", "hsl(230 80% 65%)",
+];
+
 const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
   const [rooms, setRooms] = useState<Room[]>(BASE_ROOMS);
   const [hoveredRoom,  setHoveredRoom]  = useState<string|null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
   const [themeIdx, setThemeIdx] = useState(0);
   const { open: walletModalOpen } = useAppKitState();
+  const { agents: onchainAgents } = useAgentStats();
   const theme = THEMES[themeIdx];
+
+  // Merge static AGENTS with any newly registered custom agents from onchain
+  const allAgents = useMemo<Agent[]>(() => {
+    const staticIds = new Set(AGENTS.map(a => a.id));
+    const customOnchain = onchainAgents.filter(
+      oc => !staticIds.has(oc.agentId) && oc.registeredAt > 0 && oc.active
+    );
+    const extras: Agent[] = customOnchain.map((oc, i) => ({
+      id: oc.agentId,
+      name: oc.name || oc.agentId,
+      fullName: oc.name || oc.agentId,
+      role: "Custom Agent",
+      trait: "Registered · Onchain",
+      color: CUSTOM_AGENT_COLORS[i % CUSTOM_AGENT_COLORS.length],
+      glowColor: CUSTOM_AGENT_COLORS[i % CUSTOM_AGENT_COLORS.length].replace(")", " / 0.2)").replace("hsl(", "hsl("),
+      icon: "★",
+      initials: (oc.name || oc.agentId).slice(0, 2).toUpperCase(),
+      gradientClass: "from-pink-500 to-purple-600",
+      quote: "Registered and operational on Hedera testnet.",
+      philosophy: "Custom agent registered via AgentRegistry.sol on Hedera EVM testnet.",
+      confidence: 80,
+      reputation: Math.round(oc.reputation / 200),
+      completedQuests: oc.completedQuests,
+      successRate: oc.completedQuests > 0 ? Math.round((oc.successCount / oc.completedQuests) * 100) : 80,
+      specialization: "Custom",
+      status: "active" as const,
+      animIndex: Math.min(7 + i, 10),
+      homeRoom: "consensushub",
+      recentActions: [],
+    }));
+    return [...AGENTS, ...extras];
+  }, [onchainAgents]);
 
   // Apply theme colors to rooms
   const themedRooms = rooms.map(r => ({
@@ -571,14 +617,12 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
   }, [liveMessages]);
 
   // Direction tracking — durations must match CSS @keyframes npc-move-N exactly
-  // animIndex: scout=1(35s), strategist=2(40s), sentinel=3(45s), treasurer=4(50s), executor=5(55s), archivist=6(60s)
-  const NPC_DURATIONS: Record<number, number> = { 1:35000, 2:40000, 3:45000, 4:50000, 5:55000, 6:60000 };
   useEffect(() => {
     const update = () => {
       const now = Date.now();
       const dirs: Record<string,"s"|"n"|"e"|"w"> = {};
-      for (const a of AGENTS) {
-        const dur = NPC_DURATIONS[a.animIndex] ?? 35000;
+      for (const a of allAgents) {
+        const dur = NPC_ANIM_DURATIONS[a.animIndex] ?? 35000;
         dirs[a.id] = getAgentDir(a.id, ((now - startRef.current) % dur) / dur);
       }
       setAgentDirs(dirs);
@@ -586,7 +630,7 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
     update();
     const iv = setInterval(update, 300);
     return () => clearInterval(iv);
-  }, []);
+  }, [allAgents]);
 
   return (
     <div className="flex-1 relative overflow-hidden select-none" style={{
@@ -769,7 +813,7 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
       })}
 
       {/* ── NPCs — hidden when wallet modal or dashboard is open ── */}
-      {!walletModalOpen && !hideAgents && AGENTS.map((agent) => {
+      {!walletModalOpen && !hideAgents && allAgents.map((agent) => {
         const isHov     = hoveredAgent === agent.id;
         const isSpeaker = activeBubble?.speakerId === agent.id;
         const isReplier = activeBubble?.replyId    === agent.id;
@@ -799,7 +843,7 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
 
         return (
           <div key={agent.id} className="absolute z-30"
-            style={{ animation:`npc-move-${agent.animIndex} ${[35,40,45,50,55,60][agent.animIndex-1]??35}s linear infinite` }}
+            style={{ animation:`npc-move-${agent.animIndex} ${NPC_ANIM_DURATIONS[agent.animIndex]??35000}ms linear infinite` }}
             onMouseEnter={() => setHoveredAgent(agent.id)}
             onMouseLeave={() => setHoveredAgent(null)}
           >
@@ -855,14 +899,28 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
                   : `drop-shadow(0 2px 4px hsl(225 30% 4%/0.8))`,
                 transition:"filter 0.2s",
               }}>
-              <div style={{
-                width:64, height:64,
-                backgroundImage:`url(/assets/npcs/npc-${agent.id}-${dir}.png)`,
-                backgroundRepeat:"no-repeat",
-                backgroundSize:`${9*64}px 64px`,
-                imageRendering:"pixelated",
-                animation:`npc-sprite-${agent.animIndex} 0.6s steps(1) infinite`,
-              }}/>
+              {agent.animIndex <= 6 ? (
+                <div style={{
+                  width:64, height:64,
+                  backgroundImage:`url(/assets/npcs/npc-${agent.id}-${dir}.png)`,
+                  backgroundRepeat:"no-repeat",
+                  backgroundSize:`${9*64}px 64px`,
+                  imageRendering:"pixelated",
+                  animation:`npc-sprite-${agent.animIndex} 0.6s steps(1) infinite`,
+                }}/>
+              ) : (
+                // Custom agents: pixel block with icon (no sprite sheet)
+                <div style={{
+                  width:48, height:48,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  background: agent.color + "20",
+                  border: `2px solid ${agent.color}60`,
+                  borderRadius: 6,
+                  imageRendering:"pixelated",
+                }}>
+                  <span className="font-pixel text-xl" style={{ color: agent.color }}>{agent.icon}</span>
+                </div>
+              )}
               <div className="absolute -top-2 -right-1 text-[9px] font-pixel pointer-events-none"
                 style={{ color:agent.color, textShadow:`0 0 8px ${agent.color}` }}>
                 {agent.icon}
@@ -914,11 +972,11 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
                 boxShadow: hoveredRoom===r.name ? `0 0 4px ${r.color}` : "none",
               }}/>
           ))}
-          {AGENTS.map(a=>(
+          {allAgents.map(a=>(
             <div key={`mm-${a.id}`} className="absolute w-[5px] h-[5px] rounded-full"
               style={{
                 background:a.color, boxShadow:`0 0 4px ${a.color}`,
-                animation:`npc-move-${a.animIndex} ${[35,40,45,50,55,60][a.animIndex-1]??35}s linear infinite`,
+                animation:`npc-move-${a.animIndex} ${NPC_ANIM_DURATIONS[a.animIndex]??35000}ms linear infinite`,
               }}/>
           ))}
         </div>
@@ -927,7 +985,7 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
 
       {/* ── AGENT LEGEND ── */}
       <div className="absolute bottom-2 left-2 flex flex-col gap-0.5 z-40">
-        {AGENTS.map(a=>(
+        {allAgents.map(a=>(
           <div key={`leg-${a.id}`}
             className="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer transition-all duration-150"
             style={{

@@ -1,28 +1,83 @@
-import { useState, useEffect } from "react";
-import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap, ExternalLink } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap, ExternalLink, UserPlus, Loader2, X, Shuffle, CreditCard, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENTS, STATUS_COLORS, ACTION_TYPE_COLORS, type Agent } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
-import { useAgentStats } from "@/hooks/useContracts";
-import { getStoredAgentTxHashes } from "@/hooks/useAgentInit";
+import { useAgentStats, deactivateAgentOnchain } from "@/hooks/useContracts";
+import { getStoredAgentTxHashes, AGENT_TX_STORAGE_KEY } from "@/hooks/useAgentInit";
+import PaymentGate from "@/components/PaymentGate";
+
+// micro-USDC cost per message type (6 decimals, so 1_000_000 = 1.00 USDC)
+const MSG_COST_USDC: Record<string, number> = {
+  transaction:   50_000,   // 0.05 USDC
+  tool_call:     10_000,   // 0.01 USDC
+  receipt:       20_000,   // 0.02 USDC
+  decision:       5_000,   // 0.005 USDC
+  policy:         3_000,   // 0.003 USDC
+  conversation:   1_000,   // 0.001 USDC
+  alert:          1_000,   // 0.001 USDC
+};
+
+function formatUsdc(microUsdc: number): string {
+  return (microUsdc / 1_000_000).toFixed(4);
+}
+
+type RegState = "idle" | "calling" | "done" | "error";
+type DeactivateState = "idle" | "calling" | "done" | "error";
+
+const TRAITS = [
+  { id: "analyst",   label: "Analyst",   desc: "Data-driven · precise",   icon: "◈" },
+  { id: "guardian",  label: "Guardian",  desc: "Risk-averse · vigilant",  icon: "◆" },
+  { id: "executor",  label: "Executor",  desc: "Fast · action-oriented",  icon: "▶" },
+];
+
+const NAME_PREFIXES = ["Nexus","Oryn","Vex","Kael","Drax","Lyss","Zara","Mira","Axon","Flux","Vera","Crix"];
+const NAME_SUFFIXES = ["-7","X","Prime","-9","Alpha","Zero","-Ω","Max","Nova","Core"];
+
+function autogenName() {
+  const p = NAME_PREFIXES[Math.floor(Math.random() * NAME_PREFIXES.length)];
+  const s = NAME_SUFFIXES[Math.floor(Math.random() * NAME_SUFFIXES.length)];
+  return p + s;
+}
 
 const RightPanel = () => {
   const [selectedId, setSelectedId] = useState<string>("scout");
   const [actionFeedback, setActionFeedback] = useState<{ type: "approve" | "reject" | "sim"; ts: number } | null>(null);
+  const [showRegModal, setShowRegModal] = useState(false);
+  const [regState, setRegState] = useState<RegState>("idle");
+  const [regResult, setRegResult] = useState<{ txHash?: string; topicId?: string; msg?: string } | null>(null);
+  const [regName, setRegName] = useState("");
+  const [regTrait, setRegTrait] = useState("analyst");
+  const [deactivateState, setDeactivateState] = useState<DeactivateState>("idle");
+  const [deactivateMsg, setDeactivateMsg] = useState<string | null>(null);
+  const [sessionCost, setSessionCost] = useState(0);       // tinyhbar
+  const [showPayWage, setShowPayWage] = useState(false);
+  const seenMsgIds = useRef(new Set<string>());
   const { agents: onchainAgents } = useAgentStats();
   const { messages } = useLiveTimeline();
   const { setPendingIntent } = useQuestInput();
-  const agent = AGENTS.find((a) => a.id === selectedId)!;
+  const agent = AGENTS.find((a) => a.id === selectedId) ?? AGENTS[0];
   const [agentTxHashes, setAgentTxHashes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setAgentTxHashes(getStoredAgentTxHashes());
-    // Re-read on storage events (in case another tab registers)
     const handler = () => setAgentTxHashes(getStoredAgentTxHashes());
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
-  }, []);;
+  }, []);
+
+  // Accumulate session cost from live timeline messages (micro-USDC)
+  useEffect(() => {
+    let added = 0;
+    for (const m of messages) {
+      if (seenMsgIds.current.has(m.id)) continue;
+      seenMsgIds.current.add(m.id);
+      added += MSG_COST_USDC[m.type] ?? 0;
+    }
+    if (added > 0) setSessionCost((prev) => prev + added);
+  }, [messages]);
 
   // Merge onchain data
   const onchain = onchainAgents.find((a) => a.agentId === selectedId);
@@ -59,13 +114,83 @@ const RightPanel = () => {
     setTimeout(() => setActionFeedback(null), 3000);
   };
 
+  const handleRegister = async () => {
+    setRegState("calling");
+    setRegResult(null);
+    try {
+      const res = await fetch("/api/agent-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "register", agentId: selectedId, name: regName.trim() || agent.name, trait: regTrait }),
+      });
+      const d = await res.json();
+      if (d.txHashes && Object.keys(d.txHashes).length > 0) {
+        // Persist newly returned TX hashes
+        const existing = getStoredAgentTxHashes();
+        const merged = { ...existing, ...d.txHashes };
+        localStorage.setItem(AGENT_TX_STORAGE_KEY, JSON.stringify(merged));
+        setAgentTxHashes(merged);
+      }
+      const txHash = d.txHashes?.[selectedId] ?? agentTxHashes[selectedId] ?? null;
+      const wasRegistered = d.registeredAgents?.includes(selectedId);
+      // Persist custom agent ID so PixelMap/useAgentStats can show it in the map
+      if (wasRegistered) {
+        const canonical = ["scout","strategist","sentinel","treasurer","executor","archivist"];
+        if (!canonical.includes(selectedId)) {
+          const stored: string[] = (() => { try { return JSON.parse(localStorage.getItem("aslan_custom_agent_ids") || "[]"); } catch { return []; } })();
+          if (!stored.includes(selectedId)) {
+            localStorage.setItem("aslan_custom_agent_ids", JSON.stringify([...stored, selectedId]));
+          }
+        }
+      }
+      setRegResult({
+        txHash: txHash ?? undefined,
+        topicId: d.topicId,
+        msg: d.skippedAgents?.includes(selectedId)
+          ? "Agent already registered onchain"
+          : wasRegistered
+          ? "Agent registered successfully"
+          : d.error ?? "Registration attempted",
+      });
+      setRegState("done");
+    } catch (e) {
+      setRegResult({ msg: e instanceof Error ? e.message : "Network error" });
+      setRegState("error");
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!window.confirm(`Deactivate agent ${agent.name} onchain? This requires a MetaMask transaction.`)) return;
+    setDeactivateState("calling");
+    setDeactivateMsg(null);
+    try {
+      const txHash = await deactivateAgentOnchain(selectedId);
+      setDeactivateMsg(`Deactivated · TX: ${txHash.slice(0,10)}…${txHash.slice(-6)}`);
+      setDeactivateState("done");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDeactivateMsg(msg.includes("user rejected") ? "Transaction rejected" : msg.slice(0, 60));
+      setDeactivateState("error");
+    }
+  };
+
   return (
+    <>
     <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-0 overflow-hidden">
       {/* Agent selector tabs */}
       <div className="px-3 pt-3 pb-0">
         <div className="flex items-center gap-1.5 mb-2">
           <Shield className="w-3.5 h-3.5 text-cyan" />
           <h2 className="font-pixel text-[10px] text-cyan tracking-wider">AGENT DETAIL</h2>
+          <button
+            onClick={() => { setShowRegModal(true); setRegState("idle"); setRegResult(null); setRegName(agent.name); setRegTrait("analyst"); }}
+            className="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded text-[7px] font-pixel transition-all duration-200 hover:opacity-90"
+            style={{ background: "hsl(43 90% 55% / 0.12)", border: "1px solid hsl(43 90% 55% / 0.35)", color: "hsl(43 90% 65%)" }}
+            title="Register agent onchain"
+          >
+            <UserPlus className="w-2.5 h-2.5" />
+            REGISTER
+          </button>
         </div>
         <div className="grid grid-cols-3 gap-1 mb-3">
           {AGENTS.map((a) => (
@@ -181,6 +306,36 @@ const RightPanel = () => {
             <StatBox label="Quests" value={displayQuests.toString()} color={agent.color} />
             <StatBox label="Success" value={`${displaySuccessRate}%`} color="hsl(142 70% 50%)" />
             <StatBox label="Focus" value={agent.specialization} color={agent.color} small />
+          </div>
+
+          {/* Session cost meter + pay button */}
+          <div className="rounded-lg px-2.5 py-2 flex items-center gap-2"
+            style={{ background: "hsl(43 90% 55% / 0.06)", border: "1px solid hsl(43 90% 55% / 0.2)" }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-[7px] font-pixel text-muted-foreground tracking-wider">SESSION COST</p>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-[11px] font-mono font-bold text-gold leading-none">
+                  {formatUsdc(sessionCost)}
+                </span>
+                <span className="text-[7px] font-mono text-muted-foreground">USDC</span>
+              </div>
+              <p className="text-[7px] font-mono text-muted-foreground/60 mt-0.5 truncate">
+                {messages.length} ops · 0.0.5769177
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPayWage(true)}
+              className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-md font-pixel text-[7px] transition-all hover:opacity-90 active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
+                border: "1px solid hsl(43 90% 55% / 0.6)",
+                color: "hsl(225 30% 6%)",
+                boxShadow: "0 0 12px hsl(43 90% 55% / 0.2)",
+              }}
+            >
+              <CreditCard className="w-2.5 h-2.5" />
+              PAY WAGE
+            </button>
           </div>
         </div>
 
@@ -316,7 +471,222 @@ const RightPanel = () => {
           </div>
         </div>
       </div>
+
     </aside>
+
+      {/* Register Agent Modal — full-screen portal */}
+      {/* Pay Wage — reuse PaymentGate portal */}
+      {showPayWage && (
+        <PaymentGate
+          intent={`Session wage — ${sessionCost > 0 ? formatUsdc(sessionCost) + " USDC across " + messages.length + " agent ops" : "agent activity this session"}`}
+          onPaid={() => { setShowPayWage(false); setSessionCost(0); seenMsgIds.current.clear(); }}
+          onDismiss={() => setShowPayWage(false)}
+        />
+      )}
+
+      {showRegModal && typeof document !== "undefined" && document.body && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ background: "hsl(225 30% 4% / 0.92)", backdropFilter: "blur(6px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget && regState !== "calling") setShowRegModal(false); }}
+        >
+          <div
+            className="w-full max-w-sm glass-panel p-5 space-y-4 animate-timeline-enter"
+            style={{ border: `1px solid ${agent.color}55`, boxShadow: `0 0 60px ${agent.color}18, 0 0 120px hsl(225 30% 4% / 0.8)` }}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: agent.color + "18", border: `1px solid ${agent.color}45` }}>
+                <UserPlus className="w-4 h-4" style={{ color: agent.color }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-pixel text-[11px] tracking-wider" style={{ color: agent.color }}>REGISTER AGENT ONCHAIN</p>
+                <p className="text-[8px] font-mono text-muted-foreground mt-0.5">AgentRegistry.sol · Hedera Testnet EVM</p>
+              </div>
+              <button onClick={() => setShowRegModal(false)} disabled={regState === "calling"}
+                className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-white/5 transition-colors disabled:opacity-30">
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${agent.color}35, transparent)` }} />
+
+            {/* Agent chip */}
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+              style={{ background: agent.color + "0c", border: `1px solid ${agent.color}25` }}>
+              <span className="font-pixel text-2xl leading-none" style={{ color: agent.color }}>{agent.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground">{agent.fullName}</p>
+                <p className="text-[9px] font-mono" style={{ color: agent.color + "bb" }}>{agent.role}</p>
+              </div>
+              {isOnchain && (
+                <span className="text-[7px] font-pixel px-1.5 py-0.5 rounded"
+                  style={{ background: "hsl(142 70% 50% / 0.1)", color: "hsl(142 70% 55%)", border: "1px solid hsl(142 70% 50% / 0.3)" }}>
+                  ✓ REGISTERED
+                </span>
+              )}
+            </div>
+
+            {/* Name input */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[8px] font-pixel text-muted-foreground tracking-wider">AGENT NAME</p>
+                <button
+                  onClick={() => { setRegName(autogenName()); setRegTrait(TRAITS[Math.floor(Math.random()*TRAITS.length)].id); }}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[7px] font-pixel transition-all hover:opacity-80"
+                  style={{ background: "hsl(280 65% 60% / 0.12)", border: "1px solid hsl(280 65% 60% / 0.3)", color: "hsl(280 65% 70%)" }}
+                >
+                  <Shuffle className="w-2.5 h-2.5" /> AUTOGEN
+                </button>
+              </div>
+              <input
+                type="text"
+                value={regName}
+                onChange={(e) => setRegName(e.target.value)}
+                maxLength={24}
+                placeholder="Enter agent name…"
+                disabled={regState === "calling"}
+                className="w-full h-9 px-3 rounded-lg text-sm font-mono bg-transparent outline-none transition-all disabled:opacity-40"
+                style={{
+                  background: "hsl(225 20% 9%)",
+                  border: `1px solid ${regName.trim() ? agent.color + "50" : "hsl(225 15% 20%)"}`,
+                  color: "hsl(215 20% 85%)",
+                }}
+              />
+            </div>
+
+            {/* Trait selector */}
+            <div className="space-y-1.5">
+              <p className="text-[8px] font-pixel text-muted-foreground tracking-wider">CHARACTERISTIC</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {TRAITS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setRegTrait(t.id)}
+                    disabled={regState === "calling"}
+                    className="flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-150 disabled:opacity-40"
+                    style={{
+                      background: regTrait === t.id ? agent.color + "18" : "hsl(225 20% 9%)",
+                      border: `1px solid ${regTrait === t.id ? agent.color + "60" : "hsl(225 15% 18%)"}`,
+                      boxShadow: regTrait === t.id ? `0 0 12px ${agent.color}18` : undefined,
+                    }}
+                  >
+                    <span className="font-pixel text-base leading-none" style={{ color: regTrait === t.id ? agent.color : "hsl(215 12% 45%)" }}>
+                      {t.icon}
+                    </span>
+                    <p className="text-[8px] font-pixel leading-none" style={{ color: regTrait === t.id ? agent.color : "hsl(215 12% 50%)" }}>
+                      {t.label}
+                    </p>
+                    <p className="text-[7px] font-mono text-muted-foreground text-center leading-tight">{t.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Contract row + cap */}
+            <div className="space-y-1 text-[8px] font-mono text-muted-foreground px-1">
+              <div className="flex items-center justify-between">
+                <span>Contract</span>
+                <a href="https://hashscan.io/testnet/contract/0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4"
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-0.5 text-cyan hover:underline">
+                  0x8B90…CC4 <ExternalLink className="w-2 h-2" />
+                </a>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Registry slots</span>
+                <span style={{ color: (regResult as {agentCount?:number}|null)?.agentCount != null && ((regResult as {agentCount?:number}).agentCount ?? 0) >= 18 ? "hsl(38 92% 55%)" : "hsl(215 12% 55%)" }}>
+                  {(regResult as {agentCount?:number}|null)?.agentCount != null ? `${(regResult as {agentCount?:number}).agentCount}/20` : "?/20"}
+                </span>
+              </div>
+            </div>
+
+            {/* Result */}
+            {regResult && (
+              <div className="flex items-start gap-2 px-2.5 py-2 rounded-lg"
+                style={{
+                  background: regState === "error" ? "hsl(0 72% 55% / 0.08)" : "hsl(142 70% 50% / 0.08)",
+                  border: `1px solid ${regState === "error" ? "hsl(0 72% 55% / 0.3)" : "hsl(142 70% 50% / 0.3)"}`,
+                }}>
+                {regState === "done"
+                  ? <CheckCircle className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
+                  : <Shield className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />}
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-[8px] font-pixel" style={{ color: regState === "error" ? "hsl(0 72% 65%)" : "hsl(142 70% 60%)" }}>
+                    {regResult.msg}
+                  </p>
+                  {regResult.txHash && (
+                    <a href={`https://hashscan.io/testnet/transaction/${regResult.txHash}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-0.5 text-[8px] font-mono text-cyan hover:underline">
+                      TX: {regResult.txHash.slice(0,10)}…{regResult.txHash.slice(-6)} <ExternalLink className="w-2 h-2" />
+                    </a>
+                  )}
+                  {regResult.topicId && (
+                    <p className="text-[8px] font-mono text-muted-foreground">HCS Topic: {regResult.topicId}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Deactivate feedback */}
+            {deactivateMsg && (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded"
+                style={{
+                  background: deactivateState === "error" ? "hsl(0 72% 55% / 0.08)" : "hsl(142 70% 50% / 0.08)",
+                  border: `1px solid ${deactivateState === "error" ? "hsl(0 72% 55% / 0.3)" : "hsl(142 70% 50% / 0.3)"}`,
+                }}>
+                <p className="text-[8px] font-mono" style={{ color: deactivateState === "error" ? "hsl(0 72% 65%)" : "hsl(142 70% 60%)" }}>
+                  {deactivateMsg}
+                </p>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setShowRegModal(false)} disabled={regState === "calling"}
+                className="flex-1 h-9 rounded-lg font-pixel text-[8px] transition-all disabled:opacity-30"
+                style={{ background: "hsl(225 20% 11%)", border: "1px solid hsl(225 15% 20%)", color: "hsl(215 12% 50%)" }}>
+                {regState === "done" ? "CLOSE" : "CANCEL"}
+              </button>
+              {isOnchain && (
+                <button
+                  onClick={handleDeactivate}
+                  disabled={deactivateState === "calling" || regState === "calling"}
+                  className="h-9 px-3 rounded-lg font-pixel text-[8px] flex items-center justify-center gap-1 transition-all disabled:opacity-40"
+                  style={{ background: "hsl(0 72% 40% / 0.15)", border: "1px solid hsl(0 72% 55% / 0.4)", color: "hsl(0 72% 65%)" }}
+                  title="Deactivate agent onchain (requires MetaMask)"
+                >
+                  {deactivateState === "calling" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                  REMOVE
+                </button>
+              )}
+              {regState !== "done" && (
+                <button
+                  onClick={handleRegister}
+                  disabled={regState === "calling" || !regName.trim()}
+                  className="flex-2 h-9 px-5 rounded-lg font-pixel text-[8px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+                  style={{
+                    background: `linear-gradient(135deg, ${agent.color}cc, ${agent.color}88)`,
+                    border: `1px solid ${agent.color}70`,
+                    color: "#fff",
+                    boxShadow: regState === "idle" ? `0 0 20px ${agent.color}25` : undefined,
+                  }}
+                >
+                  {regState === "calling" ? (
+                    <><Loader2 className="w-3 h-3 animate-spin" />REGISTERING…</>
+                  ) : (
+                    <><UserPlus className="w-3 h-3" />REGISTER ONCHAIN</>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 };
 
