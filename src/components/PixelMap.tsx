@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import { JsonRpcProvider, Contract } from "ethers";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import type { TimelineMessage } from "@/lib/agentConversation";
+
+const HEDERA_TESTNET_RPC = "https://testnet.hashio.io/api";
+const QUEST_RECEIPT_ADDRESS = "0x444f5895D29809847E8642Df0e0f4DBdBf541C7D";
+const AGENT_REGISTRY_ADDRESS = "0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4";
 
 interface Room {
   name: string; label: string;
@@ -9,7 +14,7 @@ interface Room {
   color: string; icon: string; desc: string; stats: string[];
 }
 
-const rooms: Room[] = [
+const BASE_ROOMS: Room[] = [
   // Positions sized to match pixel art buildings exactly, leaving corridors clear
   // Corridors: top-H(y=27%), mid-H(y=54%), left-V(x=30%), right-V(x=68%), arch-V(x=50%)
   { name:"consensushub", label:"Consensus Hub",   x:36, y:32, w:28, h:18, color:"hsl(43 90% 55%)",   icon:"⬡", desc:"HCS — Hedera Consensus Service",  stats:["HCS Topic #0.0.1234","847 msgs/min","Last Seq #4,192"] },
@@ -17,7 +22,7 @@ const rooms: Room[] = [
   { name:"mirrorvault",  label:"Mirror Vault",    x:74, y: 6, w:21, h:17, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Mirror Node — Real-time State",    stats:["12,847.50 HBAR","Slot: 4,192,441","Sync: LIVE"] },
   { name:"smartspire",   label:"Smart Spire",     x: 5, y:57, w:21, h:17, color:"hsl(142 70% 45%)",  icon:"▲", desc:"EVM — Smart Contracts",            stats:["3 Contracts Deployed","Gas: 2,115 tinyhbar","Audit: PASS"] },
   { name:"dexgate",      label:"DEX Gate",        x:74, y:57, w:21, h:17, color:"hsl(38 92% 50%)",   icon:"▶", desc:"SaucerSwap — DeFi Execution",      stats:["Vol 24h: $48,291","Top: HBAR/USDC","Slippage: 0.12%"] },
-  { name:"ledgerarchive",label:"Ledger Archive",  x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"QuestReceipt — Immutable Log",     stats:["Receipts: 2,041","Last ID: #2041","Hash: 0xab12…"] },
+  { name:"ledgerarchive",label:"Ledger Archive",  x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"QuestReceipt — Immutable Log",     stats:["Receipts: …","Last ID: …","Hash: 0xab12…"] },
 ];
 
 // ── HEDERA KINGDOM DECORATIONS ──────────────────────────────────────────────
@@ -290,8 +295,67 @@ function stripPrefix(content: string): string {
 }
 
 const PixelMap = () => {
+  const [rooms, setRooms] = useState<Room[]>(BASE_ROOMS);
   const [hoveredRoom,  setHoveredRoom]  = useState<string|null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
+
+  // Fetch live contract stats for Ledger Archive (QuestReceipt) and Smart Spire (AgentRegistry)
+  useEffect(() => {
+    const fetchContractStats = async () => {
+      try {
+        const provider = new JsonRpcProvider(HEDERA_TESTNET_RPC);
+        const questContract = new Contract(
+          QUEST_RECEIPT_ADDRESS,
+          ["function questCount() view returns (uint256)"],
+          provider
+        );
+        const agentContract = new Contract(
+          AGENT_REGISTRY_ADDRESS,
+          ["function getAgentCount() view returns (uint256)"],
+          provider
+        );
+
+        const [questCount, agentCount] = await Promise.all([
+          questContract.questCount().catch(() => null) as Promise<bigint | null>,
+          agentContract.getAgentCount().catch(() => null) as Promise<bigint | null>,
+        ]);
+
+        setRooms((prev) =>
+          prev.map((r) => {
+            if (r.name === "ledgerarchive" && questCount != null) {
+              const count = Number(questCount);
+              const countStr = count.toLocaleString("en-US");
+              return {
+                ...r,
+                stats: [
+                  `Receipts: ${countStr}`,
+                  `Last ID: #${count}`,
+                  "Hash: 0xab12…",
+                ],
+              };
+            }
+            if (r.name === "smartspire" && agentCount != null) {
+              return {
+                ...r,
+                stats: [
+                  `${Number(agentCount)} Contracts Deployed`,
+                  "Gas: 2,115 tinyhbar",
+                  "Audit: PASS",
+                ],
+              };
+            }
+            return r;
+          })
+        );
+      } catch {
+        // keep static fallback stats on error
+      }
+    };
+
+    fetchContractStats();
+    const interval = setInterval(fetchContractStats, 60000);
+    return () => clearInterval(interval);
+  }, []);
   // activeBubble: one agent speaks, then a reply agent responds
   const [activeBubble, setActiveBubble] = useState<{
     speakerId: string;

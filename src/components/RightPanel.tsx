@@ -2,10 +2,40 @@ import { useState } from "react";
 import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENTS, STATUS_COLORS, ACTION_TYPE_COLORS, type Agent } from "@/data/agents";
+import { useLiveTimeline } from "@/hooks/useLiveTimeline";
+import { useQuestInput } from "@/hooks/useQuestInput";
 
 const RightPanel = () => {
   const [selectedId, setSelectedId] = useState<string>("scout");
+  const [actionFeedback, setActionFeedback] = useState<{ type: "approve" | "reject" | "sim"; ts: number } | null>(null);
+  const { messages } = useLiveTimeline();
+  const { setPendingIntent } = useQuestInput();
   const agent = AGENTS.find((a) => a.id === selectedId)!;
+
+  // Live recent actions from timeline for selected agent
+  const liveActions = messages
+    .filter((m) => m.agentId === selectedId)
+    .slice(0, 5)
+    .map((m) => ({ action: m.content.slice(0, 72), time: m.time, type: m.type }));
+
+  const recentActions = liveActions.length > 0 ? liveActions : agent.recentActions;
+
+  const handleApprove = () => {
+    setActionFeedback({ type: "approve", ts: Date.now() });
+    setPendingIntent(`Approve and execute ${agent.name}'s latest recommended action on Hedera`);
+    setTimeout(() => setActionFeedback(null), 3000);
+  };
+
+  const handleReject = () => {
+    setActionFeedback({ type: "reject", ts: Date.now() });
+    setTimeout(() => setActionFeedback(null), 2000);
+  };
+
+  const handleSim = () => {
+    setActionFeedback({ type: "sim", ts: Date.now() });
+    setPendingIntent(`Simulate ${agent.name}'s strategy without executing — show projected outcome`);
+    setTimeout(() => setActionFeedback(null), 3000);
+  };;
 
   return (
     <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-0 overflow-hidden">
@@ -156,54 +186,81 @@ const RightPanel = () => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-1.5">
-          <Button
-            size="sm"
-            className="flex-1 gap-1 text-xs h-8"
-            style={{
-              background: `linear-gradient(135deg, hsl(142 70% 40%), hsl(142 70% 30%))`,
-              border: "1px solid hsl(142 70% 50% / 0.4)",
-              color: "hsl(142 70% 90%)",
-            }}
-          >
-            <CheckCircle className="w-3 h-3" />
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1 gap-1 text-xs h-8"
-            style={{
-              background: "linear-gradient(135deg, hsl(0 72% 40%), hsl(0 72% 30%))",
-              border: "1px solid hsl(0 72% 55% / 0.4)",
-              color: "hsl(0 72% 90%)",
-            }}
-          >
-            <XCircle className="w-3 h-3" />
-            Reject
-          </Button>
-          <Button
-            size="sm"
-            className="gap-1 text-xs h-8 px-2.5"
-            style={{
-              background: `${agent.color}15`,
-              border: `1px solid ${agent.color}40`,
-              color: agent.color,
-            }}
-          >
-            <Play className="w-3 h-3" />
-            Sim
-          </Button>
+        <div className="space-y-1.5">
+          <div className="flex gap-1.5">
+            <Button
+              size="sm"
+              onClick={handleApprove}
+              className="flex-1 gap-1 text-xs h-8 transition-all duration-200"
+              style={{
+                background: actionFeedback?.type === "approve"
+                  ? "linear-gradient(135deg, hsl(142 70% 50%), hsl(142 70% 40%))"
+                  : "linear-gradient(135deg, hsl(142 70% 40%), hsl(142 70% 30%))",
+                border: "1px solid hsl(142 70% 50% / 0.4)",
+                color: "hsl(142 70% 90%)",
+                boxShadow: actionFeedback?.type === "approve" ? "0 0 12px hsl(142 70% 50% / 0.4)" : undefined,
+              }}
+            >
+              <CheckCircle className="w-3 h-3" />
+              {actionFeedback?.type === "approve" ? "Approved!" : "Approve"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleReject}
+              className="flex-1 gap-1 text-xs h-8"
+              style={{
+                background: actionFeedback?.type === "reject"
+                  ? "linear-gradient(135deg, hsl(0 72% 50%), hsl(0 72% 40%))"
+                  : "linear-gradient(135deg, hsl(0 72% 40%), hsl(0 72% 30%))",
+                border: "1px solid hsl(0 72% 55% / 0.4)",
+                color: "hsl(0 72% 90%)",
+              }}
+            >
+              <XCircle className="w-3 h-3" />
+              {actionFeedback?.type === "reject" ? "Rejected" : "Reject"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSim}
+              className="gap-1 text-xs h-8 px-2.5"
+              style={{
+                background: actionFeedback?.type === "sim" ? `${agent.color}30` : `${agent.color}15`,
+                border: `1px solid ${agent.color}40`,
+                color: agent.color,
+              }}
+            >
+              <Play className="w-3 h-3" />
+              Sim
+            </Button>
+          </div>
+          {actionFeedback?.type === "approve" && (
+            <p className="text-[8px] font-pixel text-success text-center animate-pulse">
+              ◈ Quest dispatched to {agent.name}...
+            </p>
+          )}
+          {actionFeedback?.type === "sim" && (
+            <p className="text-[8px] font-pixel text-cyan text-center animate-pulse">
+              ▲ Simulation running...
+            </p>
+          )}
         </div>
 
-        {/* Recent actions */}
+        {/* Recent actions — live from timeline, fallback to static */}
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono mb-1.5">Recent Actions</p>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">Recent Actions</p>
+            {liveActions.length > 0 && (
+              <span className="text-[7px] font-pixel px-1 py-0.5 rounded" style={{ background: "hsl(195 100% 55% / 0.1)", color: "hsl(195 100% 55%)", border: "1px solid hsl(195 100% 55% / 0.3)" }}>LIVE</span>
+            )}
+          </div>
           <div className="space-y-1">
-            {agent.recentActions.map((item, i) => (
+            {recentActions.map((item, i) => (
               <div
                 key={i}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors cursor-pointer group"
                 style={{ background: "hsl(225 20% 11%)", border: "1px solid hsl(225 15% 18%)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${agent.color}30`)}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "hsl(225 15% 18%)")}
               >
                 <div
                   className="w-1.5 h-1.5 rounded-full shrink-0"

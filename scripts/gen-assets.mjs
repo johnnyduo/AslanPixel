@@ -57,7 +57,7 @@ async function generateImage(prompt, outputPath, options = {}) {
 const PROMPTS = {
   "map-bg": {
     prompt:
-      "pixel art top-down view blockchain city district map, dark navy blue floor, glowing neon cyan and gold room borders, 6 distinct buildings connected by glowing corridors: center-top hexagonal CONSENSUS HUB with green HCS nodes, top-left blue TOKEN FORGE with circuit patterns, top-right purple MIRROR VAULT with data streams, bottom-left green SMART SPIRE with EVM contract scrolls, bottom-right orange DEX GATE with trading charts, bottom-center red LEDGER ARCHIVE with receipt stacks, trees and lanterns along pathways, 16-bit retro RPG style, clean pixel art, cyber-fantasy aesthetic, dark moody atmosphere, no text labels in the image",
+      "pixel art top-down view RPG guild map, dark navy blue tiled floor, glowing neon cyan and gold room borders, exactly 6 rectangular rooms connected by straight horizontal and vertical corridors: one large central room with hexagonal console desk, top-left room with circuit board workstations, top-right room with holographic data screens, bottom-left room with glowing rune pillars, bottom-right room with trading terminal screens, bottom-center room with scroll shelves and receipt stacks, trees and lanterns along corridor pathways, no text no labels no letters anywhere, 16-bit SNES retro RPG style, clean pixel art, cyber-fantasy dark moody atmosphere, gold and cyan neon glow",
     outputPath: join(ASSETS, "map-bg.png"),
     aspectRatio: "16:9",
   },

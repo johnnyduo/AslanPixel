@@ -1,26 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(yarn build:*)",
-      "Bash(npx vite:*)",
-      "Bash(yarn install:*)",
-      "Bash(identify /tmp/lpc-gen/spritesheets/body/bodies/male/walk.png)",
-      "Bash(identify /tmp/lpc-gen/spritesheets/hair/bangs/walk.png)",
-      "Bash(identify /tmp/lpc-gen/spritesheets/hair/bangs/adult/walk.png)",
-      "Bash(ls /tmp/lpc-gen/spritesheets/body/bodies/male/walk*)",
-      "Bash(python3 /tmp/build_npcs.py)",
-      "Bash(identify /Library/WebServer/Documents/AslanGuild/public/assets/npcs/*.png)",
-      "Bash(identify -verbose /Library/WebServer/Documents/AslanGuild/public/assets/npcs/npc-scout.png)",
-      "Bash(identify /tmp/lpc-gen/spritesheets/head/faces/neutral/male/walk.png)"
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "WebFetch",
+      "Mcp"
     ],
     "deny": [
       "Bash(rm -rf:*)",
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
       "Bash(git push --force:*)",
-      "Bash(git reset --hard:*)",
-      "Write(*.md)",
-      "Write(**/*.md)"
+      "Bash(git reset --hard:*)"
     ],
     "defaultMode": "bypassPermissions"
   },

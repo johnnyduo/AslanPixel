@@ -3,103 +3,51 @@ pragma solidity ^0.8.19;
 
 /**
  * @title PolicyManager
- * @notice Enforces risk rules and limits for agent operations
- * @dev Sentinel agent checks these policies before any execution
+ * @notice Enforces risk rules for agent operations
  */
 contract PolicyManager {
     struct Policy {
-        string name;
-        uint256 maxPositionBps;     // Max position size in basis points (e.g. 500 = 5%)
-        uint256 maxSlippageBps;     // Max slippage in basis points (e.g. 25 = 0.25%)
-        uint256 maxSingleTxHbar;    // Max HBAR per single transaction (in tinyhbar)
-        uint256 dailyLimitHbar;     // Daily spending limit (in tinyhbar)
-        bool requireAudit;          // Require smart contract audit before interaction
+        uint256 maxSingleTxHbar;
+        uint256 dailyLimitHbar;
+        uint256 maxSlippageBps;
+        bool requireAudit;
         bool active;
     }
 
-    struct DailyUsage {
-        uint256 date;               // Unix timestamp day bucket
-        uint256 spent;              // tinyhbar spent today
-    }
-
-    mapping(string => Policy) public policies;        // policyId => Policy
-    mapping(address => DailyUsage) public dailyUsage; // wallet => usage
-    string[] public policyIds;
+    mapping(bytes32 => Policy) public policies;
+    mapping(address => uint256[2]) public dailyUsage; // [day, spent]
     address public immutable admin;
 
-    event PolicyCreated(string policyId, string name);
-    event PolicyUpdated(string policyId);
-    event PolicyViolation(string policyId, string reason, address agent);
-    event SpendingRecorded(address agent, uint256 amount, uint256 dailyTotal);
+    event PolicyViolation(bytes32 indexed key, address agent);
+    event SpendingRecorded(address agent, uint256 amount);
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "PolicyManager: not admin");
+        require(msg.sender == admin, "unauthorized");
         _;
     }
 
     constructor() {
         admin = msg.sender;
         // Default conservative policy
-        _createDefaultPolicy();
-    }
-
-    function _createDefaultPolicy() internal {
-        policies["default"] = Policy({
-            name: "Default Conservative",
-            maxPositionBps: 500,         // 5% max position
-            maxSlippageBps: 25,          // 0.25% max slippage
-            maxSingleTxHbar: 1000 * 1e8, // 1000 HBAR per TX
-            dailyLimitHbar: 5000 * 1e8,  // 5000 HBAR per day
-            requireAudit: true,
-            active: true
+        policies[keccak256("default")] = Policy({
+            maxSingleTxHbar: 1000 * 1e8,
+            dailyLimitHbar:  5000 * 1e8,
+            maxSlippageBps:  25,
+            requireAudit:    true,
+            active:          true
         });
-        policyIds.push("default");
     }
 
     function createPolicy(
         string calldata policyId,
-        string calldata name,
-        uint256 maxPositionBps,
-        uint256 maxSlippageBps,
         uint256 maxSingleTxHbar,
         uint256 dailyLimitHbar,
-        bool requireAudit
-    ) external onlyAdmin {
-        require(bytes(policies[policyId].name).length == 0, "PolicyManager: policy exists");
-        policies[policyId] = Policy({
-            name: name,
-            maxPositionBps: maxPositionBps,
-            maxSlippageBps: maxSlippageBps,
-            maxSingleTxHbar: maxSingleTxHbar,
-            dailyLimitHbar: dailyLimitHbar,
-            requireAudit: requireAudit,
-            active: true
-        });
-        policyIds.push(policyId);
-        emit PolicyCreated(policyId, name);
-    }
-
-    function updatePolicy(
-        string calldata policyId,
-        uint256 maxPositionBps,
         uint256 maxSlippageBps,
-        uint256 maxSingleTxHbar,
-        uint256 dailyLimitHbar,
         bool requireAudit
     ) external onlyAdmin {
-        Policy storage p = policies[policyId];
-        require(p.active, "PolicyManager: policy not found");
-        p.maxPositionBps  = maxPositionBps;
-        p.maxSlippageBps  = maxSlippageBps;
-        p.maxSingleTxHbar = maxSingleTxHbar;
-        p.dailyLimitHbar  = dailyLimitHbar;
-        p.requireAudit    = requireAudit;
-        emit PolicyUpdated(policyId);
-    }
-
-    function deactivatePolicy(string calldata policyId) external onlyAdmin {
-        policies[policyId].active = false;
-        emit PolicyUpdated(policyId);
+        bytes32 key = keccak256(abi.encodePacked(policyId));
+        require(!policies[key].active, "exists");
+        policies[key] = Policy(maxSingleTxHbar, dailyLimitHbar, maxSlippageBps, requireAudit, true);
     }
 
     function checkPolicy(
@@ -107,39 +55,37 @@ contract PolicyManager {
         uint256 amountHbar,
         uint256 slippageBps,
         address agentWallet
-    ) public returns (bool passed, string memory reason) {
-        Policy storage p = policies[policyId];
-        require(p.active, "PolicyManager: policy not found");
+    ) public returns (bool passed) {
+        bytes32 key = keccak256(abi.encodePacked(policyId));
+        Policy storage p = policies[key];
+        require(p.active, "not found");
 
         if (amountHbar > p.maxSingleTxHbar) {
-            emit PolicyViolation(policyId, "TX exceeds single limit", agentWallet);
-            return (false, "TX exceeds single limit");
+            emit PolicyViolation(key, agentWallet);
+            return false;
         }
-
         if (slippageBps > p.maxSlippageBps) {
-            emit PolicyViolation(policyId, "Slippage too high", agentWallet);
-            return (false, "Slippage too high");
+            emit PolicyViolation(key, agentWallet);
+            return false;
         }
 
-        // Check daily limit
         uint256 today = block.timestamp / 86400;
-        DailyUsage storage usage = dailyUsage[agentWallet];
-        if (usage.date != today) {
-            usage.date = today;
-            usage.spent = 0;
+        uint256[2] storage u = dailyUsage[agentWallet];
+        if (u[0] != today) { u[0] = today; u[1] = 0; }
+        if (u[1] + amountHbar > p.dailyLimitHbar) {
+            emit PolicyViolation(key, agentWallet);
+            return false;
         }
-
-        if (usage.spent + amountHbar > p.dailyLimitHbar) {
-            emit PolicyViolation(policyId, "Daily limit exceeded", agentWallet);
-            return (false, "Daily limit exceeded");
-        }
-
-        usage.spent += amountHbar;
-        emit SpendingRecorded(agentWallet, amountHbar, usage.spent);
-        return (true, "PASS");
+        u[1] += amountHbar;
+        emit SpendingRecorded(agentWallet, amountHbar);
+        return true;
     }
 
     function getPolicy(string calldata policyId) external view returns (Policy memory) {
-        return policies[policyId];
+        return policies[keccak256(abi.encodePacked(policyId))];
+    }
+
+    function deactivatePolicy(string calldata policyId) external onlyAdmin {
+        policies[keccak256(abi.encodePacked(policyId))].active = false;
     }
 }

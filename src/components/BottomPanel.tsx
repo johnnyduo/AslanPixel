@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send } from "lucide-react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
+import { useQuestInput } from "@/hooks/useQuestInput";
 import type { TimelineMessage } from "@/lib/agentConversation";
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
@@ -25,6 +26,19 @@ const BottomPanel = () => {
   const [lastReceiptId, setLastReceiptId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const { pendingIntent, clearPendingIntent } = useQuestInput();
+
+  // Listen for intents dispatched from LeftPanel "Deploy" button
+  useEffect(() => {
+    if (!pendingIntent) return;
+    setQuestInput(pendingIntent);
+    clearPendingIntent();
+    // Slight delay so input is visible before running
+    const t = setTimeout(() => {
+      runQuestWithIntent(pendingIntent);
+    }, 150);
+    return () => clearTimeout(t);
+  }, [pendingIntent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Merge quest messages on top of live messages, newest first
   const allMessages: TimelineMessage[] = [...questMessages, ...liveMessages].slice(0, 60);
@@ -36,19 +50,18 @@ const BottomPanel = () => {
     }
   }, [allMessages.length]);
 
-  const runQuest = () => {
-    if (!questInput.trim() || questStatus === "running") return;
+  const runQuestWithIntent = (intent: string) => {
+    if (!intent.trim() || questStatus === "running") return;
 
     setQuestStatus("running");
     setQuestMessages([]);
     setLastReceiptId(null);
 
-    // Close any existing connection
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
 
-    const url = `/api/quest?intent=${encodeURIComponent(questInput.trim())}`;
+    const url = `/api/quest?intent=${encodeURIComponent(intent.trim())}`;
     const es = new EventSource(url);
     eventSourceRef.current = es;
 
@@ -70,7 +83,6 @@ const BottomPanel = () => {
         };
         setQuestMessages((prev) => [msg, ...prev].slice(0, 30));
       } catch {
-        // Plain text line — wrap as quest message
         const msg: TimelineMessage = {
           id: `quest_${Date.now()}_${Math.random()}`,
           time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -86,6 +98,10 @@ const BottomPanel = () => {
       setQuestStatus("error");
       es.close();
     };
+  };
+
+  const runQuest = () => {
+    runQuestWithIntent(questInput.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

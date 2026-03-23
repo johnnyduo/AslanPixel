@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { Bell, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useWallet } from "@/hooks/useWallet";
 
 const STATIC_PRICE = 0.0641;
+
+// MockUSDC EVM address — resolved to Hedera account ID at runtime
+const MOCK_USDC_EVM = "0x152Bf42A48677b678c658E452788ea2687525BF7";
 
 interface HbarPrice {
   value: number;
@@ -11,7 +15,78 @@ interface HbarPrice {
 
 const TopBar = () => {
   const [hbarPrice, setHbarPrice] = useState<HbarPrice>({ value: STATIC_PRICE, change: "up" });
+  const [hbarBalance, setHbarBalance] = useState<number | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  const [usdcTokenId, setUsdcTokenId] = useState<string | null>(null);
+  const { shortAddress, isConnected, address, openModal } = useWallet();
 
+  // Resolve MockUSDC EVM → Hedera token ID once
+  useEffect(() => {
+    const resolve = async () => {
+      try {
+        const res = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/accounts/${MOCK_USDC_EVM}`
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json?.account) setUsdcTokenId(json.account);
+      } catch {
+        // ignore
+      }
+    };
+    resolve();
+  }, []);
+
+  // Fetch HBAR + USDC balance when wallet is connected
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setHbarBalance(null);
+      setUsdcBalance(null);
+      return;
+    }
+
+    const fetchBalances = async () => {
+      // HBAR balance
+      try {
+        const res = await fetch(`/api/hedera?path=/api/v1/accounts/${address}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.balance?.balance != null) {
+            setHbarBalance(json.balance.balance / 1e8);
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // USDC balance via Mirror Node token list
+      if (!usdcTokenId) return;
+      try {
+        const res = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}/tokens`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const tokens: { token_id: string; balance: number }[] = json?.tokens ?? [];
+          const found = tokens.find((t) => t.token_id === usdcTokenId);
+          if (found) {
+            // MockUSDC has 6 decimals
+            setUsdcBalance(found.balance / 1e6);
+          } else {
+            setUsdcBalance(0);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchBalances();
+    const interval = setInterval(fetchBalances, 30000);
+    return () => clearInterval(interval);
+  }, [isConnected, address, usdcTokenId]);
+
+  // HBAR live price ticker
   useEffect(() => {
     let prevPrice = STATIC_PRICE;
 
@@ -20,7 +95,6 @@ const TopBar = () => {
         const res = await fetch("/api/hedera?path=/api/v1/network/exchangerate");
         if (!res.ok) throw new Error("non-ok");
         const json = await res.json();
-        // Hedera exchange rate: current_rate.cent_equivalent / current_rate.hbar_equivalent * 0.01
         const rate = json?.current_rate;
         if (rate && rate.hbar_equivalent && rate.cent_equivalent) {
           const price = (rate.cent_equivalent / rate.hbar_equivalent) * 0.01;
@@ -29,7 +103,6 @@ const TopBar = () => {
           setHbarPrice({ value: price, change });
         }
       } catch {
-        // Backend unavailable — keep static fallback
         setHbarPrice((prev) => prev);
       }
     };
@@ -42,6 +115,18 @@ const TopBar = () => {
   const priceStr = hbarPrice.value.toFixed(4);
   const TrendIcon = hbarPrice.change === "up" ? TrendingUp : hbarPrice.change === "down" ? TrendingDown : null;
   const trendColor = hbarPrice.change === "up" ? "hsl(142 70% 50%)" : hbarPrice.change === "down" ? "hsl(0 72% 60%)" : "hsl(195 100% 55%)";
+
+  const hbarBalanceStr = hbarBalance != null
+    ? hbarBalance >= 1000
+      ? hbarBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : hbarBalance.toFixed(4)
+    : null;
+
+  const usdcBalanceStr = usdcBalance != null
+    ? usdcBalance >= 1000
+      ? usdcBalance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      : usdcBalance.toFixed(2)
+    : null;
 
   return (
     <header className="h-14 glass-panel-strong flex items-center justify-between px-5 rounded-none border-x-0 border-t-0">
@@ -64,15 +149,25 @@ const TopBar = () => {
           <span className="text-gold font-mono font-medium">HBAR ${priceStr}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
-          <span className="text-success">Mainnet</span>
-        </div>
+        {/* Wallet HBAR balance — shown when connected */}
+        {isConnected && hbarBalanceStr != null && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
+            <span className="text-muted-foreground">⬡</span>
+            <span className="text-foreground font-mono">{hbarBalanceStr}</span>
+            <span className="text-muted-foreground text-[10px]">HBAR</span>
+            {usdcBalanceStr != null && (
+              <>
+                <span className="text-border mx-0.5">|</span>
+                <span className="text-cyan font-mono">{usdcBalanceStr}</span>
+                <span className="text-muted-foreground text-[10px]">USDC</span>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
-          <span className="text-gold">ℏ</span>
-          <span className="text-foreground">12,847.50</span>
-          <span className="text-muted-foreground">HBAR</span>
+          <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
+          <span className="text-success">Testnet</span>
         </div>
 
         <Button variant="ghost" size="icon" className="relative">
@@ -80,10 +175,26 @@ const TopBar = () => {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold rounded-full" />
         </Button>
 
-        <Button variant="gold" size="sm" className="gap-2">
-          <Wallet className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">0x4a...8f2c</span>
-          <span className="sm:hidden">Wallet</span>
+        {/* Wallet connect button — real Reown AppKit */}
+        <Button
+          variant="gold"
+          size="sm"
+          className="gap-2"
+          onClick={() => openModal()}
+        >
+          {isConnected ? (
+            <>
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="hidden sm:inline font-mono">{shortAddress}</span>
+              <span className="sm:hidden">Connected</span>
+            </>
+          ) : (
+            <>
+              <Wallet className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Connect Wallet</span>
+              <span className="sm:hidden">Wallet</span>
+            </>
+          )}
         </Button>
       </div>
     </header>
