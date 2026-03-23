@@ -16,7 +16,7 @@ export const AUTO_QUESTS = [
   "Monitor HCS topic sequence integrity and flag any consensus timestamp gaps",
 ];
 
-export function useAutoQuest(intervalMs = 9 * 60 * 1000) {
+export function useAutoQuest(intervalMs = 3 * 60 * 1000) {
   const { setPendingIntent, pendingIntent } = useQuestInput();
   const idxRef = useRef(Math.floor(Math.random() * AUTO_QUESTS.length));
   const pendingRef = useRef(pendingIntent);
@@ -35,8 +35,8 @@ export function useAutoQuest(intervalMs = 9 * 60 * 1000) {
       setPendingIntent(intent);
     };
 
-    // First auto-quest fires after 3 minutes (give user time to interact first)
-    const initialDelay = setTimeout(fire, 3 * 60 * 1000);
+    // First auto-quest fires after 90 seconds (give user time to interact first)
+    const initialDelay = setTimeout(fire, 90 * 1000);
     const interval = setInterval(fire, intervalMs);
 
     return () => {

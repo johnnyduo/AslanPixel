@@ -89,13 +89,19 @@ export default async function handler(req) {
       push("message", { id: `${questId}-start`, time: ts(), type: "quest", agentId: "scout",
         content: `Quest received: "${intent}" — mobilizing 6 agents.` });
 
-      // Fetch live market context
+      // Fetch live market context + real treasury balance + policy rules
       let poolInfo = "HBAR/USDC testnet pool";
       let hbarPrice = "$0.0641";
+      let treasuryHbar = "unknown";
+      let policyRules = "slippage<25bps, position<5%, audit required";
+      const ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID ?? "0.0.5769159";
+      const POLICY_CONTRACT = process.env.POLICY_MANAGER_CONTRACT ?? "0xdBc14F4c53c071cd925fa4a730D06ddc1b4911E4";
+
       try {
-        const [pr, sr] = await Promise.allSettled([
+        const [pr, sr, br] = await Promise.allSettled([
           fetch("https://testnet.mirrornode.hedera.com/api/v1/network/exchangerate"),
           fetch("https://testnet.saucerswap.finance/api/v1/pools?limit=3"),
+          fetch(`https://testnet.mirrornode.hedera.com/api/v1/accounts/${ACCOUNT_ID}`),
         ]);
         if (pr.status === "fulfilled" && pr.value.ok) {
           const d = await pr.value.json();
@@ -105,17 +111,28 @@ export default async function handler(req) {
         if (sr.status === "fulfilled" && sr.value.ok) {
           const d = await sr.value.json();
           const pools = d.pools ?? d ?? [];
-          if (pools[0]) poolInfo = `${pools[0].tokenA?.symbol ?? "HBAR"}/${pools[0].tokenB?.symbol ?? "USDC"} pool`;
+          if (pools[0]) poolInfo = `${pools[0].tokenA?.symbol ?? "HBAR"}/${pools[0].tokenB?.symbol ?? "USDC"} pool TVL`;
+        }
+        if (br.status === "fulfilled" && br.value.ok) {
+          const d = await br.value.json();
+          const bal = d.balance?.balance;
+          if (bal != null) {
+            const hbar = (Number(bal) / 1e8).toFixed(2);
+            treasuryHbar = `${hbar} HBAR (${bal} tinyhbar) in account ${ACCOUNT_ID}`;
+          }
         }
       } catch {}
 
+      // Inject real PolicyManager contract address into sentinel prompt
+      policyRules = `PolicyManager.sol at ${POLICY_CONTRACT}: slippage<25bps, position<5%, audit required`;
+
       const STEPS = [
-        { agentId: "scout",      type: "tool_call",    prompt: `User intent: "${intent}". SaucerSwap: ${poolInfo}. HBAR: ${hbarPrice}. Report HCS scan and wallet inflow data.` },
-        { agentId: "strategist", type: "decision",     prompt: `Intent: "${intent}". HBAR at ${hbarPrice}, pool: ${poolInfo}. Build a 3-step execution plan with probability weights.` },
-        { agentId: "sentinel",   type: "policy",       prompt: `Checking plan for "${intent}" against PolicyManager.sol rules. Slippage <25bps, position <5%, audit required. State PASS or violation.` },
-        { agentId: "treasurer",  type: "conversation", prompt: `Budget allocation for: "${intent}". Policy cleared. State exact HBAR amounts and gas reserve in tinyhbar.` },
-        { agentId: "executor",   type: "transaction",  prompt: `Executing: "${intent}" on Hedera testnet. Generate TX ID and confirmation status.` },
-        { agentId: "archivist",  type: "receipt",      prompt: `Archive QuestReceipt for "${intent}". Generate receipt hash, HCS topic seq, Mirror Node confirmation.` },
+        { agentId: "scout",      type: "tool_call",    prompt: `User intent: "${intent}". SaucerSwap: ${poolInfo}. HBAR price: ${hbarPrice}. Treasury: ${treasuryHbar}. Report HCS scan, wallet inflow data, and market conditions.` },
+        { agentId: "strategist", type: "decision",     prompt: `Intent: "${intent}". HBAR at ${hbarPrice}, pool: ${poolInfo}, treasury: ${treasuryHbar}. Build a 3-step execution plan with probability weights.` },
+        { agentId: "sentinel",   type: "policy",       prompt: `Check plan for "${intent}" against ${policyRules}. Treasury balance: ${treasuryHbar}. State PASS or exact violation found.` },
+        { agentId: "treasurer",  type: "conversation", prompt: `Budget allocation for: "${intent}". Policy cleared. Treasury: ${treasuryHbar}. HBAR at ${hbarPrice}. State exact amounts and gas reserve in tinyhbar.` },
+        { agentId: "executor",   type: "transaction",  prompt: `Executing: "${intent}" on Hedera testnet EVM. Treasury: ${treasuryHbar}. Generate TX ID and SaucerSwap confirmation status.` },
+        { agentId: "archivist",  type: "receipt",      prompt: `Archive QuestReceipt for "${intent}". Treasury snapshot: ${treasuryHbar}. Generate receipt hash, HCS topic seq, Mirror Node confirmation slot.` },
       ];
 
       for (const step of STEPS) {
