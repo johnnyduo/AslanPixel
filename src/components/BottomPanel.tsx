@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send, Bot } from "lucide-react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
@@ -20,6 +20,36 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
 };
 
 type QuestStatus = "idle" | "paying" | "voting" | "running" | "complete" | "error";
+
+// Parse content and make TX hashes / HashScan URLs clickable
+function renderContent(content: string) {
+  // Split on TX hashes and hashscan URLs, making them links
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  const combined = new RegExp(`(0x[0-9a-fA-F]{40,}|hashscan\.io\/testnet\/(?:tx|transaction|contract)\/[^\s·]+)`, "g");
+  let match: RegExpExecArray | null;
+  while ((match = combined.exec(content)) !== null) {
+    if (match.index > last) parts.push(content.slice(last, match.index));
+    const raw = match[1];
+    const href = raw.startsWith("0x")
+      ? `https://hashscan.io/testnet/transaction/${raw}`
+      : `https://${raw}`;
+    const label = raw.startsWith("0x")
+      ? `${raw.slice(0, 10)}…${raw.slice(-6)}`
+      : "hashscan ↗";
+    parts.push(
+      <a key={match.index} href={href} target="_blank" rel="noopener noreferrer"
+        className="text-cyan hover:underline cursor-pointer"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {label}
+      </a>
+    );
+    last = match.index + raw.length;
+  }
+  if (last < content.length) parts.push(content.slice(last));
+  return parts.length > 0 ? parts : content;
+}
 
 const TABS = [
   { id: "all",          label: "ALL" },
@@ -353,7 +383,7 @@ const BottomPanel = () => {
                   {agentData.icon} {agentData.name}
                 </span>
               )}
-              <span className="text-[10px] font-mono text-secondary-foreground leading-snug">{item.content}</span>
+              <span className="text-[10px] font-mono text-secondary-foreground leading-snug">{renderContent(item.content)}</span>
             </div>
           );
         })}

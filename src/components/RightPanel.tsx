@@ -52,6 +52,7 @@ const RightPanel = () => {
   const [regTrait, setRegTrait] = useState("analyst");
   const [deactivateState, setDeactivateState] = useState<DeactivateState>("idle");
   const [deactivateMsg, setDeactivateMsg] = useState<string | null>(null);
+  const [philoIdx, setPhiloIdx] = useState<number>(-1); // -1 = static, 0+ = live message index
   const [sessionCost, setSessionCost] = useState(0);       // tinyhbar
   const [showPayWage, setShowPayWage] = useState(false);
   const seenMsgIds = useRef(new Set<string>());
@@ -88,6 +89,9 @@ const RightPanel = () => {
   const displaySuccessRate = isOnchain && onchain.completedQuests > 0
     ? Math.round((onchain.successCount / onchain.completedQuests) * 100)
     : agent.successRate;
+
+  // Reset philosophy index when switching agents
+  useEffect(() => { setPhiloIdx(-1); }, [selectedId]);
 
   // Live recent actions from timeline for selected agent
   const liveActions = messages
@@ -366,21 +370,60 @@ const RightPanel = () => {
           </div>
         </div>
 
-        {/* Philosophy / reasoning */}
-        <div className="glass-panel p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <Brain className="w-3 h-3" style={{ color: agent.color }} />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">Philosophy</span>
-          </div>
-          {/* Quote */}
-          <p
-            className="text-[10px] font-mono italic border-l-2 pl-2"
-            style={{ color: agent.color + "cc", borderColor: agent.color + "50" }}
-          >
-            "{agent.quote}"
-          </p>
-          <p className="text-[10px] text-secondary-foreground leading-relaxed font-mono">{agent.philosophy}</p>
-        </div>
+        {/* Philosophy / reasoning — click to cycle live agent thoughts */}
+        {(() => {
+          const liveThoughts = messages.filter((m) => m.agentId === selectedId && m.type === "conversation");
+          const hasLive = liveThoughts.length > 0;
+          const showLive = philoIdx >= 0 && hasLive;
+          const liveMsg = showLive ? liveThoughts[philoIdx % liveThoughts.length] : null;
+          return (
+            <div
+              className="glass-panel p-3 space-y-1.5 cursor-pointer transition-all duration-200 hover:opacity-90 select-none"
+              style={{ borderColor: showLive ? agent.color + "40" : undefined }}
+              title={hasLive ? "Click to cycle live agent thoughts" : "No live messages yet"}
+              onClick={() => {
+                if (!hasLive) return;
+                setPhiloIdx((prev) => {
+                  if (prev < 0) return 0;
+                  const next = prev + 1;
+                  return next >= liveThoughts.length ? -1 : next; // wrap back to static
+                });
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <Brain className="w-3 h-3" style={{ color: agent.color }} />
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
+                  {showLive ? "Live Thought" : "Philosophy"}
+                </span>
+                {hasLive && (
+                  <span className="ml-auto text-[7px] font-pixel px-1 py-0.5 rounded animate-pulse"
+                    style={{ background: agent.color + "18", color: agent.color, border: `1px solid ${agent.color}35` }}>
+                    {showLive ? `${(philoIdx % liveThoughts.length) + 1}/${liveThoughts.length}` : "LIVE ▸"}
+                  </span>
+                )}
+              </div>
+              {showLive && liveMsg ? (
+                <>
+                  <p className="text-[9px] font-mono text-muted-foreground">{liveMsg.time}</p>
+                  <p className="text-[10px] font-mono border-l-2 pl-2 leading-relaxed"
+                    style={{ color: agent.color + "cc", borderColor: agent.color + "50" }}>
+                    {liveMsg.content.replace(/^[^:]+:\s*/, "")}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p
+                    className="text-[10px] font-mono italic border-l-2 pl-2"
+                    style={{ color: agent.color + "cc", borderColor: agent.color + "50" }}
+                  >
+                    "{agent.quote}"
+                  </p>
+                  <p className="text-[10px] text-secondary-foreground leading-relaxed font-mono">{agent.philosophy}</p>
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Action buttons */}
         <div className="space-y-1.5">
