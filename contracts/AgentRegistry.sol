@@ -99,4 +99,12 @@ contract AgentRegistry {
         if (agent.completedQuests == 0) return 0;
         return (agent.successCount * 100) / agent.completedQuests;
     }
+
+    function deactivateAgent(string calldata agentId) external onlyRegistry {
+        agents[agentId].active = false;
+    }
+
+    function getAgentCount() external view returns (uint256) {
+        return agentIds.length;
+    }
 }

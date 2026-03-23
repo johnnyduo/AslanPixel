@@ -65,7 +65,7 @@ contract PolicyManager {
         uint256 dailyLimitHbar,
         bool requireAudit
     ) external onlyAdmin {
-        require(!policies[policyId].active, "PolicyManager: policy exists");
+        require(bytes(policies[policyId].name).length == 0, "PolicyManager: policy exists");
         policies[policyId] = Policy({
             name: name,
             maxPositionBps: maxPositionBps,
@@ -79,12 +79,35 @@ contract PolicyManager {
         emit PolicyCreated(policyId, name);
     }
 
+    function updatePolicy(
+        string calldata policyId,
+        uint256 maxPositionBps,
+        uint256 maxSlippageBps,
+        uint256 maxSingleTxHbar,
+        uint256 dailyLimitHbar,
+        bool requireAudit
+    ) external onlyAdmin {
+        Policy storage p = policies[policyId];
+        require(p.active, "PolicyManager: policy not found");
+        p.maxPositionBps  = maxPositionBps;
+        p.maxSlippageBps  = maxSlippageBps;
+        p.maxSingleTxHbar = maxSingleTxHbar;
+        p.dailyLimitHbar  = dailyLimitHbar;
+        p.requireAudit    = requireAudit;
+        emit PolicyUpdated(policyId);
+    }
+
+    function deactivatePolicy(string calldata policyId) external onlyAdmin {
+        policies[policyId].active = false;
+        emit PolicyUpdated(policyId);
+    }
+
     function checkPolicy(
         string calldata policyId,
         uint256 amountHbar,
         uint256 slippageBps,
         address agentWallet
-    ) external returns (bool passed, string memory reason) {
+    ) public returns (bool passed, string memory reason) {
         Policy storage p = policies[policyId];
         require(p.active, "PolicyManager: policy not found");
 

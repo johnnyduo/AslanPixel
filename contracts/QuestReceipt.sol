@@ -74,4 +74,14 @@ contract QuestReceipt {
         require(questCount > 0, "QuestReceipt: no receipts yet");
         return receipts[questCount];
     }
+
+    /// @notice Returns up to `limit` latest receipts (newest first)
+    function getRecentReceipts(uint256 limit) external view returns (Receipt[] memory) {
+        uint256 count = questCount < limit ? questCount : limit;
+        Receipt[] memory result = new Receipt[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = receipts[questCount - i];
+        }
+        return result;
+    }
 }
