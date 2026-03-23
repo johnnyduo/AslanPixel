@@ -1,96 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Silkscreen:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 225 30% 6%;
+    --foreground: 210 20% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 225 25% 10%;
+    --card-foreground: 210 20% 90%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 225 25% 10%;
+    --popover-foreground: 210 20% 90%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 43 90% 55%;
+    --primary-foreground: 225 30% 6%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 225 20% 16%;
+    --secondary-foreground: 210 20% 85%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 225 15% 14%;
+    --muted-foreground: 215 12% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 195 100% 50%;
+    --accent-foreground: 225 30% 6%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 225 15% 18%;
+    --input: 225 15% 18%;
+    --ring: 43 90% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Custom tokens */
+    --gold: 43 90% 55%;
+    --gold-dim: 43 60% 35%;
+    --cyan: 195 100% 50%;
+    --cyan-dim: 195 60% 30%;
+    --navy: 225 30% 6%;
+    --navy-light: 225 25% 12%;
+    --success: 142 70% 45%;
+    --warning: 38 92% 50%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --glass-bg: 225 25% 10%;
+    --glass-border: 225 15% 22%;
+    --glass-highlight: 225 20% 25%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --glow-gold: 0 0 20px hsl(43 90% 55% / 0.3);
+    --glow-cyan: 0 0 20px hsl(195 100% 50% / 0.3);
+    --glow-success: 0 0 20px hsl(142 70% 45% / 0.3);
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --font-display: 'Silkscreen', cursive;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Inter', sans-serif;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 225 25% 8%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 43 90% 55%;
+    --sidebar-primary-foreground: 225 30% 6%;
+    --sidebar-accent: 225 20% 16%;
+    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-border: 225 15% 18%;
+    --sidebar-ring: 43 90% 55%;
   }
 }
 
@@ -100,6 +75,197 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
   }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
+    box-shadow: inset 0 1px 0 0 hsl(var(--glass-highlight) / 0.1),
+                0 4px 24px -4px hsl(var(--navy) / 0.5);
+  }
+
+  .glass-panel-strong {
+    @apply bg-card/80 backdrop-blur-2xl border border-border/60 rounded-xl;
+    box-shadow: inset 0 1px 0 0 hsl(var(--glass-highlight) / 0.15),
+                0 8px 32px -8px hsl(var(--navy) / 0.6);
+  }
+
+  .glow-gold {
+    box-shadow: var(--glow-gold);
+  }
+
+  .glow-cyan {
+    box-shadow: var(--glow-cyan);
+  }
+
+  .glow-success {
+    box-shadow: var(--glow-success);
+  }
+
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  .text-gold-dim {
+    color: hsl(var(--gold-dim));
+  }
+
+  .text-cyan {
+    color: hsl(var(--cyan));
+  }
+
+  .text-cyan-dim {
+    color: hsl(var(--cyan-dim));
+  }
+
+  .bg-gold {
+    background-color: hsl(var(--gold));
+  }
+
+  .bg-cyan {
+    background-color: hsl(var(--cyan));
+  }
+
+  .bg-navy-light {
+    background-color: hsl(var(--navy-light));
+  }
+
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+
+  .text-success {
+    color: hsl(var(--success));
+  }
+
+  .border-gold {
+    border-color: hsl(var(--gold));
+  }
+
+  .border-cyan {
+    border-color: hsl(var(--cyan));
+  }
+
+  .border-gold\/20 {
+    border-color: hsl(var(--gold) / 0.2);
+  }
+
+  .border-cyan\/20 {
+    border-color: hsl(var(--cyan) / 0.2);
+  }
+
+  .font-pixel {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+}
+
+@layer utilities {
+  .pixel-grid {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.15) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  .gradient-gold {
+    background: linear-gradient(135deg, hsl(var(--gold)), hsl(38 85% 45%));
+  }
+
+  .gradient-cyan {
+    background: linear-gradient(135deg, hsl(var(--cyan)), hsl(210 100% 50%));
+  }
+}
+
+/* Pixel NPC animation */
+@keyframes npc-walk {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes npc-move-1 {
+  0% { left: 20%; top: 30%; }
+  25% { left: 35%; top: 25%; }
+  50% { left: 50%; top: 40%; }
+  75% { left: 30%; top: 50%; }
+  100% { left: 20%; top: 30%; }
+}
+
+@keyframes npc-move-2 {
+  0% { left: 60%; top: 20%; }
+  25% { left: 70%; top: 35%; }
+  50% { left: 55%; top: 55%; }
+  75% { left: 45%; top: 30%; }
+  100% { left: 60%; top: 20%; }
+}
+
+@keyframes npc-move-3 {
+  0% { left: 40%; top: 60%; }
+  25% { left: 25%; top: 45%; }
+  50% { left: 35%; top: 25%; }
+  75% { left: 55%; top: 50%; }
+  100% { left: 40%; top: 60%; }
+}
+
+@keyframes npc-move-4 {
+  0% { left: 75%; top: 50%; }
+  25% { left: 60%; top: 60%; }
+  50% { left: 45%; top: 45%; }
+  75% { left: 65%; top: 35%; }
+  100% { left: 75%; top: 50%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes timeline-enter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-npc-walk {
+  animation: npc-walk 0.4s steps(2) infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-timeline-enter {
+  animation: timeline-enter 0.3s ease-out forwards;
 }
