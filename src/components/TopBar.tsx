@@ -33,13 +33,12 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
     const fetchBalances = async () => {
       const provider = new JsonRpcProvider(HEDERA_TESTNET_RPC);
 
-      // HBAR balance via eth_getBalance (in wei = tinybar on Hedera)
+      // HBAR balance via eth_getBalance — Hedera returns weibars (1 HBAR = 1e18 weibars)
       try {
         const weiBalance = await provider.getBalance(address);
-        // Hedera: 1 HBAR = 1e8 tinybar, but eth_getBalance returns tinybar as wei-equivalent
-        setHbarBalance(Number(weiBalance) / 1e8);
+        setHbarBalance(Number(weiBalance) / 1e18);
       } catch {
-        // fallback to mirror node
+        // fallback to mirror node (returns tinybars, 1 HBAR = 1e8)
         try {
           const res = await fetch(`/api/hedera?path=/api/v1/accounts/${address}`);
           if (res.ok) {
