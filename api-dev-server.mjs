@@ -8,14 +8,16 @@ import { createServer } from "http";
 import { readFileSync } from "fs";
 import { Readable } from "stream";
 
-// Load env from .env.deploy
-try {
-  const envRaw = readFileSync(".env.deploy", "utf8");
-  for (const line of envRaw.split("\n")) {
-    const m = line.match(/^([^#=\s][^=]*)=(.*)$/);
-    if (m) process.env[m[1].trim()] = m[2].trim();
-  }
-} catch {}
+// Load env from .env.deploy then .env.local (local overrides deploy)
+for (const file of [".env.deploy", ".env.local"]) {
+  try {
+    const envRaw = readFileSync(file, "utf8");
+    for (const line of envRaw.split("\n")) {
+      const m = line.match(/^([^#=\s][^=]*)=(.*)$/);
+      if (m) process.env[m[1].trim()] = m[2].trim();
+    }
+  } catch {}
+}
 
 process.env.HEDERA_PRIVATE_KEY ??= process.env.DEPLOY_PRIVATE_KEY;
 

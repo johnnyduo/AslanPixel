@@ -47,7 +47,7 @@ const RightPanel = () => {
     setActionFeedback({ type: "sim", ts: Date.now() });
     setPendingIntent(`Simulate ${agent.name}'s strategy without executing — show projected outcome`);
     setTimeout(() => setActionFeedback(null), 3000);
-  };;
+  };
 
   return (
     <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-0 overflow-hidden">

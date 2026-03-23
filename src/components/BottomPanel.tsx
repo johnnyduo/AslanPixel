@@ -56,6 +56,11 @@ const BottomPanel = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [allMessages.length]);
 
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => { if (eventSourceRef.current) eventSourceRef.current.close(); };
+  }, []);
+
   const runQuestWithIntent = (intent: string) => {
     const cleanIntent = intent.replace(/^\[AUTO\] /, "").trim();
     if (!cleanIntent || questStatus === "running") return;

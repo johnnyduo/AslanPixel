@@ -44,7 +44,8 @@ const LeftPanel = () => {
         const provider = new JsonRpcProvider(HEDERA_TESTNET_RPC);
         const faucet = new Contract(FAUCET_ADDRESS, FAUCET_ABI, provider);
         const nextTime: bigint = await faucet.nextClaimTime(address);
-        setCanClaim(nextTime === 0n);
+        const nowSec = BigInt(Math.floor(Date.now() / 1000));
+        setCanClaim(nextTime === 0n || nowSec >= nextTime);
       } catch {
         setCanClaim(false);
       }

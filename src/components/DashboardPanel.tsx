@@ -22,13 +22,12 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
   const chartData = [...receipts]
     .reverse()
     .slice(0, 15)
-    .map((r, i) => ({
-      name: i === 0 ? "oldest" : String(r.questId),
-      id: r.questId,
-      success: r.success ? 1 : 0,
-      time: r.timestamp > 0
+    .map((r) => ({
+      name: r.timestamp > 0
         ? new Date(r.timestamp * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
         : `Q${r.questId}`,
+      id: r.questId,
+      success: r.success ? 1 : 0,
     }));
 
   const successRate = receipts.length > 0
