@@ -283,7 +283,7 @@ export default function Landing() {
           <div className="space-y-8">
             {[
               { n: "01", title: "You type an intent", desc: "Natural language like \"Rebalance treasury with 30% USDC buffer\" — or let Auto-Quest fire every 9 minutes autonomously.", color: "#f59e0b" },
-              { n: "02", title: "Guild Vote: 6 agents decide", desc: "All 6 agents vote sequentially. Drax (Risk Sentinel) can VETO if it detects policy violations — the quest stops.", color: "#ef4444" },
+              { n: "02", title: "Pixel Vote: 6 agents decide", desc: "All 6 agents vote sequentially. Drax (Risk Sentinel) can VETO if it detects policy violations — the quest stops.", color: "#ef4444" },
               { n: "03", title: "Agents mobilize onchain", desc: "Nexus reads HCS, Oryn models strategy, Lyss allocates budget, Vex executes the EVM transaction — each streamed live.", color: "#00d4ff" },
               { n: "04", title: "Receipt archived forever", desc: "Kael writes an immutable QuestReceipt.sol entry. Agent reputation updated in AgentRegistry.sol. HCS message posted.", color: "#a855f7" },
             ].map(step => (
@@ -312,7 +312,7 @@ export default function Landing() {
           <div className="mb-10 border border-slate-800 bg-[#0a0a0f] p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-slate-500 uppercase tracking-widest">Live Guild Vote Simulation</span>
+              <span className="text-xs text-slate-500 uppercase tracking-widest">Live Pixel Vote Simulation</span>
             </div>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
               {AGENTS.map((agent, i) => {
@@ -360,7 +360,7 @@ export default function Landing() {
           <div>
             <h2 className="text-2xl font-bold mb-2 text-amber-400 tracking-widest uppercase">Live Agent Activity</h2>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              Agents never sleep. Every 9 minutes, the guild fires an autonomous quest — yield optimization, risk scans, treasury reconciliation — streamed live with no human trigger.
+              Agents never sleep. Every 3 minutes, Aslan Pixel fires an autonomous quest — yield optimization, risk scans, treasury reconciliation — streamed live with no human trigger.
             </p>
             <div className="space-y-3">
               {["Every action posted to HCS consensus", "Every quest receipt stored onchain", "Agent reputation updated per mission", "Full audit trail — no black boxes"].map(f => (

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENTS, STATUS_COLORS, ACTION_TYPE_COLORS, type Agent } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
 import { useAgentStats } from "@/hooks/useContracts";
+import { getStoredAgentTxHashes } from "@/hooks/useAgentInit";
 
 const RightPanel = () => {
   const [selectedId, setSelectedId] = useState<string>("scout");
@@ -13,6 +14,15 @@ const RightPanel = () => {
   const { messages } = useLiveTimeline();
   const { setPendingIntent } = useQuestInput();
   const agent = AGENTS.find((a) => a.id === selectedId)!;
+  const [agentTxHashes, setAgentTxHashes] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setAgentTxHashes(getStoredAgentTxHashes());
+    // Re-read on storage events (in case another tab registers)
+    const handler = () => setAgentTxHashes(getStoredAgentTxHashes());
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);;
 
   // Merge onchain data
   const onchain = onchainAgents.find((a) => a.agentId === selectedId);
@@ -146,17 +156,24 @@ const RightPanel = () => {
             <span className="text-[9px] text-muted-foreground font-mono ml-1">
               {isOnchain ? `${onchain!.reputation}/1000` : `${displayRep}.0 rep`}
             </span>
-            {isOnchain && (
-              <a
-                href={`https://hashscan.io/testnet/account/0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-0.5 text-[7px] font-pixel px-1 py-0.5 rounded ml-1"
-                style={{ background: "hsl(195 100% 55% / 0.1)", color: "hsl(195 100% 55%)", border: "1px solid hsl(195 100% 55% / 0.3)" }}
-              >
-                ONCHAIN <ExternalLink className="w-2 h-2" />
-              </a>
-            )}
+            {isOnchain && (() => {
+              const txHash = agentTxHashes[selectedId];
+              const href = txHash
+                ? `https://hashscan.io/testnet/transaction/${txHash}`
+                : `https://hashscan.io/testnet/contract/0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4`;
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-0.5 text-[7px] font-pixel px-1 py-0.5 rounded ml-1"
+                  style={{ background: "hsl(195 100% 55% / 0.1)", color: "hsl(195 100% 55%)", border: "1px solid hsl(195 100% 55% / 0.3)" }}
+                  title={txHash ? `TX: ${txHash}` : "View AgentRegistry contract"}
+                >
+                  ONCHAIN <ExternalLink className="w-2 h-2" />
+                </a>
+              );
+            })()}
           </div>
 
           {/* Stats grid */}

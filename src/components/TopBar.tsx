@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Wallet, TrendingUp, TrendingDown, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
 import { useHbarPrice } from "@/hooks/useHbarPrice";
 
-// MockUSDC EVM address — resolved to Hedera account ID at runtime
-const MOCK_USDC_EVM = "0x152Bf42A48677b678c658E452788ea2687525BF7";
+// MockUSDC Hedera token ID (EVM: 0x152Bf42A48677b678c658E452788ea2687525BF7)
+const MOCK_USDC_TOKEN_ID = "0.0.5769177";
 
 interface TopBarProps {
   onDashboardToggle?: () => void;
@@ -14,26 +15,9 @@ interface TopBarProps {
 const TopBar = ({ onDashboardToggle }: TopBarProps) => {
   const [hbarBalance, setHbarBalance] = useState<number | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
-  const [usdcTokenId, setUsdcTokenId] = useState<string | null>(null);
   const { shortAddress, isConnected, address, openModal } = useWallet();
+  const navigate = useNavigate();
   const { price: hbarPriceValue, change: hbarChange } = useHbarPrice();
-
-  // Resolve MockUSDC EVM → Hedera token ID once
-  useEffect(() => {
-    const resolve = async () => {
-      try {
-        const res = await fetch(
-          `https://testnet.mirrornode.hedera.com/api/v1/accounts/${MOCK_USDC_EVM}`
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json?.account) setUsdcTokenId(json.account);
-      } catch {
-        // ignore
-      }
-    };
-    resolve();
-  }, []);
 
   // Fetch HBAR + USDC balance when wallet is connected
   useEffect(() => {
@@ -58,7 +42,6 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
       }
 
       // USDC balance via Mirror Node token list
-      if (!usdcTokenId) return;
       try {
         const res = await fetch(
           `https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}/tokens`
@@ -66,7 +49,7 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
         if (res.ok) {
           const json = await res.json();
           const tokens: { token_id: string; balance: number }[] = json?.tokens ?? [];
-          const found = tokens.find((t) => t.token_id === usdcTokenId);
+          const found = tokens.find((t) => t.token_id === MOCK_USDC_TOKEN_ID);
           if (found) {
             // MockUSDC has 6 decimals
             setUsdcBalance(found.balance / 1e6);
@@ -82,7 +65,7 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
     fetchBalances();
     const interval = setInterval(fetchBalances, 30000);
     return () => clearInterval(interval);
-  }, [isConnected, address, usdcTokenId]);
+  }, [isConnected, address]);
 
   const priceStr = hbarPriceValue.toFixed(4);
   const TrendIcon = hbarChange === "up" ? TrendingUp : hbarChange === "down" ? TrendingDown : null;
@@ -103,7 +86,10 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
   return (
     <header className="h-14 glass-panel-strong flex items-center justify-between px-5 rounded-none border-x-0 border-t-0">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+        >
           <div className="w-8 h-8 gradient-gold rounded-lg flex items-center justify-center">
             <span className="font-pixel text-xs text-primary-foreground">AP</span>
           </div>
@@ -111,7 +97,7 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
             <h1 className="font-pixel text-sm text-gold leading-none">ASLAN PIXEL</h1>
             <p className="text-[10px] text-muted-foreground font-mono">PROJECT v1.0</p>
           </div>
-        </div>
+        </button>
       </div>
 
       <div className="flex items-center gap-2">
@@ -149,7 +135,7 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
             size="icon"
             className="relative"
             onClick={onDashboardToggle}
-            title="Guild Dashboard"
+            title="Pixel Dashboard"
           >
             <BarChart2 className="w-4 h-4 text-muted-foreground hover:text-gold transition-colors" />
           </Button>

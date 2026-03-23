@@ -19,8 +19,8 @@ createAppKit({
   adapters: [new EthersAdapter()],
   networks: [hederaTestnet],
   metadata: {
-    name: "Aslan Pixel — Agentic Guild",
-    description: "Hedera-powered agentic guild with on-chain quest receipts",
+    name: "Aslan Pixel — Agentic Pixel",
+    description: "Hedera-powered agentic pixel society with on-chain quest receipts",
     url: typeof window !== "undefined" ? window.location.origin : "https://aslanpixel.vercel.app",
     icons: ["/favicon.ico"],
   },

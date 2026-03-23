@@ -1,8 +1,149 @@
 import { useState, useEffect, useRef } from "react";
 import { JsonRpcProvider, Contract } from "ethers";
+import { useAppKitState } from "@reown/appkit/react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import type { TimelineMessage } from "@/lib/agentConversation";
+
+// ── MAP THEMES ───────────────────────────────────────────────────────────────
+interface MapTheme {
+  id: string;
+  name: string;
+  icon: string;
+  // overall tint & scanline
+  bgBase: string;           // CSS background for the map container
+  scanline: string;         // scanline colour
+  borderColor: string;      // map border glow
+  ambientGlow: string;      // radial glow behind rooms
+  // corner glow colours (top-left, top-right, bottom-left, bottom-right)
+  cornerGlows: [string,string,string,string];
+  // decoration palette overrides (indexed same as `decorations` array order)
+  decoColors: string[];
+  // room color overrides (keyed by room name — undefined = keep original)
+  roomColors: Partial<Record<string,string>>;
+  // skybox gradient
+  skybox: string;
+}
+
+const THEMES: MapTheme[] = [
+  {
+    id: "cyber",
+    name: "Cyber",
+    icon: "◈",
+    bgBase: "hsl(225 30% 5% / 0.9)",
+    scanline: "hsl(225 35% 3% / 0.08)",
+    borderColor: "hsl(43 90% 55% / 0.22)",
+    ambientGlow: "hsl(43 90% 55% / 0.05)",
+    cornerGlows: [
+      "hsl(195 100% 50% / 0.06)",
+      "hsl(280 65% 65% / 0.06)",
+      "hsl(142 70% 45% / 0.06)",
+      "hsl(38 92% 50% / 0.06)",
+    ],
+    decoColors: [
+      "#00e5ff","#a78bfa","#34d399","#fb923c", // crystals
+      "#00e5ff","#34d399",                      // left hnodes
+      "#a78bfa","#fb923c",                      // right hnodes
+      "#00e5ff","#a78bfa",                      // top orbs
+      "#34d399","#fb923c",                      // mid runes
+      "#06b6d4","#f59e0b",                      // arch towers
+      "#00bfff","#c084fc","#4ade80","#fb923c","#fbbf24","#f87171", // lanterns
+      "#fbbf24",                                // top edge orb
+      "#f87171",                                // bottom edge orb
+    ],
+    roomColors: {},
+    skybox: `
+      radial-gradient(ellipse 90% 85% at 50% 50%, transparent 45%, hsl(225 35% 3% / 0.6) 100%),
+      radial-gradient(ellipse 30% 20% at 15% 15%, hsl(195 100% 50% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 85% 15%, hsl(280 65% 65% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 15% 85%, hsl(142 70% 45% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 85% 85%, hsl(38 92% 50% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 20% 15% at 50% 40%, hsl(43 90% 55% / 0.05) 0%, transparent 70%)
+    `,
+  },
+  {
+    id: "lava",
+    name: "Lava",
+    icon: "◆",
+    bgBase: "hsl(15 40% 5% / 0.95)",
+    scanline: "hsl(10 50% 3% / 0.12)",
+    borderColor: "hsl(20 95% 55% / 0.30)",
+    ambientGlow: "hsl(20 95% 55% / 0.06)",
+    cornerGlows: [
+      "hsl(0 90% 55% / 0.08)",
+      "hsl(30 100% 55% / 0.07)",
+      "hsl(15 85% 45% / 0.07)",
+      "hsl(40 100% 50% / 0.08)",
+    ],
+    decoColors: [
+      "#ff4500","#ff6b00","#ff2200","#ffaa00", // crystals
+      "#ff4500","#ff6b00",                      // left hnodes
+      "#ff2200","#ffaa00",                      // right hnodes
+      "#ff4500","#ff6b00",                      // top orbs
+      "#ff2200","#ffaa00",                      // mid runes
+      "#ff6633","#ff9900",                      // arch towers
+      "#ff3300","#ff6b00","#ff4400","#ffaa00","#ff7700","#ff2200", // lanterns
+      "#ffcc00",                                // top edge orb
+      "#ff4400",                                // bottom edge orb
+    ],
+    roomColors: {
+      consensushub:  "hsl(20 95% 55%)",
+      tokenforge:    "hsl(0 90% 60%)",
+      mirrorvault:   "hsl(35 100% 55%)",
+      smartspire:    "hsl(10 90% 50%)",
+      dexgate:       "hsl(40 95% 55%)",
+      ledgerarchive: "hsl(5 85% 55%)",
+    },
+    skybox: `
+      radial-gradient(ellipse 90% 85% at 50% 50%, transparent 40%, hsl(10 50% 3% / 0.75) 100%),
+      radial-gradient(ellipse 40% 25% at 50% 70%, hsl(20 100% 40% / 0.10) 0%, transparent 70%),
+      radial-gradient(ellipse 25% 20% at 20% 80%, hsl(0 90% 40% / 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 25% 20% at 80% 80%, hsl(40 100% 45% / 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 20% 15% at 50% 90%, hsl(15 95% 50% / 0.12) 0%, transparent 70%)
+    `,
+  },
+  {
+    id: "void",
+    name: "Void",
+    icon: "▣",
+    bgBase: "hsl(270 30% 4% / 0.97)",
+    scanline: "hsl(270 40% 3% / 0.10)",
+    borderColor: "hsl(280 80% 65% / 0.25)",
+    ambientGlow: "hsl(280 80% 65% / 0.05)",
+    cornerGlows: [
+      "hsl(260 80% 65% / 0.07)",
+      "hsl(300 70% 60% / 0.07)",
+      "hsl(240 90% 65% / 0.07)",
+      "hsl(280 75% 60% / 0.07)",
+    ],
+    decoColors: [
+      "#c084fc","#e879f9","#818cf8","#a78bfa", // crystals
+      "#c084fc","#818cf8",                      // left hnodes
+      "#e879f9","#a78bfa",                      // right hnodes
+      "#c084fc","#e879f9",                      // top orbs
+      "#818cf8","#a78bfa",                      // mid runes
+      "#7c3aed","#d946ef",                      // arch towers
+      "#a855f7","#c084fc","#818cf8","#e879f9","#9333ea","#7c3aed", // lanterns
+      "#d946ef",                                // top edge orb
+      "#7c3aed",                                // bottom edge orb
+    ],
+    roomColors: {
+      consensushub:  "hsl(280 80% 65%)",
+      tokenforge:    "hsl(260 80% 65%)",
+      mirrorvault:   "hsl(300 70% 60%)",
+      smartspire:    "hsl(240 90% 65%)",
+      dexgate:       "hsl(290 75% 60%)",
+      ledgerarchive: "hsl(270 75% 62%)",
+    },
+    skybox: `
+      radial-gradient(ellipse 90% 85% at 50% 50%, transparent 45%, hsl(270 40% 3% / 0.80) 100%),
+      radial-gradient(ellipse 50% 40% at 50% 20%, hsl(280 80% 50% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 25% at 20% 50%, hsl(260 80% 55% / 0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 25% at 80% 50%, hsl(300 70% 55% / 0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 20% 15% at 50% 50%, hsl(280 90% 60% / 0.05) 0%, transparent 70%)
+    `,
+  },
+];
 
 const HEDERA_TESTNET_RPC = "https://testnet.hashio.io/api";
 const QUEST_RECEIPT_ADDRESS = "0x444f5895D29809847E8642Df0e0f4DBdBf541C7D";
@@ -298,6 +439,15 @@ const PixelMap = () => {
   const [rooms, setRooms] = useState<Room[]>(BASE_ROOMS);
   const [hoveredRoom,  setHoveredRoom]  = useState<string|null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
+  const [themeIdx, setThemeIdx] = useState(0);
+  const { open: walletModalOpen } = useAppKitState();
+  const theme = THEMES[themeIdx];
+
+  // Apply theme colors to rooms
+  const themedRooms = rooms.map(r => ({
+    ...r,
+    color: theme.roomColors[r.name] ?? r.color,
+  }));
 
   // Fetch live contract stats for Ledger Archive (QuestReceipt) and Smart Spire (AgentRegistry)
   useEffect(() => {
@@ -441,15 +591,16 @@ const PixelMap = () => {
   return (
     <div className="flex-1 relative overflow-hidden select-none" style={{
       minHeight: 0,
-      background: "hsl(225 30% 5% / 0.9)",
-      border: "1px solid hsl(43 90% 55% / 0.22)",
+      background: theme.bgBase,
+      border: `1px solid ${theme.borderColor}`,
       borderRadius: "12px",
       animation: "kingdom-border 4s ease-in-out infinite",
+      transition: "background 0.6s ease, border-color 0.6s ease",
       boxShadow: `
         inset 0 0 80px hsl(225 35% 3% / 0.6),
-        0 0 0 1px hsl(43 90% 55% / 0.10),
+        0 0 0 1px ${theme.borderColor},
         0 8px 40px -8px hsl(225 35% 3% / 0.9),
-        0 0 60px -20px hsl(43 90% 55% / 0.15)
+        0 0 60px -20px ${theme.ambientGlow}
       `,
     }}>
 
@@ -461,21 +612,15 @@ const PixelMap = () => {
         imageRendering: "pixelated",
       }} />
 
-      {/* Hedera Kingdom: deep vignette + ambient color wash */}
+      {/* Ambient color wash — theme-driven */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        background: `
-          radial-gradient(ellipse 90% 85% at 50% 50%, transparent 45%, hsl(225 35% 3% / 0.6) 100%),
-          radial-gradient(ellipse 30% 20% at 15% 15%, hsl(195 100% 50% / 0.06) 0%, transparent 70%),
-          radial-gradient(ellipse 30% 20% at 85% 15%, hsl(280 65% 65% / 0.06) 0%, transparent 70%),
-          radial-gradient(ellipse 30% 20% at 15% 85%, hsl(142 70% 45% / 0.06) 0%, transparent 70%),
-          radial-gradient(ellipse 30% 20% at 85% 85%, hsl(38 92% 50% / 0.06) 0%, transparent 70%),
-          radial-gradient(ellipse 20% 15% at 50% 40%, hsl(43 90% 55% / 0.05) 0%, transparent 70%)
-        `,
+        background: theme.skybox,
+        transition: "background 0.6s ease",
       }} />
 
-      {/* Subtle scanline overlay — makes it feel more pixel-art authentic */}
+      {/* Scanline overlay */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, hsl(225 35% 3% / 0.08) 3px, hsl(225 35% 3% / 0.08) 4px)",
+        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 3px, ${theme.scanline} 3px, ${theme.scanline} 4px)`,
         mixBlendMode: "multiply",
       }} />
 
@@ -483,7 +628,7 @@ const PixelMap = () => {
       {decorations.map((d, i) => {
         const Component = DECO_COMPONENTS[d.type];
         if (!Component) return null;
-        const col = (d as any).color || "#00e5ff";
+        const col = theme.decoColors[i] ?? (d as any).color ?? "#00e5ff";
         const glowSizes: Record<string,number> = { crystal:48, hnode:56, orb:44, rune:36, tower:52, lantern:32 };
         const glowSize = glowSizes[d.type] || 40;
         const glowOpacity = d.type === "lantern" ? 0.45 : 0.55;
@@ -519,7 +664,7 @@ const PixelMap = () => {
       })}
 
       {/* ── ROOMS — pure glow border, NO background fill ── */}
-      {rooms.map((r) => {
+      {themedRooms.map((r) => {
         const hov = hoveredRoom === r.name;
         return (
           <div key={r.name} className="absolute cursor-pointer z-20"
@@ -623,8 +768,8 @@ const PixelMap = () => {
         );
       })}
 
-      {/* ── NPCs ── */}
-      {AGENTS.map((agent) => {
+      {/* ── NPCs — hidden when wallet modal is open ── */}
+      {!walletModalOpen && AGENTS.map((agent) => {
         const isHov     = hoveredAgent === agent.id;
         const isSpeaker = activeBubble?.speakerId === agent.id;
         const isReplier = activeBubble?.replyId    === agent.id;
@@ -732,7 +877,7 @@ const PixelMap = () => {
       })}
 
       {/* ── AMBIENT ROOM GLOWS ── */}
-      {rooms.map((r,i) => (
+      {themedRooms.map((r,i) => (
         <div key={`amb-${i}`} className="absolute pointer-events-none z-10"
           style={{
             left:`${r.x+r.w/2}%`, top:`${r.y+r.h/2}%`,
@@ -742,10 +887,26 @@ const PixelMap = () => {
           }}/>
       ))}
 
+      {/* ── THEME SWITCHER ── */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1">
+        {THEMES.map((t, i) => (
+          <button key={t.id} onClick={() => setThemeIdx(i)}
+            className="font-pixel text-[8px] px-2 py-1 rounded transition-all duration-200"
+            style={{
+              background: themeIdx === i ? t.borderColor.replace("0.22","0.25").replace("0.30","0.30").replace("0.25","0.25") + "33" : "hsl(225 30% 6% / 0.7)",
+              border: `1px solid ${themeIdx === i ? t.borderColor : "hsl(225 30% 20% / 0.4)"}`,
+              color: themeIdx === i ? "#fff" : "hsl(225 10% 55%)",
+              boxShadow: themeIdx === i ? `0 0 8px ${t.borderColor}` : "none",
+            }}>
+            {t.icon} {t.name}
+          </button>
+        ))}
+      </div>
+
       {/* ── MINIMAP ── */}
       <div className="absolute top-2 right-2 w-[72px] h-[62px] glass-panel p-1 opacity-50 hover:opacity-100 transition-opacity z-40">
         <div className="w-full h-full relative rounded-sm overflow-hidden" style={{ background:"hsl(225 32% 6%)" }}>
-          {rooms.map(r=>(
+          {themedRooms.map(r=>(
             <div key={r.name} className="absolute rounded-[1px] transition-all duration-200"
               style={{
                 left:`${r.x}%`, top:`${r.y}%`, width:`${r.w}%`, height:`${r.h}%`,

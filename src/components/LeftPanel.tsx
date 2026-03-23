@@ -168,7 +168,7 @@ const LeftPanel = () => {
 
       {/* Active agents */}
       <div>
-        <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-mono mb-1.5">Guild Agents</p>
+        <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-mono mb-1.5">Pixel Agents</p>
         <div className="grid grid-cols-3 gap-1">
           {AGENTS.map((a) => (
             <div

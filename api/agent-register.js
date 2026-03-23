@@ -61,7 +61,7 @@ async function ensureHCSTopic(client) {
   // Create a new topic
   try {
     const tx = await new TopicCreateTransaction()
-      .setTopicMemo("AslanGuild Agent Activity — v1.0")
+      .setTopicMemo("Aslan Pixel Agent Activity — v1.0")
       .execute(client);
     const receipt = await tx.getReceipt(client);
     _topicId = receipt.topicId.toString();
@@ -89,23 +89,21 @@ async function registerAgents(wallet) {
   const contract = new Contract(AGENT_REGISTRY_ADDRESS, AGENT_REGISTRY_ABI, wallet);
   const registered = [];
   const skipped = [];
+  // txHashes: agentId -> EVM tx hash (only for newly registered agents)
+  const txHashes = {};
 
   for (const agent of AGENTS) {
     try {
       const tx = await contract.registerAgent(agent.id, agent.name, agent.role, wallet.address);
-      await tx.wait();
+      const receipt = await tx.wait();
       registered.push(agent.id);
+      txHashes[agent.id] = receipt?.hash ?? tx.hash;
     } catch (err) {
       // "exists" revert is expected — agent already registered
-      const msg = err?.reason ?? err?.message ?? "";
-      if (msg.includes("exists") || msg.includes("execution reverted")) {
-        skipped.push(agent.id);
-      } else {
-        skipped.push(agent.id);
-      }
+      skipped.push(agent.id);
     }
   }
-  return { registered, skipped };
+  return { registered, skipped, txHashes };
 }
 
 async function recordAllQuestResults(wallet, questId, success) {
@@ -144,18 +142,19 @@ async function run(mode, questId, success) {
   }
 
   // Default: register agents
-  const { registered, skipped } = await registerAgents(wallet);
+  const { registered, skipped, txHashes } = await registerAgents(wallet);
 
   // Post HCS message for registration
   const seqNum = await postHCSMessage(hederaClient, topicId, {
     event: "agents_registered",
     registered,
     skipped,
+    txHashes,
     timestamp: new Date().toISOString(),
-    guild: "AslanGuild",
+    project: "Aslan Pixel",
   });
 
-  return { topicId, registeredAgents: registered, skippedAgents: skipped, hcsSeq: seqNum };
+  return { topicId, registeredAgents: registered, skippedAgents: skipped, txHashes, hcsSeq: seqNum };
 }
 
 export default async function handler(req, res) {

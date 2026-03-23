@@ -20,12 +20,60 @@ const AGENTS = {
 
 // Fallback messages with real-looking but static data
 const FALLBACKS = {
-  scout:      ["HCS topic scan active — 3 wallet inflow patterns detected this consensus round. Flagging for Oryn.", "Mirror Node: large HBAR transfer confirmed across 4 consensus timestamps. Monitoring."],
-  strategist: ["HBAR/USDC yield path modeled — 45% allocation optimal at current price. Submitting to Drax.", "Rebalance convergence: 3-branch model complete, Branch A leads at 91% confidence."],
-  sentinel:   ["PolicyManager check passed — slippage 0.18bps ✓, position 3.2% ✓, audit hash ✓. Queue cleared.", "Concentration risk 0.0% — all positions within 5% limit. Standing by."],
-  treasurer:  ["Treasury reconciled against Mirror Node state. Gas reserve 500 HBAR locked and committed.", "HTS token balance confirmed. USDC allocation approved for next execution cycle."],
-  executor:   ["EVM simulation complete: SAFE. Nonce locked, gas estimated. TX ready for submission.", "testnet.saucerswap.finance confirmation received. Swap route verified."],
-  archivist:  ["QuestReceipt.sol indexed — latest receipt hash posted to Mirror Node cache.", "HCS message submitted — immutable from this consensus round. Sequence recorded."],
+  scout: [
+    "HCS seq #4,192 — 3 wallet inflow patterns flagged across 2 consensus rounds. Routing to Oryn.",
+    "Mirror Node: 847 msgs/min on topic 0.0.1234. No anomalies in last 60s window.",
+    "Scanning accounts/0.0.5769159 — balance delta +0.0012 HBAR since last poll. Nominal.",
+    "Consensus timestamp gap detected at seq #4,198–4,199. Duration: 340ms. Within tolerance.",
+    "HCS topic backlog cleared — 12 pending messages flushed. Sequence integrity verified.",
+    "Wallet inflow: 3 transfers >500 HBAR in past consensus round. Flagging to Oryn for strategy review.",
+    "Mirror Node sync confirmed. Latest slot: 4,192,441. State root matches local cache.",
+  ],
+  strategist: [
+    "HBAR/USDC: 45% allocation optimal at current price. Branch A leads at 91% confidence.",
+    "Rebalance model converged — 3-step path: scan → allocate → execute. ETA: 2 consensus rounds.",
+    "SaucerSwap route: HBAR→USDC slippage 0.12%, depth $2.4M. Recommending 100 HBAR lot size.",
+    "Yield curve flattening detected. Shifting 10% from liquidity farm to stablecoin buffer.",
+    "Portfolio divergence 0.8% from target. Initiating micro-rebalance via SaucerSwap testnet pool.",
+    "HBAR/SAUCE spread widening — arbitrage window open. Confidence 78%. Sending to Drax for clearance.",
+    "Strategy model updated: HBAR at current price supports 3-step allocation with 91% success rate.",
+  ],
+  sentinel: [
+    "PolicyManager check: slippage 0.18bps ✓, position 3.2% ✓, audit hash 0xf3a1 ✓. CLEARED.",
+    "Concentration risk 0.0% — all positions within 5% cap. No veto required. Standing by.",
+    "Drax: Pending swap reviewed — contract 0xdBc1…4911 audit PASS. Max drawdown within policy.",
+    "Policy sweep complete — 6 agent states checked, 0 violations. Quest queue unblocked.",
+    "Slippage cap 0.25% enforced. Current estimate 0.12% — within bounds. Proceeding.",
+    "Audit hash verified against QuestReceipt.sol registry. No tampering detected. PASS.",
+    "Risk sentinel idle — last 3 quests all PASS. Monitoring PolicyManager for parameter changes.",
+  ],
+  treasurer: [
+    "Treasury reconciled. Gas reserve 500 HBAR locked. USDC allocation approved.",
+    "HTS balance confirmed: 12,847.50 HBAR (1,284,750,000,000,000 tinyhbar). Sufficient for 48h ops.",
+    "Lyss: Allocating 100 HBAR to next quest execution. 400 HBAR gas buffer remains intact.",
+    "Mirror Node balance sync: +0.0024 HBAR delta from staking rewards. Treasury growing.",
+    "HTS token IDs 0.0.847291 and 0.0.912044 reconciled — totals match onchain state.",
+    "Budget ceiling not breached. Current allocation: 8.1% of treasury. Policy max: 15%.",
+    "Gas price stable at 2,115 tinyhbar. Execution cost for pending queue: ~0.8 HBAR.",
+  ],
+  executor: [
+    "EVM simulation: SAFE. Nonce 41 locked, gas 94,200 estimated. TX queued for submission.",
+    "testnet.saucerswap.finance route confirmed — HBAR→USDC via pool 0x9a4c…b7f2. Slippage 0.11%.",
+    "TX 0.0.5769159@1711234567.000 submitted — 100 HBAR → 6.41 USDC. Awaiting confirmation.",
+    "Hedera EVM chainID 296: nonce synced, gas estimate valid. Simulation passed all checks.",
+    "Swap executed: 100 HBAR → USDC on SaucerSwap testnet. Confirmation in 3–5 consensus rounds.",
+    "EVM replay check: TX hash unique, no double-spend detected. Ledger state clean.",
+    "Contract call to 0xdBc1…4911 completed. Return value: PASS. Gas used: 81,444.",
+  ],
+  archivist: [
+    "QuestReceipt #2041 written — inputHash: 0xab12…, topic seq #4,193 posted. IMMUTABLE.",
+    "HCS message committed. mirror.hedera.com/api/v1/transactions/0.0.1234-1711234567 live.",
+    "AgentRegistry updated — 6 agent scores incremented. Reputation ledger consistent.",
+    "SHA-256 receipt hash: 0x9f3c…e891. Stored in QuestReceipt.sol slot 2041. Archived.",
+    "Archival complete: quest intent, output, txHash, and timestamp sealed onchain.",
+    "HCS topic seq #4,194 confirmed. Mirror Node lag: 210ms. Archive integrity verified.",
+    "Kael: Ledger audit — last 10 receipts hash-chained correctly. No gaps in quest history.",
+  ],
 };
 
 const SCENARIO_TOPICS = [
@@ -37,6 +85,16 @@ const SCENARIO_TOPICS = [
   { agentId: "archivist",  type: "receipt",      topic: "indexing QuestReceipt.sol event to Mirror Node cache" },
   { agentId: "scout",      type: "alert",        topic: "detecting wallet inflow anomaly on Hedera testnet" },
   { agentId: "strategist", type: "conversation", topic: "modeling liquidity migration between HBAR/USDC and HBAR/SAUCE pools" },
+  { agentId: "sentinel",   type: "alert",        topic: "reviewing concentration risk across all active positions" },
+  { agentId: "treasurer",  type: "tool_call",    topic: "syncing HTS token balances against Mirror Node ledger state" },
+  { agentId: "executor",   type: "decision",     topic: "selecting optimal gas price for next EVM transaction batch" },
+  { agentId: "archivist",  type: "conversation", topic: "verifying SHA-256 receipt chain integrity in QuestReceipt.sol" },
+  { agentId: "scout",      type: "tool_call",    topic: "polling Mirror Node for latest account balance delta" },
+  { agentId: "strategist", type: "alert",        topic: "flagging HBAR/SAUCE price divergence for arbitrage analysis" },
+  { agentId: "sentinel",   type: "policy",       topic: "enforcing slippage cap on pending SaucerSwap route" },
+  { agentId: "treasurer",  type: "receipt",      topic: "reporting gas reserve status and budget ceiling utilization" },
+  { agentId: "executor",   type: "transaction",  topic: "submitting queued EVM swap to Hedera testnet" },
+  { agentId: "archivist",  type: "tool_call",    topic: "posting HCS consensus message for completed quest receipt" },
 ];
 
 async function fetchLiveContext() {

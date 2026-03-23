@@ -325,7 +325,7 @@
 }
 
 /* Strategist (animIndex=2, dur=40s):
-   strategy → left-V → top-H → right-V → vault → back */
+   strategy → left-V → top-H → right-V → vault (lower row) → back */
 @keyframes npc-move-2 {
   0%   { left: 15%; top: 65%; }  /* strategy inside */
   6%   { left: 26%; top: 65%; }  /* → exit strategy east */
@@ -334,12 +334,12 @@
   20%  { left: 50%; top: 41%; }  /* ↑ enter hub, go north through hub */
   26%  { left: 63%; top: 41%; }  /* → cross hub east */
   30%  { left: 63%; top: 27%; }  /* ↑ exit hub top, enter right-V going north */
-  36%  { left: 68%; top: 27%; }  /* → slight east on top-H to vault junction */
-  40%  { left: 68%; top: 14%; }  /* ↑ go north to vault level */
-  44%  { left: 85%; top: 14%; }  /* → enter vault */
-  52%  { left: 85%; top: 14%; }  /* wait in vault */
-  58%  { left: 68%; top: 14%; }  /* ← exit vault west */
-  62%  { left: 68%; top: 27%; }  /* ↓ go south on right-V */
+  36%  { left: 71%; top: 27%; }  /* → slight east on top-H to vault junction (offset from Treasurer at 68%) */
+  40%  { left: 71%; top: 14%; }  /* ↑ go north to vault level */
+  44%  { left: 85%; top: 18%; }  /* → enter vault (lower row, Treasurer uses top row) */
+  52%  { left: 85%; top: 18%; }  /* wait in vault */
+  58%  { left: 71%; top: 18%; }  /* ← exit vault west */
+  62%  { left: 71%; top: 27%; }  /* ↓ go south on right-V */
   68%  { left: 63%; top: 27%; }  /* ← back to hub corner */
   72%  { left: 63%; top: 41%; }  /* ↓ enter hub */
   78%  { left: 50%; top: 41%; }  /* ← cross hub west */
@@ -381,46 +381,46 @@
 }
 
 /* Executor (animIndex=5, dur=55s):
-   market → right-V going north to mid-H → mid-H west → arch-V south → archive → back */
+   market → right-V going north to mid-H → mid-H west → arch-V south (offset right) → archive → back */
 @keyframes npc-move-5 {
   0%   { left: 85%; top: 65%; }  /* market inside */
   8%   { left: 74%; top: 65%; }  /* ← exit market west to right-V junction */
   14%  { left: 68%; top: 65%; }  /* ← reach right-V */
   20%  { left: 68%; top: 54%; }  /* ↑ go north on right-V to mid-H */
-  28%  { left: 50%; top: 54%; }  /* ← go west along mid-H */
-  34%  { left: 50%; top: 50%; }  /* ↑ enter hub bottom */
-  40%  { left: 50%; top: 50%; }  /* wait at hub bottom */
-  46%  { left: 50%; top: 54%; }  /* ↓ exit hub south */
-  52%  { left: 50%; top: 65%; }  /* ↓ go south on arch-V */
-  58%  { left: 50%; top: 80%; }  /* ↓ reach archive top */
-  64%  { left: 50%; top: 88%; }  /* ↓ enter archive */
-  70%  { left: 50%; top: 88%; }  /* wait in archive */
-  76%  { left: 50%; top: 80%; }  /* ↑ exit archive north */
-  82%  { left: 50%; top: 65%; }  /* ↑ go north on arch-V */
+  28%  { left: 53%; top: 54%; }  /* ← go west along mid-H (stop slightly right of center) */
+  34%  { left: 53%; top: 50%; }  /* ↑ enter hub bottom (right of center) */
+  40%  { left: 53%; top: 50%; }  /* wait at hub bottom */
+  46%  { left: 53%; top: 54%; }  /* ↓ exit hub south */
+  52%  { left: 53%; top: 65%; }  /* ↓ go south on arch-V (right lane) */
+  58%  { left: 53%; top: 80%; }  /* ↓ reach archive top */
+  64%  { left: 53%; top: 88%; }  /* ↓ enter archive */
+  70%  { left: 53%; top: 88%; }  /* wait in archive */
+  76%  { left: 53%; top: 80%; }  /* ↑ exit archive north */
+  82%  { left: 53%; top: 65%; }  /* ↑ go north on arch-V (right lane) */
   88%  { left: 68%; top: 65%; }  /* → go east along mid-H level */
   94%  { left: 74%; top: 65%; }  /* → reach market door */
   100% { left: 85%; top: 65%; }  /* → into market */
 }
 
 /* Archivist (animIndex=6, dur=60s):
-   archive → arch-V going north → hub bottom → cross hub → back south → archive */
+   archive → arch-V going north (offset left) → hub bottom → cross hub → back south → archive */
 @keyframes npc-move-6 {
-  0%   { left: 50%; top: 88%; }  /* archive inside */
-  8%   { left: 50%; top: 80%; }  /* ↑ exit archive north */
-  16%  { left: 50%; top: 65%; }  /* ↑ go north on arch-V through corridor */
-  24%  { left: 50%; top: 54%; }  /* ↑ continue to mid-H */
-  30%  { left: 50%; top: 50%; }  /* ↑ enter hub from south */
-  38%  { left: 50%; top: 41%; }  /* ↑ go north through hub center */
+  0%   { left: 47%; top: 88%; }  /* archive inside (left lane) */
+  8%   { left: 47%; top: 80%; }  /* ↑ exit archive north */
+  16%  { left: 47%; top: 65%; }  /* ↑ go north on arch-V (left lane) */
+  24%  { left: 47%; top: 54%; }  /* ↑ continue to mid-H */
+  30%  { left: 47%; top: 50%; }  /* ↑ enter hub from south (left of center) */
+  38%  { left: 47%; top: 41%; }  /* ↑ go north through hub center */
   44%  { left: 37%; top: 41%; }  /* ← cross hub west */
   50%  { left: 37%; top: 41%; }  /* wait at hub west */
-  58%  { left: 50%; top: 41%; }  /* → back east to hub center */
+  58%  { left: 47%; top: 41%; }  /* → back east to hub center */
   64%  { left: 63%; top: 41%; }  /* → cross hub east */
   70%  { left: 63%; top: 41%; }  /* wait */
-  76%  { left: 50%; top: 41%; }  /* ← back to center */
-  82%  { left: 50%; top: 50%; }  /* ↓ exit hub south */
-  88%  { left: 50%; top: 65%; }  /* ↓ go south on arch-V */
-  94%  { left: 50%; top: 80%; }  /* ↓ reach archive */
-  100% { left: 50%; top: 88%; }  /* ↓ enter archive */
+  76%  { left: 47%; top: 41%; }  /* ← back to center */
+  82%  { left: 47%; top: 50%; }  /* ↓ exit hub south */
+  88%  { left: 47%; top: 65%; }  /* ↓ go south on arch-V (left lane) */
+  94%  { left: 47%; top: 80%; }  /* ↓ reach archive */
+  100% { left: 47%; top: 88%; }  /* ↓ enter archive */
 }
 
 @keyframes pulse-glow {
