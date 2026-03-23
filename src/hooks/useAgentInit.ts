@@ -48,9 +48,7 @@ export function useAgentInit() {
           const existing = getStoredAgentTxHashes();
           const merged = { ...existing, ...d.txHashes };
           localStorage.setItem(AGENT_TX_STORAGE_KEY, JSON.stringify(merged));
-          console.log("[AgentInit] Registered:", d.registeredAgents, "| TX hashes stored:", d.txHashes);
         } else if (d.skippedAgents?.length > 0) {
-          console.log("[AgentInit] Agents already registered | HCS topic:", d.topicId);
         }
       })
       .catch(() => { /* silent — non-critical */ });

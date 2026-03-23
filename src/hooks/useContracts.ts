@@ -65,13 +65,6 @@ const USDC_FAUCET_ABI = [
   "event Dripped(address indexed to, uint256 amount, uint256 nextClaimAt)",
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const POLICY_MANAGER_ABI = [
-  "function getPolicy(string policyId) view returns (tuple(uint256 maxSingleTxHbar, uint256 dailyLimitHbar, uint256 maxSlippageBps, bool requireAudit, bool active))",
-  "function checkPolicy(string policyId, uint256 amountHbar, uint256 slippageBps, address agentWallet) nonpayable returns (bool passed)",
-  "function createPolicy(string policyId, uint256 maxSingleTxHbar, uint256 dailyLimitHbar, uint256 maxSlippageBps, bool requireAudit) nonpayable",
-  "function deactivatePolicy(string policyId) nonpayable",
-];
 
 // ---------------------------------------------------------------------------
 // Provider helpers
@@ -139,7 +132,7 @@ export function useQuestReceipts(): { receipts: Receipt[]; count: number; loadin
       }
 
       const limit = Math.min(n, 20);
-      const raw: any[] = await contract.getRecentReceipts(limit);
+      const raw = await contract.getRecentReceipts(limit) as Record<string, unknown>[];
 
       const parsed: Receipt[] = raw.map((r) => ({
         inputHash:  r.inputHash,
@@ -224,8 +217,6 @@ export function useAgentStats(): { agents: AgentStat[]; loading: boolean } {
           } as AgentStat;
         });
 
-      // Surface how many agents the contract has (for cap display)
-      (parsed as any)._agentCount = agentCount;
       setAgents(parsed);
     } catch (err) {
       console.warn("[useAgentStats] fetch error:", err);
@@ -370,8 +361,9 @@ export function useClaimFaucet(): {
       const tx = await contract.drip();
       await tx.wait();
       return tx.hash as string;
-    } catch (err: any) {
-      const msg: string = err?.reason ?? err?.message ?? "Claim failed";
+    } catch (err) {
+      const e = err as { reason?: string; message?: string };
+      const msg: string = e?.reason ?? e?.message ?? "Claim failed";
       setError(msg);
       throw err;
     } finally {

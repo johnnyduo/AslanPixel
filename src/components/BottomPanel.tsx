@@ -185,7 +185,6 @@ const BottomPanel = () => {
       content: `VETO: ${reason}`,
     };
     setQuestMessages((prev) => [msg, ...prev]);
-    console.log("[Vote] Vetoed:", reason);
   };
 
   const runQuest = () => {
