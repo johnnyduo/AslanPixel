@@ -201,42 +201,123 @@
   }
 }
 
-/* Pixel NPC animation */
+/* NPC body bob (fallback) */
 @keyframes npc-walk {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-2px); }
+  100% { transform: translateY(0px); }
 }
 
+/* Real LPC spritesheet walk cycling — 9 frames × 64px wide each (display at 1× scale) */
+/* Each agent gets its own animation so they can be slightly out of phase */
+@keyframes npc-sprite-1 {
+  0%  { background-position: 0px 0; }       11.1% { background-position: -64px 0; }
+  22.2% { background-position: -128px 0; }  33.3% { background-position: -192px 0; }
+  44.4% { background-position: -256px 0; }  55.5% { background-position: -320px 0; }
+  66.6% { background-position: -384px 0; }  77.7% { background-position: -448px 0; }
+  88.8% { background-position: -512px 0; }  100%  { background-position: 0px 0; }
+}
+@keyframes npc-sprite-2 {
+  0%  { background-position: -128px 0; }    11.1% { background-position: -192px 0; }
+  22.2% { background-position: -256px 0; }  33.3% { background-position: -320px 0; }
+  44.4% { background-position: -384px 0; }  55.5% { background-position: -448px 0; }
+  66.6% { background-position: -512px 0; }  77.7% { background-position: 0px 0; }
+  88.8% { background-position: -64px 0; }   100%  { background-position: -128px 0; }
+}
+@keyframes npc-sprite-3 {
+  0%  { background-position: -256px 0; }    11.1% { background-position: -320px 0; }
+  22.2% { background-position: -384px 0; }  33.3% { background-position: -448px 0; }
+  44.4% { background-position: -512px 0; }  55.5% { background-position: 0px 0; }
+  66.6% { background-position: -64px 0; }   77.7% { background-position: -128px 0; }
+  88.8% { background-position: -192px 0; }  100%  { background-position: -256px 0; }
+}
+@keyframes npc-sprite-4 {
+  0%  { background-position: -64px 0; }     11.1% { background-position: -128px 0; }
+  22.2% { background-position: -192px 0; }  33.3% { background-position: -256px 0; }
+  44.4% { background-position: -320px 0; }  55.5% { background-position: -384px 0; }
+  66.6% { background-position: -448px 0; }  77.7% { background-position: -512px 0; }
+  88.8% { background-position: 0px 0; }     100%  { background-position: -64px 0; }
+}
+@keyframes npc-sprite-5 {
+  0%  { background-position: -320px 0; }    11.1% { background-position: -384px 0; }
+  22.2% { background-position: -448px 0; }  33.3% { background-position: -512px 0; }
+  44.4% { background-position: 0px 0; }     55.5% { background-position: -64px 0; }
+  66.6% { background-position: -128px 0; }  77.7% { background-position: -192px 0; }
+  88.8% { background-position: -256px 0; }  100%  { background-position: -320px 0; }
+}
+@keyframes npc-sprite-6 {
+  0%  { background-position: -192px 0; }    11.1% { background-position: -256px 0; }
+  22.2% { background-position: -320px 0; }  33.3% { background-position: -384px 0; }
+  44.4% { background-position: -448px 0; }  55.5% { background-position: -512px 0; }
+  66.6% { background-position: 0px 0; }     77.7% { background-position: -64px 0; }
+  88.8% { background-position: -128px 0; }  100%  { background-position: -192px 0; }
+}
+
+/* Scout — guild → hub → strategy (long patrol) */
 @keyframes npc-move-1 {
-  0% { left: 20%; top: 30%; }
-  25% { left: 35%; top: 25%; }
-  50% { left: 50%; top: 40%; }
-  75% { left: 30%; top: 50%; }
-  100% { left: 20%; top: 30%; }
+  0%   { left: 13%; top: 16%; }
+  15%  { left: 25%; top: 22%; }
+  30%  { left: 38%; top: 32%; }
+  45%  { left: 50%; top: 41%; }
+  60%  { left: 38%; top: 52%; }
+  75%  { left: 15%; top: 58%; }
+  88%  { left: 10%; top: 45%; }
+  100% { left: 13%; top: 16%; }
 }
 
+/* Strategist — strategy tower → hub → vault (diagonal sweep) */
 @keyframes npc-move-2 {
-  0% { left: 60%; top: 20%; }
-  25% { left: 70%; top: 35%; }
-  50% { left: 55%; top: 55%; }
-  75% { left: 45%; top: 30%; }
-  100% { left: 60%; top: 20%; }
+  0%   { left: 12%; top: 62%; }
+  20%  { left: 28%; top: 50%; }
+  40%  { left: 44%; top: 38%; }
+  55%  { left: 58%; top: 32%; }
+  70%  { left: 78%; top: 16%; }
+  85%  { left: 65%; top: 34%; }
+  100% { left: 12%; top: 62%; }
 }
 
+/* Sentinel — perimeter patrol around hub */
 @keyframes npc-move-3 {
-  0% { left: 40%; top: 60%; }
-  25% { left: 25%; top: 45%; }
-  50% { left: 35%; top: 25%; }
-  75% { left: 55%; top: 50%; }
-  100% { left: 40%; top: 60%; }
+  0%   { left: 34%; top: 30%; }
+  16%  { left: 64%; top: 30%; }
+  33%  { left: 67%; top: 52%; }
+  50%  { left: 50%; top: 57%; }
+  66%  { left: 34%; top: 52%; }
+  83%  { left: 32%; top: 38%; }
+  100% { left: 34%; top: 30%; }
 }
 
+/* Treasurer — vault → hub → back to vault (short back-and-forth) */
 @keyframes npc-move-4 {
-  0% { left: 75%; top: 50%; }
-  25% { left: 60%; top: 60%; }
-  50% { left: 45%; top: 45%; }
-  75% { left: 65%; top: 35%; }
-  100% { left: 75%; top: 50%; }
+  0%   { left: 80%; top: 15%; }
+  25%  { left: 72%; top: 26%; }
+  45%  { left: 60%; top: 38%; }
+  55%  { left: 60%; top: 38%; }
+  75%  { left: 72%; top: 26%; }
+  100% { left: 80%; top: 15%; }
+}
+
+/* Executor — market gate → hub → archive (vertical sweep) */
+@keyframes npc-move-5 {
+  0%   { left: 80%; top: 62%; }
+  20%  { left: 68%; top: 55%; }
+  38%  { left: 56%; top: 47%; }
+  50%  { left: 50%; top: 54%; }
+  65%  { left: 50%; top: 72%; }
+  80%  { left: 56%; top: 80%; }
+  90%  { left: 68%; top: 70%; }
+  100% { left: 80%; top: 62%; }
+}
+
+/* Archivist — archive → hub center → back (pendulum) */
+@keyframes npc-move-6 {
+  0%   { left: 48%; top: 88%; }
+  20%  { left: 49%; top: 80%; }
+  40%  { left: 50%; top: 65%; }
+  50%  { left: 51%; top: 52%; }
+  60%  { left: 50%; top: 65%; }
+  80%  { left: 49%; top: 80%; }
+  100% { left: 48%; top: 88%; }
 }
 
 @keyframes pulse-glow {
