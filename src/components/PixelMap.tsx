@@ -8,46 +8,179 @@ interface Room {
 }
 
 const rooms: Room[] = [
+  // Positions sized to match pixel art buildings exactly, leaving corridors clear
+  // Corridors: top-H(y=27%), mid-H(y=54%), left-V(x=30%), right-V(x=68%), arch-V(x=50%)
   { name:"hub",      label:"Town Square",    x:36, y:32, w:28, h:18, color:"hsl(43 90% 55%)",   icon:"◈", desc:"Central Command",    stats:["6 Agents Active","24 Quests","LIVE"] },
-  { name:"guild",    label:"Guild Hall",      x: 4, y: 6, w:22, h:17, color:"hsl(195 100% 50%)", icon:"⬡", desc:"Agent Coordination", stats:["Intel Feed","318 Ops","ONLINE"] },
-  { name:"vault",    label:"Vault House",     x:74, y: 6, w:22, h:17, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Treasury & Assets",   stats:["12,847 HBAR","3 Tokens","SECURED"] },
-  { name:"strategy", label:"Strategy Tower",  x: 4, y:57, w:22, h:17, color:"hsl(142 70% 45%)",  icon:"▲", desc:"Planning Operations", stats:["Risk: LOW","241 Plans","RUNNING"] },
-  { name:"market",   label:"Market Gate",     x:74, y:57, w:22, h:17, color:"hsl(38 92% 50%)",   icon:"◉", desc:"Execution Hub",       stats:["412 TX Done","0 Pending","READY"] },
+  { name:"guild",    label:"Guild Hall",      x: 5, y: 6, w:21, h:17, color:"hsl(195 100% 50%)", icon:"⬡", desc:"Agent Coordination", stats:["Intel Feed","318 Ops","ONLINE"] },
+  { name:"vault",    label:"Vault House",     x:74, y: 6, w:21, h:17, color:"hsl(280 65% 65%)",  icon:"◆", desc:"Treasury & Assets",   stats:["12,847 HBAR","3 Tokens","SECURED"] },
+  { name:"strategy", label:"Strategy Tower",  x: 5, y:57, w:21, h:17, color:"hsl(142 70% 45%)",  icon:"▲", desc:"Planning Operations", stats:["Risk: LOW","241 Plans","RUNNING"] },
+  { name:"market",   label:"Market Gate",     x:74, y:57, w:21, h:17, color:"hsl(38 92% 50%)",   icon:"◉", desc:"Execution Hub",       stats:["412 TX Done","0 Pending","READY"] },
   { name:"archive",  label:"Archive Library", x:36, y:80, w:28, h:16, color:"hsl(0 72% 60%)",    icon:"▣", desc:"Onchain Records",     stats:["Receipt #2041","509 Logs","IMMUTABLE"] },
 ];
 
-// Decorations along corridors: trees, lanterns, signs, barrels
+// Decorations — trees, shrubs, flowers, lanterns, barrels, benches
+// Corridors: top-H(y=27%), mid-H(y=54%), left-V(x=30%), right-V(x=68%), arch-V(x=50%)
+// Trees/shrubs placed in empty space OUTSIDE buildings (not blocking corridors)
 const decorations = [
-  // Trees (🌲 pixel art via CSS)
-  { x:"27%", y:"14%", type:"tree" }, { x:"72%", y:"14%", type:"tree" },
-  { x:"27%", y:"21%", type:"tree" }, { x:"72%", y:"21%", type:"tree" },
-  { x:"14%", y:"32%", type:"tree" }, { x:"14%", y:"48%", type:"tree" },
-  { x:"85%", y:"32%", type:"tree" }, { x:"85%", y:"48%", type:"tree" },
-  { x:"29%", y:"68%", type:"tree" }, { x:"70%", y:"68%", type:"tree" },
-  { x:"29%", y:"74%", type:"tree" }, { x:"70%", y:"74%", type:"tree" },
-  // Lanterns
-  { x:"31%", y:"17%", type:"lantern", color:"hsl(43 90% 55%)" },
-  { x:"68%", y:"17%", type:"lantern", color:"hsl(280 65% 65%)" },
-  { x:"15%", y:"40%", type:"lantern", color:"hsl(195 100% 50%)" },
-  { x:"84%", y:"40%", type:"lantern", color:"hsl(38 92% 50%)" },
-  { x:"31%", y:"71%", type:"lantern", color:"hsl(142 70% 45%)" },
-  { x:"68%", y:"71%", type:"lantern", color:"hsl(0 72% 60%)" },
-  { x:"48%", y:"62%", type:"lantern", color:"hsl(43 90% 55%)" },
-  { x:"51%", y:"70%", type:"lantern", color:"hsl(43 90% 55%)" },
-  // Benches / barrels
-  { x:"48%", y:"17%", type:"barrel" }, { x:"52%", y:"17%", type:"barrel" },
-  { x:"16%", y:"44%", type:"bench"  }, { x:"83%", y:"44%", type:"bench"  },
-  { x:"48%", y:"65%", type:"barrel" },
+  // ── TOP-LEFT FOREST (corner above guild, left of top-H corridor) ──
+  { x:"1%",  y:"2%",  type:"tree2" }, { x:"3%",  y:"1%",  type:"tree" },
+  { x:"5%",  y:"3%",  type:"shrub" }, { x:"2%",  y:"5%",  type:"tree2" },
+  { x:"1%",  y:"4%",  type:"shrub" },
+
+  // ── TOP-RIGHT FOREST (corner above vault, right of top-H corridor) ──
+  { x:"97%", y:"2%",  type:"tree2" }, { x:"95%", y:"1%",  type:"tree" },
+  { x:"98%", y:"4%",  type:"shrub" }, { x:"96%", y:"4%",  type:"tree2" },
+  { x:"99%", y:"2%",  type:"shrub" },
+
+  // ── BOTTOM-LEFT CORNER (below strategy, bottom-left) ──
+  { x:"1%",  y:"76%", type:"tree2" }, { x:"3%",  y:"77%", type:"tree" },
+  { x:"2%",  y:"79%", type:"shrub" }, { x:"1%",  y:"81%", type:"tree" },
+  { x:"4%",  y:"80%", type:"shrub" }, { x:"2%",  y:"83%", type:"tree2" },
+
+  // ── BOTTOM-RIGHT CORNER (below market) ──
+  { x:"97%", y:"76%", type:"tree2" }, { x:"95%", y:"78%", type:"tree" },
+  { x:"98%", y:"80%", type:"shrub" }, { x:"96%", y:"82%", type:"tree" },
+  { x:"99%", y:"79%", type:"shrub" }, { x:"97%", y:"84%", type:"tree2" },
+
+  // ── BOTTOM STRIP (below archive, bottom edge) ──
+  { x:"20%", y:"97%", type:"shrub" }, { x:"30%", y:"98%", type:"tree" },
+  { x:"36%", y:"97%", type:"shrub" }, { x:"65%", y:"97%", type:"shrub" },
+  { x:"70%", y:"98%", type:"tree"  }, { x:"78%", y:"97%", type:"shrub" },
+
+  // ── TOP STRIP (above guild and vault, top edge) ──
+  { x:"14%", y:"2%",  type:"shrub" }, { x:"18%", y:"1%",  type:"tree" },
+  { x:"22%", y:"3%",  type:"shrub" },
+  { x:"78%", y:"2%",  type:"shrub" }, { x:"82%", y:"1%",  type:"tree" },
+  { x:"86%", y:"3%",  type:"shrub" },
+
+  // ── BETWEEN GUILD AND STRATEGY (left wall strip, x=1-3%) ──
+  { x:"2%",  y:"28%", type:"shrub" }, { x:"1%",  y:"32%", type:"tree2" },
+  { x:"2%",  y:"36%", type:"shrub" }, { x:"1%",  y:"41%", type:"tree"  },
+  { x:"2%",  y:"45%", type:"shrub" }, { x:"1%",  y:"49%", type:"tree2" },
+  { x:"2%",  y:"53%", type:"shrub" },
+
+  // ── BETWEEN VAULT AND MARKET (right wall strip, x=97-99%) ──
+  { x:"98%", y:"28%", type:"shrub" }, { x:"99%", y:"32%", type:"tree2" },
+  { x:"98%", y:"36%", type:"shrub" }, { x:"99%", y:"41%", type:"tree"  },
+  { x:"98%", y:"45%", type:"shrub" }, { x:"99%", y:"49%", type:"tree2" },
+  { x:"98%", y:"53%", type:"shrub" },
+
+  // ── TOP-H CORRIDOR SIDES (y≈27%, flanking trees) ──
+  { x:"29%", y:"24%", type:"tree"  }, { x:"32%", y:"24%", type:"shrub" },
+  { x:"35%", y:"24%", type:"shrub" },
+  { x:"64%", y:"24%", type:"shrub" }, { x:"67%", y:"24%", type:"tree"  },
+  { x:"71%", y:"24%", type:"shrub" },
+  { x:"29%", y:"30%", type:"shrub" }, { x:"32%", y:"30%", type:"flower"},
+  { x:"67%", y:"30%", type:"flower"}, { x:"71%", y:"30%", type:"shrub" },
+
+  // ── MID-H CORRIDOR SIDES (y≈54%, flanking trees) ──
+  { x:"29%", y:"52%", type:"shrub" }, { x:"33%", y:"52%", type:"flower"},
+  { x:"65%", y:"52%", type:"flower"}, { x:"69%", y:"52%", type:"shrub" },
+  { x:"29%", y:"56%", type:"tree"  }, { x:"33%", y:"56%", type:"shrub" },
+  { x:"65%", y:"56%", type:"shrub" }, { x:"69%", y:"56%", type:"tree"  },
+
+  // ── LEFT-V CORRIDOR SIDES (x≈30%, flanking trees) ──
+  { x:"27%", y:"30%", type:"shrub" }, { x:"27%", y:"35%", type:"tree"  },
+  { x:"27%", y:"42%", type:"shrub" }, { x:"27%", y:"48%", type:"tree2" },
+  { x:"33%", y:"30%", type:"flower"}, { x:"33%", y:"38%", type:"shrub" },
+  { x:"33%", y:"46%", type:"flower"}, { x:"33%", y:"52%", type:"shrub" },
+
+  // ── RIGHT-V CORRIDOR SIDES (x≈68%, flanking trees) ──
+  { x:"65%", y:"30%", type:"shrub" }, { x:"65%", y:"36%", type:"tree"  },
+  { x:"65%", y:"43%", type:"shrub" }, { x:"65%", y:"49%", type:"tree2" },
+  { x:"71%", y:"30%", type:"flower"}, { x:"71%", y:"38%", type:"shrub" },
+  { x:"71%", y:"46%", type:"flower"}, { x:"71%", y:"52%", type:"shrub" },
+
+  // ── ARCH-V CORRIDOR SIDES (x≈50%, between hub and archive) ──
+  { x:"46%", y:"54%", type:"shrub" }, { x:"46%", y:"60%", type:"tree2" },
+  { x:"46%", y:"67%", type:"shrub" }, { x:"46%", y:"74%", type:"flower"},
+  { x:"54%", y:"54%", type:"flower"}, { x:"54%", y:"61%", type:"shrub" },
+  { x:"54%", y:"68%", type:"tree2" }, { x:"54%", y:"75%", type:"shrub" },
+
+  // ── LANTERNS (at corridor junctions) ──
+  { x:"30%", y:"27%", type:"lantern", color:"hsl(195 100% 50%)" },  // guild-side top-H
+  { x:"68%", y:"27%", type:"lantern", color:"hsl(280 65% 65%)" },   // vault-side top-H
+  { x:"30%", y:"54%", type:"lantern", color:"hsl(142 70% 45%)" },   // strategy-side mid-H
+  { x:"68%", y:"54%", type:"lantern", color:"hsl(38 92% 50%)" },    // market-side mid-H
+  { x:"50%", y:"54%", type:"lantern", color:"hsl(43 90% 55%)" },    // archive corridor top
+  { x:"50%", y:"68%", type:"lantern", color:"hsl(0 72% 60%)" },     // archive corridor mid
+
+  // ── BARRELS & BENCHES (resting spots along corridors) ──
+  { x:"31%", y:"25%", type:"barrel" }, { x:"67%", y:"25%", type:"barrel" },
+  { x:"28%", y:"44%", type:"bench"  }, { x:"34%", y:"44%", type:"bench"  },
+  { x:"64%", y:"44%", type:"bench"  }, { x:"72%", y:"44%", type:"bench"  },
+  { x:"48%", y:"61%", type:"barrel" }, { x:"53%", y:"61%", type:"barrel" },
 ];
 
-// PATROL mirrors CSS keyframe positions exactly (for direction detection)
+// PATROL mirrors CSS keyframe waypoints exactly (for direction detection)
+// Each entry is an ordered list of key positions matching CSS @keyframes npc-move-N
 const PATROL: Record<string, { x:number; y:number }[]> = {
-  scout:      [{x:14,y:18},{x:14,y:18},{x:33,y:18},{x:50,y:32},{x:50,y:44},{x:36,y:52},{x:17,y:57},{x:14,y:65},{x:14,y:65},{x:17,y:45},{x:14,y:18}],
-  strategist: [{x:14,y:65},{x:17,y:57},{x:36,y:52},{x:50,y:41},{x:64,y:41},{x:70,y:28},{x:85,y:18},{x:85,y:18},{x:70,y:28},{x:64,y:41},{x:17,y:57},{x:14,y:65}],
-  sentinel:   [{x:37,y:32},{x:64,y:32},{x:64,y:50},{x:37,y:50},{x:37,y:32},{x:50,y:41},{x:64,y:32},{x:37,y:32}],
-  treasurer:  [{x:85,y:18},{x:85,y:18},{x:70,y:28},{x:66,y:41},{x:66,y:41},{x:70,y:28},{x:85,y:18},{x:85,y:18}],
-  executor:   [{x:85,y:65},{x:85,y:57},{x:66,y:50},{x:50,y:50},{x:50,y:65},{x:50,y:80},{x:50,y:80},{x:50,y:65},{x:66,y:50},{x:85,y:57},{x:85,y:65}],
-  archivist:  [{x:50,y:88},{x:50,y:80},{x:50,y:65},{x:50,y:50},{x:50,y:41},{x:50,y:41},{x:50,y:50},{x:50,y:65},{x:50,y:80},{x:50,y:88}],
+  // Scout (npc-move-1): guild → top-H corridor → hub → left-V → strategy → back
+  scout: [
+    {x:15,y:14},{x:15,y:14},  // guild inside, wait
+    {x:26,y:14},{x:26,y:27},  // exit east, go south to top-H
+    {x:36,y:27},{x:36,y:41},  // east to hub entrance, south into hub
+    {x:50,y:41},{x:36,y:41},  // cross hub east, back west
+    {x:36,y:50},{x:30,y:50},  // exit hub south, west to left-V
+    {x:30,y:57},{x:15,y:57},  // south on left-V, west into strategy
+    {x:15,y:65},{x:15,y:65},  // deeper in strategy, wait
+    {x:15,y:57},{x:30,y:57},  // north out of strategy, east to left-V
+    {x:30,y:27},{x:26,y:27},  // north on left-V to top-H, west
+    {x:26,y:14},{x:15,y:14},  // north to guild level, west into guild
+  ],
+  // Strategist (npc-move-2): strategy → left-V → hub → right-V → vault → back
+  strategist: [
+    {x:15,y:65},{x:26,y:65},  // strategy → exit east
+    {x:26,y:54},{x:50,y:54},  // north to mid-H, east along mid-H
+    {x:50,y:41},{x:63,y:41},  // north into hub, east across hub
+    {x:63,y:27},{x:68,y:27},  // north exit hub, east on top-H
+    {x:68,y:14},{x:85,y:14},  // north to vault level, east into vault
+    {x:85,y:14},{x:68,y:14},  // wait in vault, west exit
+    {x:68,y:27},{x:63,y:27},  // south on right-V, west to hub corner
+    {x:63,y:41},{x:50,y:41},  // south into hub, west cross hub
+    {x:50,y:54},{x:26,y:54},  // south exit hub, west along mid-H
+    {x:26,y:65},{x:15,y:65},  // south enter strategy, west deeper
+  ],
+  // Sentinel (npc-move-3): hub perimeter loop (strictly rectangular)
+  sentinel: [
+    {x:37,y:32},{x:63,y:32},  // hub top-left → top-right (east)
+    {x:63,y:50},{x:37,y:50},  // top-right → bottom-right (south), → bottom-left (west)
+    {x:37,y:32},{x:50,y:32},  // bottom-left → top-left (north), → top-middle (east)
+    {x:50,y:50},{x:37,y:32},  // → bottom-middle (south), return to start
+  ],
+  // Treasurer (npc-move-4): vault → right-V south → hub east side → back
+  treasurer: [
+    {x:85,y:14},{x:85,y:14},  // vault inside, wait
+    {x:74,y:14},{x:68,y:14},  // west exit vault, reach right-V junction
+    {x:68,y:27},{x:68,y:41},  // south on right-V to top-H, continue south to hub level
+    {x:63,y:41},{x:63,y:41},  // west enter hub east side, wait
+    {x:68,y:41},{x:68,y:27},  // east exit hub, north on right-V
+    {x:68,y:14},{x:74,y:14},  // north to vault level, east enter vault
+    {x:85,y:14},              // east deeper in vault
+  ],
+  // Executor (npc-move-5): market → right-V north → mid-H west → archive-V south → archive → back
+  executor: [
+    {x:85,y:65},{x:74,y:65},  // market → exit west
+    {x:68,y:65},{x:68,y:54},  // reach right-V junction, north to mid-H
+    {x:50,y:54},{x:50,y:50},  // west along mid-H, north enter hub bottom
+    {x:50,y:50},{x:50,y:54},  // wait at hub, south exit
+    {x:50,y:65},{x:50,y:80},  // south on arch-V, reach archive top
+    {x:50,y:88},{x:50,y:88},  // enter archive, wait
+    {x:50,y:80},{x:50,y:65},  // north exit archive, north on arch-V
+    {x:68,y:65},{x:74,y:65},  // east to market junction, east to market door
+    {x:85,y:65},              // into market
+  ],
+  // Archivist (npc-move-6): archive → arch-V north → hub → cross hub → back south
+  archivist: [
+    {x:50,y:88},{x:50,y:80},  // archive → exit north
+    {x:50,y:65},{x:50,y:54},  // north on arch-V, continue to mid-H
+    {x:50,y:50},{x:50,y:41},  // north enter hub south, north through hub center
+    {x:37,y:41},{x:37,y:41},  // west cross hub, wait at hub west
+    {x:50,y:41},{x:63,y:41},  // east back to center, east cross hub
+    {x:63,y:41},{x:50,y:41},  // wait at hub east, west back to center
+    {x:50,y:50},{x:50,y:65},  // south exit hub, south on arch-V
+    {x:50,y:80},{x:50,y:88},  // reach archive, enter archive
+  ],
 };
 
 function getDir(dx:number, dy:number): "s"|"n"|"e"|"w" {
@@ -63,15 +196,56 @@ function getAgentDir(id:string, t:number): "s"|"n"|"e"|"w" {
   return getDir(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
 }
 
-// Tree pixel art SVG
+// Tree pixel art SVG (tall pine)
 const TreeSVG = () => (
-  <svg width="16" height="20" viewBox="0 0 16 20" style={{ imageRendering:"pixelated" }}>
-    <rect x="7" y="14" width="2" height="6" fill="#3d2a1a"/>
-    <rect x="4" y="10" width="8" height="6" fill="#1a3d1a"/>
-    <rect x="3" y="7"  width="10" height="5" fill="#1e4d1e"/>
-    <rect x="5" y="4"  width="6" height="5"  fill="#256325"/>
-    <rect x="6" y="1"  width="4" height="4"  fill="#2d7a2d"/>
-    <rect x="7" y="0"  width="2" height="2"  fill="#38963a"/>
+  <svg width="16" height="22" viewBox="0 0 16 22" style={{ imageRendering:"pixelated" }}>
+    <rect x="7" y="16" width="2" height="6" fill="#3d2a1a"/>
+    <rect x="4" y="12" width="8" height="6" fill="#1a3d1a"/>
+    <rect x="3" y="8"  width="10" height="6" fill="#1e4d1e"/>
+    <rect x="4" y="5"  width="8"  height="5" fill="#256325"/>
+    <rect x="5" y="2"  width="6"  height="5" fill="#2d7a2d"/>
+    <rect x="6" y="0"  width="4"  height="3" fill="#38963a"/>
+    <rect x="7" y="0"  width="2"  height="1" fill="#4ab04c"/>
+  </svg>
+);
+
+// Tree2 — wider oak-style
+const Tree2SVG = () => (
+  <svg width="20" height="18" viewBox="0 0 20 18" style={{ imageRendering:"pixelated" }}>
+    <rect x="9"  y="13" width="2"  height="5"  fill="#3d2a1a"/>
+    <rect x="8"  y="11" width="4"  height="3"  fill="#4a3320"/>
+    <rect x="2"  y="5"  width="16" height="8"  fill="#1a3d1a"/>
+    <rect x="0"  y="6"  width="20" height="6"  fill="#1e4d1e"/>
+    <rect x="2"  y="4"  width="16" height="4"  fill="#256325"/>
+    <rect x="4"  y="2"  width="12" height="5"  fill="#2d7a2d"/>
+    <rect x="6"  y="0"  width="8"  height="4"  fill="#38963a"/>
+    <rect x="3"  y="7"  width="2"  height="2"  fill="#38963a" opacity="0.6"/>
+    <rect x="15" y="7"  width="2"  height="2"  fill="#38963a" opacity="0.6"/>
+  </svg>
+);
+
+// Shrub — low bush
+const ShrubSVG = () => (
+  <svg width="14" height="10" viewBox="0 0 14 10" style={{ imageRendering:"pixelated" }}>
+    <rect x="5"  y="7"  width="4"  height="3"  fill="#3d2a1a"/>
+    <rect x="0"  y="4"  width="14" height="5"  fill="#1e4d1e"/>
+    <rect x="1"  y="2"  width="12" height="5"  fill="#256325"/>
+    <rect x="2"  y="0"  width="10" height="4"  fill="#2d7a2d"/>
+    <rect x="4"  y="1"  width="2"  height="2"  fill="#38963a"/>
+    <rect x="8"  y="1"  width="2"  height="2"  fill="#38963a"/>
+  </svg>
+);
+
+// Flower — small colorful ground cover
+const FlowerSVG = () => (
+  <svg width="12" height="10" viewBox="0 0 12 10" style={{ imageRendering:"pixelated" }}>
+    <rect x="5"  y="5"  width="2"  height="5"  fill="#2d6e2d"/>
+    <rect x="3"  y="6"  width="6"  height="2"  fill="#2d6e2d"/>
+    <rect x="5"  y="2"  width="2"  height="4"  fill="#e86a4a"/>
+    <rect x="4"  y="3"  width="4"  height="2"  fill="#f08060"/>
+    <rect x="5"  y="3"  width="2"  height="2"  fill="#ffdd44"/>
+    <rect x="2"  y="4"  width="2"  height="2"  fill="#e86a4a" opacity="0.7"/>
+    <rect x="8"  y="4"  width="2"  height="2"  fill="#6ab0e8" opacity="0.8"/>
   </svg>
 );
 
@@ -109,6 +283,9 @@ const BenchSVG = () => (
 
 const DECO_COMPONENTS: Record<string, (color?:string) => JSX.Element> = {
   tree:    () => <TreeSVG />,
+  tree2:   () => <Tree2SVG />,
+  shrub:   () => <ShrubSVG />,
+  flower:  () => <FlowerSVG />,
   lantern: (c) => <LanternSVG color={c||"#fff"} />,
   barrel:  () => <BarrelSVG />,
   bench:   () => <BenchSVG />,
@@ -134,19 +311,21 @@ const PixelMap = () => {
     return () => { clearInterval(iv); clearTimeout(init); if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
-  // Direction tracking
+  // Direction tracking — durations must match CSS @keyframes npc-move-N exactly
+  // animIndex: scout=1(35s), strategist=2(40s), sentinel=3(45s), treasurer=4(50s), executor=5(55s), archivist=6(60s)
+  const NPC_DURATIONS: Record<number, number> = { 1:35000, 2:40000, 3:45000, 4:50000, 5:55000, 6:60000 };
   useEffect(() => {
     const update = () => {
       const now = Date.now();
       const dirs: Record<string,"s"|"n"|"e"|"w"> = {};
       for (const a of AGENTS) {
-        const dur = (22 + a.animIndex * 4) * 1000;
+        const dur = NPC_DURATIONS[a.animIndex] ?? 35000;
         dirs[a.id] = getAgentDir(a.id, ((now - startRef.current) % dur) / dur);
       }
       setAgentDirs(dirs);
     };
     update();
-    const iv = setInterval(update, 350);
+    const iv = setInterval(update, 300);
     return () => clearInterval(iv);
   }, []);
 
@@ -199,15 +378,21 @@ const PixelMap = () => {
             onMouseEnter={() => setHoveredRoom(r.name)}
             onMouseLeave={() => setHoveredRoom(null)}
           >
-            {/* Outer glow bloom — only visible on hover */}
-            <div className="absolute inset-0 rounded-lg pointer-events-none transition-all duration-500"
+            {/* Outer glow bloom — scales with room size via vw units */}
+            <div className="absolute pointer-events-none transition-all duration-500"
               style={{
+                // Extend glow slightly beyond room bounds
+                inset: hov ? `${-r.h * 0.08}%` : "0%",
+                borderRadius: "10px",
                 boxShadow: hov
-                  ? `0 0 40px ${r.color}60, 0 0 80px ${r.color}30, inset 0 0 40px ${r.color}15`
+                  ? `0 0 ${r.w * 0.4}px ${r.color}55, 0 0 ${r.w * 0.8}px ${r.color}25, inset 0 0 ${r.w * 0.3}px ${r.color}10`
                   : `0 0 0px transparent`,
-                border: hov ? `2px solid ${r.color}ee` : `1px solid ${r.color}18`,
-                borderRadius: "8px",
+                border: hov ? `2px solid ${r.color}cc` : `1px solid ${r.color}15`,
                 transition: "all 0.35s ease",
+                // Pixel-art scanline overlay on hover
+                backgroundImage: hov
+                  ? `repeating-linear-gradient(0deg, transparent, transparent 3px, ${r.color}04 3px, ${r.color}04 4px)`
+                  : "none",
               }} />
 
             {/* Corner pixel markers — always subtle, bright on hover */}
@@ -285,7 +470,7 @@ const PixelMap = () => {
         const dir   = agentDirs[agent.id] || "e";
         return (
           <div key={agent.id} className="absolute z-30"
-            style={{ animation:`npc-move-${agent.animIndex} ${30+agent.animIndex*5}s linear infinite` }}
+            style={{ animation:`npc-move-${agent.animIndex} ${[35,40,45,50,55,60][agent.animIndex-1]??35}s linear infinite` }}
             onMouseEnter={() => setHoveredAgent(agent.id)}
             onMouseLeave={() => setHoveredAgent(null)}
           >
@@ -367,7 +552,7 @@ const PixelMap = () => {
             <div key={`mm-${a.id}`} className="absolute w-[5px] h-[5px] rounded-full"
               style={{
                 background:a.color, boxShadow:`0 0 4px ${a.color}`,
-                animation:`npc-move-${a.animIndex} ${30+a.animIndex*5}s linear infinite`,
+                animation:`npc-move-${a.animIndex} ${[35,40,45,50,55,60][a.animIndex-1]??35}s linear infinite`,
               }}/>
           ))}
         </div>

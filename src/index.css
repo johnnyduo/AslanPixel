@@ -256,89 +256,150 @@
 /* NPC patrol — linear, follows corridors, no diagonal shortcuts */
 /* Rooms (smaller): guild(4-26,6-23) hub(36-64,32-50) vault(74-96,6-23) strategy(4-26,57-74) market(74-96,57-74) archive(36-64,80-96) */
 
-/* Scout: guild → top-corridor(y≈18%) → hub top → cross hub → left-corridor(x≈15%) → strategy → back */
+/*
+  CORRIDOR MAP (% of map container, NPC sprite anchored at top-left):
+  Buildings:  guild(4-26,6-23)  hub(36-64,32-50)  vault(74-96,6-23)
+              strategy(4-26,57-74)  market(74-96,57-74)  archive(36-64,80-96)
+  Corridors:
+    Top-H  : y=27%  (between top-buildings bottom≈23% and hub top≈32%)
+    Mid-H  : y=54%  (between hub bottom≈50% and strategy/market top≈57%)
+    Left-V : x=30%  (between guild right≈26% and hub left≈36%)
+    Right-V: x=68%  (between hub right≈64% and vault/market left≈74%)
+    Arch-V : x=50%  (hub bottom ↔ archive top, center of both)
+  NPC spawn points (inside buildings, door edges):
+    guild-door: (26%, 14%)   vault-door: (74%, 14%)
+    hub-topleft:(36%, 32%)   hub-center: (50%, 41%)  hub-right:(63%, 41%)
+    strategy-door:(26%, 65%) market-door:(74%, 65%)
+    archive-top: (50%, 80%)
+  Rule: movement must be ONLY horizontal OR vertical per segment — never diagonal.
+*/
+
+/* Scout (animIndex=1, dur=35s):
+   guild-inside → exit right to corridor junction (26,14) → go east along top-H (y=27) →
+   enter hub from top-left corner (36,27→36,32) → cross hub east-west →
+   exit hub bottom-left (36,50) → go south along left-V (x=30) →
+   enter strategy from top (30,57→26,65) → idle →
+   exit strategy right, go north along left-V back to top-H → back to guild */
 @keyframes npc-move-1 {
-  0%   { left: 14%; top: 14%; }
-  10%  { left: 14%; top: 14%; }
-  20%  { left: 14%; top: 18%; }
-  30%  { left: 36%; top: 18%; }
-  38%  { left: 50%; top: 32%; }
-  46%  { left: 50%; top: 44%; }
-  54%  { left: 36%; top: 50%; }
-  62%  { left: 15%; top: 57%; }
-  70%  { left: 14%; top: 65%; }
-  80%  { left: 14%; top: 65%; }
-  90%  { left: 15%; top: 45%; }
-  100% { left: 14%; top: 14%; }
+  0%   { left: 15%; top: 14%; }  /* guild inside */
+  5%   { left: 15%; top: 14%; }  /* wait */
+  12%  { left: 26%; top: 14%; }  /* → exit guild east, reach corridor junction */
+  16%  { left: 26%; top: 27%; }  /* ↓ go south to top-H corridor */
+  24%  { left: 36%; top: 27%; }  /* → go east along top-H to hub entrance */
+  28%  { left: 36%; top: 41%; }  /* ↓ enter hub, go south */
+  34%  { left: 50%; top: 41%; }  /* → cross hub east */
+  38%  { left: 36%; top: 41%; }  /* ← back west across hub */
+  44%  { left: 36%; top: 50%; }  /* ↓ exit hub south to mid-H */
+  48%  { left: 30%; top: 50%; }  /* ← go west to left-V */
+  54%  { left: 30%; top: 57%; }  /* ↓ go south along left-V, enter strategy */
+  58%  { left: 15%; top: 57%; }  /* ← into strategy */
+  64%  { left: 15%; top: 65%; }  /* ↓ deeper in strategy */
+  70%  { left: 15%; top: 65%; }  /* wait */
+  76%  { left: 15%; top: 57%; }  /* ↑ exit strategy north */
+  80%  { left: 30%; top: 57%; }  /* → right to left-V */
+  84%  { left: 30%; top: 27%; }  /* ↑ go north along left-V all the way */
+  90%  { left: 26%; top: 27%; }  /* ← back to guild junction */
+  94%  { left: 26%; top: 14%; }  /* ↑ go north to guild door level */
+  100% { left: 15%; top: 14%; }  /* ← enter guild */
 }
 
-/* Strategist: strategy → left-corridor → hub → right-corridor(x≈85%) → vault → back */
+/* Strategist (animIndex=2, dur=40s):
+   strategy → left-V → top-H → right-V → vault → back */
 @keyframes npc-move-2 {
-  0%   { left: 14%; top: 65%; }
-  8%   { left: 15%; top: 57%; }
-  18%  { left: 36%; top: 50%; }
-  28%  { left: 50%; top: 41%; }
-  36%  { left: 64%; top: 41%; }
-  44%  { left: 74%; top: 23%; }
-  52%  { left: 85%; top: 14%; }
-  62%  { left: 85%; top: 14%; }
-  70%  { left: 74%; top: 23%; }
-  80%  { left: 50%; top: 41%; }
-  90%  { left: 15%; top: 57%; }
-  100% { left: 14%; top: 65%; }
+  0%   { left: 15%; top: 65%; }  /* strategy inside */
+  6%   { left: 26%; top: 65%; }  /* → exit strategy east */
+  10%  { left: 26%; top: 54%; }  /* ↑ go north to mid-H */
+  16%  { left: 50%; top: 54%; }  /* → go east along mid-H to hub area */
+  20%  { left: 50%; top: 41%; }  /* ↑ enter hub, go north through hub */
+  26%  { left: 63%; top: 41%; }  /* → cross hub east */
+  30%  { left: 63%; top: 27%; }  /* ↑ exit hub top, enter right-V going north */
+  36%  { left: 68%; top: 27%; }  /* → slight east on top-H to vault junction */
+  40%  { left: 68%; top: 14%; }  /* ↑ go north to vault level */
+  44%  { left: 85%; top: 14%; }  /* → enter vault */
+  52%  { left: 85%; top: 14%; }  /* wait in vault */
+  58%  { left: 68%; top: 14%; }  /* ← exit vault west */
+  62%  { left: 68%; top: 27%; }  /* ↓ go south on right-V */
+  68%  { left: 63%; top: 27%; }  /* ← back to hub corner */
+  72%  { left: 63%; top: 41%; }  /* ↓ enter hub */
+  78%  { left: 50%; top: 41%; }  /* ← cross hub west */
+  82%  { left: 50%; top: 54%; }  /* ↓ exit hub south */
+  88%  { left: 26%; top: 54%; }  /* ← go west along mid-H */
+  92%  { left: 26%; top: 65%; }  /* ↓ enter strategy */
+  100% { left: 15%; top: 65%; }  /* ← deeper in strategy */
 }
 
-/* Sentinel: hub perimeter clockwise — strictly H then V edges */
+/* Sentinel (animIndex=3, dur=45s):
+   Patrols hub perimeter strictly: top-edge → right-edge → bottom-edge → left-edge (rectangular loop) */
 @keyframes npc-move-3 {
-  0%   { left: 37%; top: 32%; }
-  16%  { left: 63%; top: 32%; }
-  33%  { left: 63%; top: 50%; }
-  50%  { left: 37%; top: 50%; }
-  66%  { left: 37%; top: 32%; }
-  75%  { left: 50%; top: 41%; }
-  84%  { left: 63%; top: 32%; }
-  100% { left: 37%; top: 32%; }
+  0%   { left: 37%; top: 32%; }  /* hub top-left corner */
+  20%  { left: 63%; top: 32%; }  /* → east along hub top edge */
+  35%  { left: 63%; top: 50%; }  /* ↓ south along hub right edge */
+  55%  { left: 37%; top: 50%; }  /* ← west along hub bottom edge */
+  70%  { left: 37%; top: 32%; }  /* ↑ north along hub left edge */
+  80%  { left: 50%; top: 32%; }  /* → patrol hub top middle */
+  90%  { left: 50%; top: 50%; }  /* ↓ cross hub vertically */
+  100% { left: 37%; top: 32%; }  /* ↑↖ return to start (goes via left edge) */
 }
 
-/* Treasurer: vault → right-corridor → hub right → back */
+/* Treasurer (animIndex=4, dur=50s):
+   vault → right-V going south → mid-H east junction → back north → vault */
 @keyframes npc-move-4 {
-  0%   { left: 85%; top: 14%; }
-  15%  { left: 85%; top: 14%; }
-  30%  { left: 74%; top: 23%; }
-  42%  { left: 64%; top: 41%; }
-  50%  { left: 64%; top: 41%; }
-  62%  { left: 74%; top: 23%; }
-  75%  { left: 85%; top: 14%; }
-  100% { left: 85%; top: 14%; }
+  0%   { left: 85%; top: 14%; }  /* vault inside */
+  10%  { left: 85%; top: 14%; }  /* wait */
+  18%  { left: 74%; top: 14%; }  /* ← exit vault west to right-V junction */
+  24%  { left: 68%; top: 14%; }  /* ← go to right-V */
+  30%  { left: 68%; top: 27%; }  /* ↓ go south on right-V to top-H */
+  38%  { left: 68%; top: 41%; }  /* ↓ continue south to hub level */
+  44%  { left: 63%; top: 41%; }  /* ← enter hub east side */
+  50%  { left: 63%; top: 41%; }  /* wait in hub */
+  58%  { left: 68%; top: 41%; }  /* → exit hub east */
+  64%  { left: 68%; top: 27%; }  /* ↑ go north on right-V */
+  70%  { left: 68%; top: 14%; }  /* ↑ continue to vault level */
+  76%  { left: 74%; top: 14%; }  /* → enter vault */
+  100% { left: 85%; top: 14%; }  /* → deeper in vault, wait */
 }
 
-/* Executor: market → right-corridor → hub bottom → archive-corridor(x=50%) → archive → back */
+/* Executor (animIndex=5, dur=55s):
+   market → right-V going north to mid-H → mid-H west → arch-V south → archive → back */
 @keyframes npc-move-5 {
-  0%   { left: 85%; top: 65%; }
-  10%  { left: 85%; top: 57%; }
-  20%  { left: 64%; top: 50%; }
-  30%  { left: 50%; top: 50%; }
-  40%  { left: 50%; top: 65%; }
-  50%  { left: 50%; top: 80%; }
-  60%  { left: 50%; top: 80%; }
-  70%  { left: 50%; top: 65%; }
-  80%  { left: 64%; top: 50%; }
-  90%  { left: 85%; top: 57%; }
-  100% { left: 85%; top: 65%; }
+  0%   { left: 85%; top: 65%; }  /* market inside */
+  8%   { left: 74%; top: 65%; }  /* ← exit market west to right-V junction */
+  14%  { left: 68%; top: 65%; }  /* ← reach right-V */
+  20%  { left: 68%; top: 54%; }  /* ↑ go north on right-V to mid-H */
+  28%  { left: 50%; top: 54%; }  /* ← go west along mid-H */
+  34%  { left: 50%; top: 50%; }  /* ↑ enter hub bottom */
+  40%  { left: 50%; top: 50%; }  /* wait at hub bottom */
+  46%  { left: 50%; top: 54%; }  /* ↓ exit hub south */
+  52%  { left: 50%; top: 65%; }  /* ↓ go south on arch-V */
+  58%  { left: 50%; top: 80%; }  /* ↓ reach archive top */
+  64%  { left: 50%; top: 88%; }  /* ↓ enter archive */
+  70%  { left: 50%; top: 88%; }  /* wait in archive */
+  76%  { left: 50%; top: 80%; }  /* ↑ exit archive north */
+  82%  { left: 50%; top: 65%; }  /* ↑ go north on arch-V */
+  88%  { left: 68%; top: 65%; }  /* → go east along mid-H level */
+  94%  { left: 74%; top: 65%; }  /* → reach market door */
+  100% { left: 85%; top: 65%; }  /* → into market */
 }
 
-/* Archivist: archive → archive-corridor(x=50%) → hub bottom → hub center → back */
+/* Archivist (animIndex=6, dur=60s):
+   archive → arch-V going north → hub bottom → cross hub → back south → archive */
 @keyframes npc-move-6 {
-  0%   { left: 50%; top: 92%; }
-  12%  { left: 50%; top: 80%; }
-  24%  { left: 50%; top: 65%; }
-  36%  { left: 50%; top: 50%; }
-  48%  { left: 50%; top: 41%; }
-  56%  { left: 50%; top: 41%; }
-  68%  { left: 50%; top: 50%; }
-  80%  { left: 50%; top: 65%; }
-  90%  { left: 50%; top: 80%; }
-  100% { left: 50%; top: 92%; }
+  0%   { left: 50%; top: 88%; }  /* archive inside */
+  8%   { left: 50%; top: 80%; }  /* ↑ exit archive north */
+  16%  { left: 50%; top: 65%; }  /* ↑ go north on arch-V through corridor */
+  24%  { left: 50%; top: 54%; }  /* ↑ continue to mid-H */
+  30%  { left: 50%; top: 50%; }  /* ↑ enter hub from south */
+  38%  { left: 50%; top: 41%; }  /* ↑ go north through hub center */
+  44%  { left: 37%; top: 41%; }  /* ← cross hub west */
+  50%  { left: 37%; top: 41%; }  /* wait at hub west */
+  58%  { left: 50%; top: 41%; }  /* → back east to hub center */
+  64%  { left: 63%; top: 41%; }  /* → cross hub east */
+  70%  { left: 63%; top: 41%; }  /* wait */
+  76%  { left: 50%; top: 41%; }  /* ← back to center */
+  82%  { left: 50%; top: 50%; }  /* ↓ exit hub south */
+  88%  { left: 50%; top: 65%; }  /* ↓ go south on arch-V */
+  94%  { left: 50%; top: 80%; }  /* ↓ reach archive */
+  100% { left: 50%; top: 88%; }  /* ↓ enter archive */
 }
 
 @keyframes pulse-glow {
