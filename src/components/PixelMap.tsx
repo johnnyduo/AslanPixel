@@ -664,7 +664,7 @@ const PixelMap = () => {
                 style={{
                   bottom:"calc(100% + 8px)",
                   left: "50%", transform:"translateX(-50%)",
-                  width: 170, padding:"6px 10px", borderRadius: 8,
+                  width: 180, maxWidth: 180, padding:"6px 10px", borderRadius: 8,
                   background:"hsl(225 32% 8% / 0.97)",
                   border:`1px solid ${agent.color}66`,
                   boxShadow:`0 0 24px ${agent.color}30, 0 4px 16px hsl(225 35% 3%/0.8)`,
@@ -683,8 +683,8 @@ const PixelMap = () => {
                 </div>
                 {/* Message content — strip agent name prefix */}
                 <p className="text-[8px] font-mono leading-relaxed"
-                  style={{ color: agent.color + "ee" }}>
-                  {stripPrefix(bubbleMsg).slice(0, 120)}{bubbleMsg.length > 120 ? "…" : ""}
+                  style={{ color: agent.color + "ee", wordBreak:"break-word", overflowWrap:"anywhere", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:4, WebkitBoxOrient:"vertical" }}>
+                  {stripPrefix(bubbleMsg)}
                 </p>
                 {/* Reply indicator */}
                 {isReplier && (
