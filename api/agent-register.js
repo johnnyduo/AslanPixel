@@ -22,6 +22,16 @@ import {
 
 const RPC_URL = "https://testnet.hashio.io/api";
 
+// Hedera testnet (chainId 296) has a fixed base fee — does not float like Ethereum.
+// maxFeePerGas = 2x baseFee gives safe headroom; excess is refunded.
+// maxPriorityFeePerGas = 0 — Hedera consensus ignores tips entirely.
+// gasLimit = 500_000 — actual register(string) usage is ~368k; 500k is a safe ceiling.
+const HEDERA_GAS = {
+  gasLimit:            500_000,
+  maxFeePerGas:        1_940_000_000_000n, // 1940 gwei = 2× fixed baseFee (970 gwei)
+  maxPriorityFeePerGas: 0n,                // Hedera ignores priority fees
+};
+
 // ERC-8004 contracts on Hedera Testnet (chainId 296)
 const ERC8004_IDENTITY_REGISTRY   = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
 const ERC8004_REPUTATION_REGISTRY = "0x8004B663056A597Dffe9eCcC1965A193B7388713";
@@ -165,8 +175,7 @@ async function erc8004RegisterAgents(wallet, customAgentId, customName, customTr
       // Build ERC-8004 registration URI
       const agentURI = buildAgentRegistrationURI(agent);
 
-      // Let ethers auto-estimate gas — URI is now small so no fee spike risk
-      const tx = await identityRegistry["register(string)"](agentURI);
+      const tx = await identityRegistry["register(string)"](agentURI, HEDERA_GAS);
       const receipt = await tx.wait();
 
       // Extract agentId (tokenId) from Registered event
@@ -190,7 +199,7 @@ async function erc8004RegisterAgents(wallet, customAgentId, customName, customTr
 
       // Also register in legacy registry (best-effort, may already exist)
       try {
-        const legacyTx = await legacyRegistry.registerAgent(agent.id, agent.name, agent.role, wallet.address);
+        const legacyTx = await legacyRegistry.registerAgent(agent.id, agent.name, agent.role, wallet.address, HEDERA_GAS);
         await legacyTx.wait();
       } catch { /* agent may already exist in legacy registry — ignore */ }
 
@@ -241,6 +250,7 @@ async function erc8004RecordQuestResults(wallet, questId, success) {
           "https://aslanpixel.vercel.app/api/quest",
           "", // feedbackURI
           feedbackHash,
+          HEDERA_GAS,
         );
         await tx.wait();
         successCount++;
@@ -253,7 +263,7 @@ async function erc8004RecordQuestResults(wallet, questId, success) {
     const legacyRegistry = new Contract(AGENT_REGISTRY_ADDRESS, AGENT_REGISTRY_ABI, wallet);
     await Promise.allSettled(
       AGENTS.map((agent) =>
-        legacyRegistry.recordQuestResult(agent.id, questId, success).then((tx) => tx.wait())
+        legacyRegistry.recordQuestResult(agent.id, questId, success, HEDERA_GAS).then((tx) => tx.wait())
       )
     );
   } catch { /* best-effort */ }
