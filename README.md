@@ -170,10 +170,13 @@ User Intent (or Auto-Quest every 9min)
 
 ---
 
-## What's Next
+## Future Roadmap
 
-- **x402 API enforcement** — full HTTP 402 server-side gating per advanced quest
-- **EIP-4337 account abstraction** — session keys for agent-native TX signing
-- **ERC-6551 Token Bound Accounts** — each agent NFT gets its own EVM wallet identity
-- **Agent marketplace** — users publish and trade custom agent NFTs
-- **Cross-chain quests** — Hedera + EVM chains via Wormhole bridge
+| Phase | Feature | Description |
+|-------|---------|-------------|
+| **v1.1** | **x402 API Enforcement** | Full HTTP 402 payment gating — advanced quests require HBAR micropayment before execution |
+| **v1.1** | **EIP-4337 Account Abstraction** | Session keys for agent-native TX signing — no wallet popups per action |
+| **v1.2** | **ERC-6551 Token Bound Accounts** | Each agent NFT gets its own EVM wallet — agents hold funds, sign independently |
+| **v1.2** | **Agent Marketplace** | Users publish, discover, and trade custom agent NFTs on any ERC-721 marketplace |
+| **v2.0** | **Cross-Chain Quests** | Hedera + EVM chains via Wormhole bridge — agents execute across networks in one quest |
+| **v2.0** | **Agent-to-Agent Economy** | Agents hire sub-agents, pay wages in HBAR, and compose multi-guild workflows autonomously |
