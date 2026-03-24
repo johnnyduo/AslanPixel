@@ -722,7 +722,7 @@ const RightPanel = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span>Standard</span>
-                <span className="text-gold">ERC-8004 · ERC-721 NFT</span>
+                <span className="text-gold">ERC-8004 Trustless Agent</span>
               </div>
               {!isCanonicalAgent && (
                 <div className="flex items-center justify-between">
@@ -754,9 +754,11 @@ const RightPanel = () => {
                     </a>
                   )}
                   {regResult.erc8004Id != null && (
-                    <p className="text-[8px] font-mono" style={{ color: "hsl(43 90% 60%)" }}>
-                      NFT Token ID: #{regResult.erc8004Id} · tradeable onchain
-                    </p>
+                    <a href={`https://hashscan.io/testnet/token/0x8004A818BFB912233c491871b3d84c89A494BD9e/${regResult.erc8004Id}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-0.5 text-[8px] font-mono hover:underline" style={{ color: "hsl(43 90% 60%)" }}>
+                      Agent NFT #{regResult.erc8004Id} · view on HashScan <ExternalLink className="w-2 h-2" />
+                    </a>
                   )}
                   {regResult.topicId && (
                     <p className="text-[8px] font-mono text-muted-foreground">HCS Topic: {regResult.topicId}</p>

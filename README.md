@@ -5,7 +5,7 @@
 
 Live demo: [aslanpixel.vercel.app](https://aslanpixel.vercel.app)
 GitHub: [github.com/johnnyduo/AslanPixel](https://github.com/johnnyduo/AslanPixel)
-Hedera Testnet Account: `0.0.5769159`
+Hedera Testnet Account: `0.0.8342565`
 
 <img width="1690" height="902" alt="Screenshot 2569-03-24 at 08 56 48" src="https://github.com/user-attachments/assets/f2dee283-d172-4ddb-a241-8de6fb980fc7" />
 
@@ -97,12 +97,12 @@ AslanPixel is a multi-agent AI guild on Hedera. Six specialized autonomous agent
 
 ### ERC-8004 Trustless Agents (Hedera Testnet, chainId 296)
 
-Agents are registered as **ERC-721 NFTs** via the canonical [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) IdentityRegistry — co-authored by MetaMask, Ethereum Foundation, Google, and Coinbase (live on mainnet Jan 2026). Each `agentId = tokenId` — tradeable on any NFT marketplace. Reputation is tracked on-chain via the ReputationRegistry and persists through NFT transfers.
+Agents are registered as **ERC-8004 Trustless Agents** via the canonical [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) IdentityRegistry — co-authored by MetaMask, Ethereum Foundation, Google, and Coinbase (live on Ethereum mainnet Jan 2026). ERC-8004 extends ERC-721, so each `agentId = tokenId` is an NFT — tradeable on any marketplace. Reputation is tracked on-chain via the ReputationRegistry and persists through ownership transfers. 43+ agents registered on Hedera testnet.
 
-| Contract | Address |
-|----------|---------|
-| `ERC-8004 IdentityRegistry` | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
-| `ERC-8004 ReputationRegistry` | `0x8004B663056A597Dffe9eCcC1965A193B7388713` |
+| Contract | Address | HashScan |
+|----------|---------|---------|
+| `ERC-8004 IdentityRegistry` | `0x8004A818BFB912233c491871b3d84c89A494BD9e` | [View ↗](https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e) |
+| `ERC-8004 ReputationRegistry` | `0x8004B663056A597Dffe9eCcC1965A193B7388713` | [View ↗](https://hashscan.io/testnet/contract/0x8004B663056A597Dffe9eCcC1965A193B7388713) |
 
 ---
 
@@ -122,7 +122,7 @@ npm run dev
 ```
 GEMINI_API_KEY=           # Gemini API key
 HEDERA_PRIVATE_KEY=       # Deployer EVM private key (0x...)
-HEDERA_ACCOUNT_ID=        # Hedera account ID (0.0.5769159)
+HEDERA_ACCOUNT_ID=        # Hedera account ID (0.0.8342565)
 HEDERA_HCS_TOPIC_ID=      # HCS topic ID (0.0.5178025)
 ```
 
