@@ -1,41 +1,52 @@
-# AslanGuild — Agentic Guild on Hedera
+# AslanPixel — Agentic Guild on Hedera
 
-> **AI agent society that thinks, transacts, and archives everything onchain — autonomously.**
+> **Think. Transact. Collaborate. On Hedera.**
+> AI agents that debate, vote, and execute real DeFi transactions — every step streamed live and archived immutably onchain.
 
 Live demo: [aslanpixel.vercel.app](https://aslanpixel.vercel.app)
+GitHub: [github.com/johnnyduo/AslanPixel](https://github.com/johnnyduo/AslanPixel)
 Hedera Testnet Account: `0.0.5769159`
 
 ---
 
 ## What It Does
 
-AslanGuild is a multi-agent AI coordination layer on Hedera. Six specialized autonomous agents collaborate in real-time to scan, plan, validate, fund, execute, and archive DeFi operations — all verifiably onchain.
+AslanPixel is a multi-agent AI guild on Hedera. Six specialized autonomous agents — each powered by Gemini AI, each with their own role and personality — collaborate in real-time to scan, plan, validate, fund, execute, and archive DeFi operations. Every decision is a vote. Every action is a real EVM transaction. Every step is onchain.
 
-**The core user insight:** DeFi is complex and opaque. You don't know what's happening with your funds. AslanGuild makes every step visible — every agent decision, every policy check, every transaction — streamed live and archived immutably on Hedera.
+**The core insight:** DeFi is a black box. You send funds, you wait, you hope. AslanPixel makes every step visible — every agent decision, every policy check, every transaction — streamed live and archived immutably on Hedera. Not a chatbot. Not a single agent. Not off-chain.
 
 ### The 6 Agents
 
 | Agent | Role | Hedera Layer |
 |-------|------|-------------|
 | **Nexus** ◈ | HCS Intelligence — reads consensus streams | HCS (Hedera Consensus Service) |
-| **Oryn** ▲ | Strategy Engine — models execution paths | EVM Smart Contracts |
-| **Drax** ◆ | Risk Sentinel — enforces PolicyManager.sol | PolicyManager.sol |
-| **Lyss** ◉ | Treasury Keeper — tracks HTS balances | HTS (Hedera Token Service) |
-| **Vex** ▶ | TX Executor — simulate → sign → submit | Hedera EVM |
-| **Kael** ▣ | Ledger Archivist — writes QuestReceipt.sol | Mirror Node + QuestReceipt.sol |
+| **Oryn** ▲ | Strategy Engine — models 3 execution paths | EVM Smart Contracts |
+| **Drax** ◆ | Risk Sentinel — enforces PolicyManager.sol, holds VETO | PolicyManager.sol |
+| **Lyss** ◉ | Treasury Keeper — holds 500 HBAR gas reserve, tracks USDC | HTS (Hedera Token Service) |
+| **Vex** ▶ | TX Executor — simulate → sign → submit, links HashScan | Hedera EVM |
+| **Kael** ▣ | Ledger Archivist — writes QuestReceipt.sol, updates reputation | Mirror Node + QuestReceipt.sol |
 
 ### How It Works
 
 1. User types a natural language intent: *"Rebalance treasury with 30% USDC buffer"*
-2. **Guild Vote**: All 6 agents vote — Drax (Sentinel) can veto high-risk quests
-3. **Approved**: Agents mobilize sequentially, each streaming their action to the timeline
+2. **Guild Vote**: All 6 agents vote sequentially — Drax (Sentinel) can veto high-risk quests
+3. **Approved**: Agents mobilize sequentially, each streaming their action live to the timeline
 4. **Onchain**: Quest receipt stored in `QuestReceipt.sol`, agent reputation updated in `AgentRegistry.sol`
-5. **HCS**: Every quest event posted to Hedera Consensus Service topic
+5. **HCS**: Every quest event posted to Hedera Consensus Service topic `0.0.5178025`
 6. **TX Link**: HashScan URL shown for every confirmed transaction
 
-### Auto-Quest Mode
+### Live Features
 
-Every 9 minutes, the guild autonomously fires a preset quest — yield optimization, risk scans, treasury reconciliation — keeping the platform active without user interaction.
+| Feature | Description |
+|---------|-------------|
+| **Pixel World Map** | NPCs patrol a pixel-art world — each building represents a Hedera module |
+| **Quest Runner** | Type an intent → 7-step agent stream fires instantly, live in browser |
+| **Guild Vote Panel** | Watch each agent debate in real-time — Drax can VETO any quest |
+| **Live TX Timeline** | Every step streams via SSE — TX hash links directly to HashScan |
+| **Agent Dashboard** | Recharts quest history + reputation scores pulled live from chain |
+| **Register an Agent** | Your agent ID goes onchain — NPC spawns in the pixel map |
+| **USDC Faucet** | One click → 100 testnet USDC, cooldown enforced onchain |
+| **Auto-Quest Mode** | Guild fires automatically every 9 minutes — platform is always alive |
 
 ---
 
@@ -49,7 +60,7 @@ Every 9 minutes, the guild autonomously fires a preset quest — yield optimizat
 - Zustand for cross-component state
 
 ### AI
-- **Gemini 3.1 Flash Lite Preview** — powers all 6 agent responses
+- **Gemini 3.1 Flash Lite Preview** (`gemini-3.1-flash-lite-preview`) — powers all 6 agent responses
 - Server-side only (Vercel Edge runtime) — API key never exposed to browser
 
 ### Backend (Vercel API Routes)
@@ -64,10 +75,10 @@ Every 9 minutes, the guild autonomously fires a preset quest — yield optimizat
 | `GET /api/saucerswap` | Edge | SaucerSwap testnet proxy |
 
 ### Hedera Integration
-- **HCS** — agent activity and quest events published as Hedera Consensus Service messages
-- **HTS** — HBAR/USDC balances tracked via Mirror Node
-- **EVM (Hedera testnet, chainID 296)** — all contracts deployed via Remix
-- **Mirror Node** — real-time price, balance, receipt, and token lookups
+- **HCS** — agent activity and quest events published as Hedera Consensus Service messages (topic `0.0.5178025`)
+- **HTS** — HBAR/USDC balances tracked via Mirror Node in tinyhbar
+- **EVM (Hedera testnet, chainID 296)** — all contracts deployed via Remix IDE
+- **Mirror Node** — real-time price, balance, receipt, and token lookups (30s Vercel Edge cache)
 - **SaucerSwap testnet** — live pool TVL/volume injected into agent prompts
 
 ### Smart Contracts (Hedera Testnet)
@@ -85,8 +96,8 @@ Every 9 minutes, the guild autonomously fires a preset quest — yield optimizat
 ## Running Locally
 
 ```bash
-git clone https://github.com/YOUR_REPO/AslanGuild
-cd AslanGuild
+git clone https://github.com/johnnyduo/AslanPixel
+cd AslanPixel
 npm install
 # Keys already in .env.deploy for demo
 npm run dev
@@ -98,8 +109,8 @@ npm run dev
 ```
 GEMINI_API_KEY=           # Gemini API key
 HEDERA_PRIVATE_KEY=       # Deployer EVM private key (0x...)
-HEDERA_ACCOUNT_ID=        # Hedera account ID (0.0.XXXXXX)
-HEDERA_HCS_TOPIC_ID=      # HCS topic (auto-created if not set)
+HEDERA_ACCOUNT_ID=        # Hedera account ID (0.0.5769159)
+HEDERA_HCS_TOPIC_ID=      # HCS topic ID (0.0.5178025)
 ```
 
 ---
@@ -114,7 +125,7 @@ User Intent (or Auto-Quest every 9min)
 [GET /api/quest — Vercel Edge SSE]
     ├── Nexus ◈  — HCS scan + market data (real SaucerSwap prices)
     ├── Oryn  ▲  — 3-branch strategy model with confidence %
-    ├── Drax  ◆  — PolicyManager.sol compliance check
+    ├── Drax  ◆  — PolicyManager.sol compliance check (VETO if fails)
     ├── Lyss  ◉  — Treasury budget allocation in tinyhbar
     ├── Vex   ▶  — EVM simulate → sign → submit
     └── Kael  ▣  — QuestReceipt.sol write + Mirror Node archive
@@ -122,13 +133,13 @@ User Intent (or Auto-Quest every 9min)
 [POST /api/store-receipt — Node.js]
     ├── QuestReceipt.sol → stores inputHash + txHash onchain
     ├── AgentRegistry.sol → updates reputation for all 6 agents
-    └── HCS Topic → publishes quest_complete JSON message
+    └── HCS Topic 0.0.5178025 → publishes quest_complete JSON message
          ↓
 [Frontend updates]
-    ├── Timeline: streams all agent messages live
+    ├── Timeline: streams all agent messages live via SSE
     ├── Status bar: Receipt #N + HashScan TX link
     ├── Dashboard: recharts quest history + live agent reputation
-    └── RightPanel: onchain reputation per agent (0-1000 scale)
+    └── RightPanel: onchain reputation per agent (0–1000 scale)
 ```
 
 ---
@@ -137,18 +148,19 @@ User Intent (or Auto-Quest every 9min)
 
 **"create marketplaces, coordination layers, and tools where autonomous actors can think, transact, and collaborate — leveraging Hedera's fast, low-cost microtransactions and secure consensus"**
 
-- ✅ **Think** — Gemini AI powers each agent's in-character reasoning
-- ✅ **Transact** — every quest generates a real Hedera EVM transaction
-- ✅ **Collaborate** — 6 agents coordinate via vote consensus + sequential handoff
-- ✅ **Hedera consensus** — HCS messages for every agent action
-- ✅ **Transparent** — full audit trail in QuestReceipt.sol, publicly readable
+- ✅ **Think** — Gemini 3.1 Flash Lite powers each agent's in-character reasoning, confidence scoring, and multi-branch strategy
+- ✅ **Transact** — every quest generates a real Hedera EVM transaction (simulate → sign → submit, Chain 296)
+- ✅ **Collaborate** — 6 agents coordinate via sequential vote + handoff, Drax VETO blocks non-compliant quests
+- ✅ **Hedera consensus** — HCS messages for every agent action, topic `0.0.5178025`
+- ✅ **Microtransactions** — agent session wages per op; auto-quest fires every 9 min
+- ✅ **Transparent** — full audit trail in QuestReceipt.sol, publicly readable on HashScan forever
 
 ---
 
 ## What's Next
 
-- x402 payment gating — pay 1 HBAR per advanced quest
-- EIP-4337 account abstraction — session keys for agent-native TX signing
-- HCS-10 full agent standard compliance (Hashgraph Online)
-- Cross-chain quests via Wormhole bridge
-- Agent marketplace — users publish custom workflows as NFTs
+- **x402 payment gating** — pay 1 HBAR per advanced quest (HTTP 402 protocol)
+- **EIP-4337 account abstraction** — session keys for agent-native TX signing
+- **HCS-10 full compliance** — Hashgraph Online agent messaging standard
+- **Agent marketplace** — users publish custom workflows as NFTs
+- **Cross-chain quests** — Hedera + EVM chains via Wormhole bridge
