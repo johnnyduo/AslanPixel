@@ -79,9 +79,22 @@ const BottomPanel = () => {
   // Activate auto quest scheduler
   useAutoQuest();
 
+  // If wallet disconnects while payment gate or vote panel is open, dismiss them
+  useEffect(() => {
+    if (!isConnected && (questStatus === "paying" || questStatus === "voting")) {
+      setPendingVoteIntent(null);
+      setQuestStatus("idle");
+    }
+  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Listen for intents dispatched from LeftPanel / autoQuest
   useEffect(() => {
     if (!pendingIntent) return;
+    // Never open payment gate if wallet is disconnected
+    if (!isConnected) {
+      clearPendingIntent();
+      return;
+    }
     const intent = pendingIntent;
     clearPendingIntent();
     setQuestInput(intent.replace(/^\[AUTO\] /, ""));

@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef } from "react";
 import { useQuestInput } from "@/hooks/useQuestInput";
+import { useWallet } from "@/hooks/useWallet";
 
 export const AUTO_QUESTS = [
   "Rebalance HBAR/USDC pool allocation for maximum yield on SaucerSwap testnet",
@@ -18,17 +19,19 @@ export const AUTO_QUESTS = [
 
 export function useAutoQuest(intervalMs = 3 * 60 * 1000) {
   const { setPendingIntent, pendingIntent } = useQuestInput();
+  const { isConnected } = useWallet();
   const idxRef = useRef(Math.floor(Math.random() * AUTO_QUESTS.length));
   const pendingRef = useRef(pendingIntent);
+  const connectedRef = useRef(isConnected);
 
-  // Keep ref in sync without re-creating interval
-  useEffect(() => {
-    pendingRef.current = pendingIntent;
-  }, [pendingIntent]);
+  // Keep refs in sync without re-creating interval
+  useEffect(() => { pendingRef.current = pendingIntent; }, [pendingIntent]);
+  useEffect(() => { connectedRef.current = isConnected; }, [isConnected]);
 
   useEffect(() => {
     const fire = () => {
-      // Don't stack quests — skip if one is pending
+      // Don't fire when wallet is disconnected or a quest is already pending
+      if (!connectedRef.current) return;
       if (pendingRef.current) return;
       const intent = "[AUTO] " + AUTO_QUESTS[idxRef.current % AUTO_QUESTS.length];
       idxRef.current++;
