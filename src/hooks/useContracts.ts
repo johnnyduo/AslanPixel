@@ -289,29 +289,18 @@ export async function registerAgentERC8004(
   const signer = await provider.getSigner();
   const contract = new Contract(ADDRESSES.ERC8004Identity, ERC8004_IDENTITY_ABI, signer);
 
-  // Build minimal registration URI
+  // Minimal registration URI — keep small to reduce onchain gas cost
   const registrationFile = {
     type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
     name: agentName,
-    description: `${agentName} — ${role}. AslanPixel guild agent on Hedera.`,
-    image: `https://aslanpixel.vercel.app/assets/npcs/npc-${agentId}-s.png`,
-    services: [{ name: "A2A", endpoint: "https://aslanpixel.vercel.app/.well-known/agent-card.json", version: "0.3.0" }],
-    x402Support: true,
+    description: `${agentName} — ${role}`,
+    services: [{ name: "A2A", endpoint: "https://aslanpixel.vercel.app/.well-known/agent-card.json" }],
     active: true,
-    supportedTrust: ["reputation"],
   };
   const agentURI = "data:application/json;base64," + btoa(JSON.stringify(registrationFile));
 
-  const encoder = new TextEncoder();
-  const toHex = (s: string) => "0x" + Array.from(encoder.encode(s)).map(b => b.toString(16).padStart(2,"0")).join("");
-
-  const metadata = [
-    { metadataKey: "agentId",   metadataValue: toHex(agentId) },
-    { metadataKey: "agentName", metadataValue: toHex(agentName) },
-    { metadataKey: "agentRole", metadataValue: toHex(role) },
-  ];
-
-  const tx = await contract["register(string,(string,bytes)[])"](agentURI, metadata);
+  // Use register(string) — no metadata array, minimises gas
+  const tx = await contract["register(string)"](agentURI);
   const receipt = await tx.wait();
 
   // Parse Registered event to get agentId (tokenId)

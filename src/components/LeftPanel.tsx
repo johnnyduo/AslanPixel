@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Send, Sparkles, Target, Zap, Scroll, TrendingUp, ChevronRight, Droplets } from "lucide-react";
+import { Send, Sparkles, Target, Zap, Scroll, TrendingUp, ChevronRight, Droplets, Wallet, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
@@ -29,7 +29,7 @@ const LeftPanel = () => {
   const [claimError, setClaimError] = useState<string | null>(null);
   const { messages, isLive } = useLiveTimeline();
   const { setPendingIntent } = useQuestInput();
-  const { isConnected, address } = useWallet();
+  const { isConnected, address, openModal } = useWallet();
   const { walletProvider } = useAppKitProvider("eip155");
 
   // Check if user can claim from faucet (read-only, no wallet needed)
@@ -106,7 +106,37 @@ const LeftPanel = () => {
   };
 
   return (
-    <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-3 p-4 overflow-hidden">
+    <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-3 p-4 overflow-hidden relative">
+
+      {/* Wallet lock overlay — shown when not connected */}
+      {!isConnected && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 rounded-none"
+          style={{ background: "hsl(225 28% 5% / 0.88)", backdropFilter: "blur(6px)" }}>
+          <div className="flex flex-col items-center gap-2 mb-1">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: "hsl(43 90% 55% / 0.1)", border: "1px solid hsl(43 90% 55% / 0.3)" }}>
+              <Lock className="w-4 h-4 text-gold" />
+            </div>
+            <span className="font-pixel text-[9px] text-gold tracking-widest">QUEST INPUT LOCKED</span>
+          </div>
+          <p className="text-[10px] font-mono text-muted-foreground text-center max-w-[200px] leading-relaxed">
+            Connect your wallet to deploy quests and view active missions.
+          </p>
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-4 h-8 rounded-lg font-pixel text-[9px] transition-all hover:opacity-90"
+            style={{
+              background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
+              border: "1px solid hsl(43 90% 55% / 0.6)",
+              color: "hsl(225 30% 6%)",
+              boxShadow: "0 0 20px hsl(43 90% 50% / 0.2)",
+            }}
+          >
+            <Wallet className="w-3 h-3" />
+            CONNECT WALLET
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

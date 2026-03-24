@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap, ExternalLink, UserPlus, Loader2, X, Shuffle, CreditCard, Trash2 } from "lucide-react";
+import { Shield, Brain, Star, CheckCircle, XCircle, Play, ChevronRight, Zap, ExternalLink, UserPlus, Loader2, X, Shuffle, CreditCard, Trash2, Wallet, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AGENTS, STATUS_COLORS, ACTION_TYPE_COLORS, type Agent } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
-import { useAgentStats, deactivateAgentOnchain } from "@/hooks/useContracts";
+import { useAgentStats, deactivateAgentOnchain, registerAgentERC8004 } from "@/hooks/useContracts";
 import { getStoredAgentTxHashes, AGENT_TX_STORAGE_KEY } from "@/hooks/useAgentInit";
 import PaymentGate from "@/components/PaymentGate";
+import { useWallet } from "@/hooks/useWallet";
 
 // micro-USDC cost per message type (6 decimals, so 1_000_000 = 1.00 USDC)
 const MSG_COST_USDC: Record<string, number> = {
@@ -43,12 +44,14 @@ function autogenName() {
 }
 
 const RightPanel = () => {
+  const { isConnected, openModal } = useWallet();
   const [selectedId, setSelectedId] = useState<string>("scout");
   const [actionFeedback, setActionFeedback] = useState<{ type: "approve" | "reject" | "sim"; ts: number } | null>(null);
   const [showRegModal, setShowRegModal] = useState(false);
   const [regState, setRegState] = useState<RegState>("idle");
-  const [regResult, setRegResult] = useState<{ txHash?: string; topicId?: string; msg?: string } | null>(null);
+  const [regResult, setRegResult] = useState<{ txHash?: string; topicId?: string; erc8004Id?: number | null; msg?: string } | null>(null);
   const [regName, setRegName] = useState("");
+  const [regAgentId, setRegAgentId] = useState(""); // custom agent ID for new agents
   const [regTrait, setRegTrait] = useState("analyst");
   const [deactivateState, setDeactivateState] = useState<DeactivateState>("idle");
   const [deactivateMsg, setDeactivateMsg] = useState<string | null>(null);
@@ -118,9 +121,48 @@ const RightPanel = () => {
     setTimeout(() => setActionFeedback(null), 3000);
   };
 
+  const CANONICAL_IDS = ["scout","strategist","sentinel","treasurer","executor","archivist"];
+  const isCanonicalAgent = CANONICAL_IDS.includes(selectedId);
+
   const handleRegister = async () => {
     setRegState("calling");
     setRegResult(null);
+
+    // Custom (new) agent: user signs directly via MetaMask → ERC-8004 IdentityRegistry
+    if (!isCanonicalAgent || regAgentId.trim()) {
+      const agentIdToUse = regAgentId.trim() || selectedId;
+      const nameToUse = regName.trim() || agentIdToUse;
+      const roleToUse = TRAITS.find(t => t.id === regTrait)?.label ?? regTrait;
+      try {
+        const { txHash, erc8004AgentId } = await registerAgentERC8004(agentIdToUse, nameToUse, roleToUse);
+        // Persist custom agent ID for PixelMap / useAgentStats
+        const stored: string[] = (() => { try { return JSON.parse(localStorage.getItem("aslan_custom_agent_ids") || "[]"); } catch { return []; } })();
+        if (!stored.includes(agentIdToUse)) {
+          localStorage.setItem("aslan_custom_agent_ids", JSON.stringify([...stored, agentIdToUse]));
+        }
+        // Persist tx hash
+        const existing = getStoredAgentTxHashes();
+        const merged = { ...existing, [agentIdToUse]: txHash };
+        localStorage.setItem(AGENT_TX_STORAGE_KEY, JSON.stringify(merged));
+        setAgentTxHashes(merged);
+
+        setRegResult({
+          txHash,
+          erc8004Id: erc8004AgentId,
+          msg: erc8004AgentId !== null
+            ? `Agent #${erc8004AgentId} minted as ERC-8004 NFT`
+            : "Agent registered via ERC-8004",
+        });
+        setRegState("done");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Transaction failed";
+        setRegResult({ msg: msg.includes("user rejected") ? "Transaction rejected" : msg.slice(0, 80) });
+        setRegState("error");
+      }
+      return;
+    }
+
+    // Canonical agent (1 of 6): server-side registration via deployer key
     try {
       const res = await fetch("/api/agent-register", {
         method: "POST",
@@ -129,7 +171,6 @@ const RightPanel = () => {
       });
       const d = await res.json();
       if (d.txHashes && Object.keys(d.txHashes).length > 0) {
-        // Persist newly returned TX hashes
         const existing = getStoredAgentTxHashes();
         const merged = { ...existing, ...d.txHashes };
         localStorage.setItem(AGENT_TX_STORAGE_KEY, JSON.stringify(merged));
@@ -137,23 +178,13 @@ const RightPanel = () => {
       }
       const txHash = d.txHashes?.[selectedId] ?? agentTxHashes[selectedId] ?? null;
       const wasRegistered = d.registeredAgents?.includes(selectedId);
-      // Persist custom agent ID so PixelMap/useAgentStats can show it in the map
-      if (wasRegistered) {
-        const canonical = ["scout","strategist","sentinel","treasurer","executor","archivist"];
-        if (!canonical.includes(selectedId)) {
-          const stored: string[] = (() => { try { return JSON.parse(localStorage.getItem("aslan_custom_agent_ids") || "[]"); } catch { return []; } })();
-          if (!stored.includes(selectedId)) {
-            localStorage.setItem("aslan_custom_agent_ids", JSON.stringify([...stored, selectedId]));
-          }
-        }
-      }
       setRegResult({
         txHash: txHash ?? undefined,
         topicId: d.topicId,
         msg: d.skippedAgents?.includes(selectedId)
-          ? "Agent already registered onchain"
+          ? "Agent already registered via ERC-8004"
           : wasRegistered
-          ? "Agent registered successfully"
+          ? "Agent registered via ERC-8004"
           : d.error ?? "Registration attempted",
       });
       setRegState("done");
@@ -180,14 +211,45 @@ const RightPanel = () => {
 
   return (
     <>
-    <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-0 overflow-hidden">
+    <aside className="w-72 xl:w-80 glass-panel flex flex-col gap-0 overflow-hidden relative">
+
+      {/* Wallet lock overlay — shown when not connected */}
+      {!isConnected && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3"
+          style={{ background: "hsl(225 28% 5% / 0.88)", backdropFilter: "blur(6px)" }}>
+          <div className="flex flex-col items-center gap-2 mb-1">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: "hsl(195 100% 55% / 0.08)", border: "1px solid hsl(195 100% 55% / 0.25)" }}>
+              <Lock className="w-4 h-4 text-cyan" />
+            </div>
+            <span className="font-pixel text-[9px] text-cyan tracking-widest">AGENT PANEL LOCKED</span>
+          </div>
+          <p className="text-[10px] font-mono text-muted-foreground text-center max-w-[200px] leading-relaxed">
+            Connect your wallet to view agent stats and register agents on-chain.
+          </p>
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-4 h-8 rounded-lg font-pixel text-[9px] transition-all hover:opacity-90"
+            style={{
+              background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
+              border: "1px solid hsl(43 90% 55% / 0.6)",
+              color: "hsl(225 30% 6%)",
+              boxShadow: "0 0 20px hsl(43 90% 50% / 0.2)",
+            }}
+          >
+            <Wallet className="w-3 h-3" />
+            CONNECT WALLET
+          </button>
+        </div>
+      )}
+
       {/* Agent selector tabs */}
       <div className="px-3 pt-3 pb-0">
         <div className="flex items-center gap-1.5 mb-2">
           <Shield className="w-3.5 h-3.5 text-cyan" />
           <h2 className="font-pixel text-[10px] text-cyan tracking-wider">AGENT DETAIL</h2>
           <button
-            onClick={() => { setShowRegModal(true); setRegState("idle"); setRegResult(null); setRegName(agent.name); setRegTrait("analyst"); }}
+            onClick={() => { setShowRegModal(true); setRegState("idle"); setRegResult(null); setRegName(agent.name); setRegTrait("analyst"); setRegAgentId(""); }}
             className="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded text-[7px] font-pixel transition-all duration-200 hover:opacity-90"
             style={{ background: "hsl(43 90% 55% / 0.12)", border: "1px solid hsl(43 90% 55% / 0.35)", color: "hsl(43 90% 65%)" }}
             title="Register agent onchain"
@@ -545,7 +607,7 @@ const RightPanel = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-pixel text-[11px] tracking-wider" style={{ color: agent.color }}>REGISTER AGENT ONCHAIN</p>
-                <p className="text-[8px] font-mono text-muted-foreground mt-0.5">AgentRegistry.sol · Hedera Testnet EVM</p>
+                <p className="text-[8px] font-mono text-muted-foreground mt-0.5">ERC-8004 IdentityRegistry · Hedera Testnet</p>
               </div>
               <button onClick={() => setShowRegModal(false)} disabled={regState === "calling"}
                 className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-white/5 transition-colors disabled:opacity-30">
@@ -570,6 +632,27 @@ const RightPanel = () => {
                 </span>
               )}
             </div>
+
+            {/* Agent ID input — only shown for new custom agents */}
+            {!isCanonicalAgent && (
+              <div className="space-y-1.5">
+                <p className="text-[8px] font-pixel text-muted-foreground tracking-wider">AGENT ID <span className="text-cyan">(unique · onchain key)</span></p>
+                <input
+                  type="text"
+                  value={regAgentId}
+                  onChange={(e) => setRegAgentId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                  maxLength={32}
+                  placeholder="e.g. my-agent-42"
+                  disabled={regState === "calling"}
+                  className="w-full h-9 px-3 rounded-lg text-sm font-mono bg-transparent outline-none transition-all disabled:opacity-40"
+                  style={{
+                    background: "hsl(225 20% 9%)",
+                    border: `1px solid ${regAgentId.trim() ? "hsl(195 100% 55% / 0.5)" : "hsl(225 15% 20%)"}`,
+                    color: "hsl(215 20% 85%)",
+                  }}
+                />
+              </div>
+            )}
 
             {/* Name input */}
             <div className="space-y-1.5">
@@ -627,22 +710,26 @@ const RightPanel = () => {
               </div>
             </div>
 
-            {/* Contract row + cap */}
+            {/* Contract row */}
             <div className="space-y-1 text-[8px] font-mono text-muted-foreground px-1">
               <div className="flex items-center justify-between">
-                <span>Contract</span>
-                <a href="https://hashscan.io/testnet/contract/0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4"
+                <span>ERC-8004 Registry</span>
+                <a href="https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e"
                   target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-0.5 text-cyan hover:underline">
-                  0x8B90…CC4 <ExternalLink className="w-2 h-2" />
+                  0x8004…BD9e <ExternalLink className="w-2 h-2" />
                 </a>
               </div>
               <div className="flex items-center justify-between">
-                <span>Registry slots</span>
-                <span style={{ color: (regResult as {agentCount?:number}|null)?.agentCount != null && ((regResult as {agentCount?:number}).agentCount ?? 0) >= 18 ? "hsl(38 92% 55%)" : "hsl(215 12% 55%)" }}>
-                  {(regResult as {agentCount?:number}|null)?.agentCount != null ? `${(regResult as {agentCount?:number}).agentCount}/20` : "?/20"}
-                </span>
+                <span>Standard</span>
+                <span className="text-gold">ERC-8004 · ERC-721 NFT</span>
               </div>
+              {!isCanonicalAgent && (
+                <div className="flex items-center justify-between">
+                  <span>Signing</span>
+                  <span style={{ color: "hsl(142 70% 55%)" }}>Your MetaMask wallet</span>
+                </div>
+              )}
             </div>
 
             {/* Result */}
@@ -665,6 +752,11 @@ const RightPanel = () => {
                       className="flex items-center gap-0.5 text-[8px] font-mono text-cyan hover:underline">
                       TX: {regResult.txHash.slice(0,10)}…{regResult.txHash.slice(-6)} <ExternalLink className="w-2 h-2" />
                     </a>
+                  )}
+                  {regResult.erc8004Id != null && (
+                    <p className="text-[8px] font-mono" style={{ color: "hsl(43 90% 60%)" }}>
+                      NFT Token ID: #{regResult.erc8004Id} · tradeable onchain
+                    </p>
                   )}
                   {regResult.topicId && (
                     <p className="text-[8px] font-mono text-muted-foreground">HCS Topic: {regResult.topicId}</p>
@@ -708,7 +800,7 @@ const RightPanel = () => {
               {regState !== "done" && (
                 <button
                   onClick={handleRegister}
-                  disabled={regState === "calling" || !regName.trim()}
+                  disabled={regState === "calling" || !regName.trim() || (!isCanonicalAgent && !regAgentId.trim())}
                   className="flex-2 h-9 px-5 rounded-lg font-pixel text-[8px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
                   style={{
                     background: `linear-gradient(135deg, ${agent.color}cc, ${agent.color}88)`,

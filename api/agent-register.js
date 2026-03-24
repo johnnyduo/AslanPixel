@@ -11,7 +11,7 @@
  * Returns: { topicId, registeredAgents, txHashes, agentIds, hcsSeq }
  */
 
-import { JsonRpcProvider, Wallet, Contract, toUtf8Bytes, hexlify } from "ethers";
+import { JsonRpcProvider, Wallet, Contract } from "ethers";
 import {
   Client,
   PrivateKey,
@@ -131,28 +131,15 @@ async function postHCSMessage(client, topicId, payload) {
 // Conforms to https://eips.ethereum.org/EIPS/eip-8004#registration-v1
 // ---------------------------------------------------------------------------
 function buildAgentRegistrationURI(agent) {
+  // Minimal inline JSON — keep small to reduce onchain gas cost.
+  // Extended metadata is served from the off-chain endpoint.
   const registrationFile = {
     type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
     name: agent.name,
-    description: `${agent.symbol} ${agent.name} — ${agent.role}. AslanPixel guild agent on Hedera.`,
-    image: `https://aslanpixel.vercel.app/assets/npcs/npc-${agent.id}-s.png`,
-    services: [
-      {
-        name: "A2A",
-        endpoint: "https://aslanpixel.vercel.app/.well-known/agent-card.json",
-        version: "0.3.0",
-      },
-    ],
-    x402Support: true,
+    description: `${agent.name} — ${agent.role}`,
+    services: [{ name: "A2A", endpoint: "https://aslanpixel.vercel.app/.well-known/agent-card.json" }],
     active: true,
-    supportedTrust: ["reputation"],
-    chainId: 296,
-    hedera: {
-      hcsTopicId: process.env.HEDERA_HCS_TOPIC_ID || "0.0.5178025",
-      accountId: process.env.HEDERA_ACCOUNT_ID || "0.0.5769159",
-    },
   };
-  // Encode as data URI (no IPFS needed for testnet/hackathon)
   return "data:application/json;base64," + Buffer.from(JSON.stringify(registrationFile)).toString("base64");
 }
 
@@ -178,15 +165,8 @@ async function erc8004RegisterAgents(wallet, customAgentId, customName, customTr
       // Build ERC-8004 registration URI
       const agentURI = buildAgentRegistrationURI(agent);
 
-      // Encode agentId as metadata key "agentId" -> bytes
-      const metadata = [
-        { metadataKey: "agentId",   metadataValue: hexlify(toUtf8Bytes(agent.id)) },
-        { metadataKey: "agentName", metadataValue: hexlify(toUtf8Bytes(agent.name)) },
-        { metadataKey: "agentRole", metadataValue: hexlify(toUtf8Bytes(agent.role)) },
-      ];
-
-      // Call ERC-8004 register(string, MetadataEntry[])
-      const tx = await identityRegistry["register(string,(string,bytes)[])"](agentURI, metadata);
+      // Use register(string) — minimal gas, no metadata array overhead
+      const tx = await identityRegistry["register(string)"](agentURI);
       const receipt = await tx.wait();
 
       // Extract agentId (tokenId) from Registered event

@@ -97,35 +97,38 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* HBAR live price ticker */}
+        {/* HBAR live price ticker — always visible */}
         <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
           {TrendIcon && <TrendIcon className="w-3 h-3" style={{ color: trendColor }} />}
           <span className="text-gold font-mono font-medium">HBAR ${priceStr}</span>
         </div>
 
-        {/* Wallet HBAR balance — shown when connected */}
-        {isConnected && hbarBalanceStr != null && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
-            <span className="text-muted-foreground">⬡</span>
-            <span className="text-foreground font-mono">{hbarBalanceStr}</span>
-            <span className="text-muted-foreground text-[10px]">HBAR</span>
-            {usdcBalanceStr != null && (
-              <>
-                <span className="text-border mx-0.5">|</span>
-                <span className="text-cyan font-mono">{usdcBalanceStr}</span>
-                <span className="text-muted-foreground text-[10px]">USDC</span>
-              </>
+        {/* Wallet balances + network badge — only when connected */}
+        {isConnected && (
+          <>
+            {hbarBalanceStr != null && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
+                <span className="text-muted-foreground">⬡</span>
+                <span className="text-foreground font-mono">{hbarBalanceStr}</span>
+                <span className="text-muted-foreground text-[10px]">HBAR</span>
+                {usdcBalanceStr != null && (
+                  <>
+                    <span className="text-border mx-0.5">|</span>
+                    <span className="text-cyan font-mono">{usdcBalanceStr}</span>
+                    <span className="text-muted-foreground text-[10px]">USDC</span>
+                  </>
+                )}
+              </div>
             )}
-          </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
+              <span className="text-success">Testnet</span>
+            </div>
+          </>
         )}
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 glass-panel text-xs font-mono">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
-          <span className="text-success">Testnet</span>
-        </div>
-
-        {/* Dashboard toggle */}
-        {onDashboardToggle && (
+        {/* Dashboard toggle — only when connected */}
+        {isConnected && onDashboardToggle && (
           <Button
             variant="ghost"
             size="icon"
@@ -137,12 +140,15 @@ const TopBar = ({ onDashboardToggle }: TopBarProps) => {
           </Button>
         )}
 
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-4 h-4 text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold rounded-full" />
-        </Button>
+        {/* Notifications — only when connected */}
+        {isConnected && (
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="w-4 h-4 text-muted-foreground" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold rounded-full" />
+          </Button>
+        )}
 
-        {/* Wallet connect button — real Reown AppKit */}
+        {/* Wallet connect / address button */}
         <Button
           variant="gold"
           size="sm"

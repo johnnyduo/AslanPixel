@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send, Bot, Wallet } from "lucide-react";
+import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send, Bot, Wallet, Lock } from "lucide-react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
@@ -208,17 +208,20 @@ const BottomPanel = () => {
       {/* Wallet connect gate — shown when not connected */}
       {!isConnected && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3"
-          style={{ background: "hsl(225 28% 5% / 0.92)", backdropFilter: "blur(4px)" }}>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+          style={{ background: "hsl(225 28% 5% / 0.88)", backdropFilter: "blur(6px)" }}>
+          <div className="flex flex-col items-center gap-2 mb-1">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: "hsl(43 90% 55% / 0.1)", border: "1px solid hsl(43 90% 55% / 0.3)" }}>
+              <Lock className="w-4 h-4 text-gold" />
+            </div>
             <span className="font-pixel text-[9px] text-gold tracking-widest">GUILD TERMINAL LOCKED</span>
           </div>
-          <p className="text-[10px] font-mono text-muted-foreground text-center max-w-[260px] leading-relaxed">
+          <p className="text-[10px] font-mono text-muted-foreground text-center max-w-[240px] leading-relaxed">
             Connect your wallet to submit quests and view the live agent timeline.
           </p>
           <button
             onClick={openModal}
-            className="flex items-center gap-2 px-4 h-8 rounded-lg font-pixel text-[9px] transition-all"
+            className="flex items-center gap-2 px-4 h-8 rounded-lg font-pixel text-[9px] transition-all hover:opacity-90"
             style={{
               background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
               border: "1px solid hsl(43 90% 55% / 0.6)",

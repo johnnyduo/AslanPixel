@@ -24,12 +24,10 @@ const Index = () => {
           <DashboardPanel onClose={() => setDashOpen(false)} />
         )}
 
-        {/* Left Panel — quest input + agent list. Hidden when wallet not connected */}
-        {isConnected && (
-          <div className="hidden lg:flex">
-            <LeftPanel />
-          </div>
-        )}
+        {/* Left Panel — always visible, shows lock overlay when wallet not connected */}
+        <div className="hidden lg:flex">
+          <LeftPanel />
+        </div>
 
         {/* Center + Bottom */}
         <div className="flex-1 flex flex-col overflow-hidden p-1 gap-1">
@@ -38,12 +36,10 @@ const Index = () => {
           <BottomPanel />
         </div>
 
-        {/* Right Panel — agent stats. Hidden when wallet not connected */}
-        {isConnected && (
-          <div className="hidden lg:flex">
-            <RightPanel />
-          </div>
-        )}
+        {/* Right Panel — always visible, shows lock overlay when wallet not connected */}
+        <div className="hidden lg:flex">
+          <RightPanel />
+        </div>
       </div>
     </div>
   );

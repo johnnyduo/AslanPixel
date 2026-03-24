@@ -812,8 +812,9 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
         );
       })}
 
-      {/* ── NPCs — hidden when wallet modal or dashboard is open ── */}
-      {!walletModalOpen && !hideAgents && allAgents.map((agent) => {
+      {/* ── NPCs — kept alive to preserve animation position; hidden instantly via visibility ── */}
+      {allAgents.map((agent) => {
+        const shouldHide = walletModalOpen || hideAgents;
         const isHov     = hoveredAgent === agent.id;
         const isSpeaker = activeBubble?.speakerId === agent.id;
         const isReplier = activeBubble?.replyId    === agent.id;
@@ -843,7 +844,11 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
 
         return (
           <div key={agent.id} className="absolute z-30"
-            style={{ animation:`npc-move-${agent.animIndex} ${NPC_ANIM_DURATIONS[agent.animIndex]??35000}ms linear infinite` }}
+            style={{
+              animation:`npc-move-${agent.animIndex} ${NPC_ANIM_DURATIONS[agent.animIndex]??35000}ms linear infinite`,
+              visibility: shouldHide ? "hidden" : "visible",
+              pointerEvents: shouldHide ? "none" : "auto",
+            }}
             onMouseEnter={() => setHoveredAgent(agent.id)}
             onMouseLeave={() => setHoveredAgent(null)}
           >
@@ -972,7 +977,7 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
                 boxShadow: hoveredRoom===r.name ? `0 0 4px ${r.color}` : "none",
               }}/>
           ))}
-          {allAgents.map(a=>(
+          {!hideAgents && !walletModalOpen && allAgents.map(a=>(
             <div key={`mm-${a.id}`} className="absolute w-[5px] h-[5px] rounded-full"
               style={{
                 background:a.color, boxShadow:`0 0 4px ${a.color}`,
