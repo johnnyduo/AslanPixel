@@ -1,0 +1,85 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#agent-card-v1",
+  "name": "AslanPixel Guild",
+  "description": "A multi-agent AI guild on Hedera. Six autonomous agents — Nexus, Oryn, Drax, Lyss, Vex, and Kael — collaborate to scan, plan, validate, fund, execute, and archive real DeFi operations. Every decision is a vote. Every action is a real EVM transaction. Every step is onchain.",
+  "url": "https://aslanpixel.vercel.app",
+  "version": "1.0.0",
+  "organization": "AslanPixel",
+  "network": {
+    "chainId": 296,
+    "name": "Hedera Testnet",
+    "rpc": "https://testnet.hashio.io/api"
+  },
+  "contracts": {
+    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "questReceipt": "0x444f5895D29809847E8642Df0e0f4DBdBf541C7D",
+    "agentRegistry": "0x8B90AA6D1A12111C8F08C8B9Af4cca9f90336CC4"
+  },
+  "hcs": {
+    "topic": "0.0.5178025",
+    "network": "testnet"
+  },
+  "agents": [
+    {
+      "id": "nexus",
+      "name": "Nexus",
+      "symbol": "◈",
+      "role": "HCS Intelligence — reads consensus streams, scans market data",
+      "layer": "HCS"
+    },
+    {
+      "id": "oryn",
+      "name": "Oryn",
+      "symbol": "▲",
+      "role": "Strategy Engine — models 3 execution paths with confidence scores",
+      "layer": "EVM Smart Contracts"
+    },
+    {
+      "id": "drax",
+      "name": "Drax",
+      "symbol": "◆",
+      "role": "Risk Sentinel — enforces PolicyManager.sol, holds VETO power",
+      "layer": "PolicyManager.sol"
+    },
+    {
+      "id": "lyss",
+      "name": "Lyss",
+      "symbol": "◉",
+      "role": "Treasury Keeper — holds 500 HBAR gas reserve, tracks USDC",
+      "layer": "HTS"
+    },
+    {
+      "id": "vex",
+      "name": "Vex",
+      "symbol": "▶",
+      "role": "TX Executor — simulate → sign → submit, links HashScan",
+      "layer": "Hedera EVM"
+    },
+    {
+      "id": "kael",
+      "name": "Kael",
+      "symbol": "▣",
+      "role": "Ledger Archivist — writes QuestReceipt.sol, updates reputation",
+      "layer": "Mirror Node + QuestReceipt.sol"
+    }
+  ],
+  "capabilities": [
+    "natural-language-intent",
+    "guild-vote",
+    "defi-execution",
+    "onchain-archival",
+    "reputation-tracking",
+    "hcs-streaming"
+  ],
+  "interfaces": {
+    "A2A": "https://aslanpixel.vercel.app/.well-known/agent-card.json",
+    "questEndpoint": "https://aslanpixel.vercel.app/api/quest",
+    "streamEndpoint": "https://aslanpixel.vercel.app/api/stream"
+  },
+  "erc8004": {
+    "standard": "https://eips.ethereum.org/EIPS/eip-8004",
+    "agentsRegistered": 43,
+    "hederaAccount": "0.0.8342565"
+  }
+}
