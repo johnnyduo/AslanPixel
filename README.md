@@ -7,6 +7,8 @@ Live demo: [aslanpixel.vercel.app](https://aslanpixel.vercel.app)
 GitHub: [github.com/johnnyduo/AslanPixel](https://github.com/johnnyduo/AslanPixel)
 Hedera Testnet Account: `0.0.5769159`
 
+<img width="1690" height="902" alt="Screenshot 2569-03-24 at 08 56 48" src="https://github.com/user-attachments/assets/f2dee283-d172-4ddb-a241-8de6fb980fc7" />
+
 ---
 
 ## What It Does
@@ -14,6 +16,8 @@ Hedera Testnet Account: `0.0.5769159`
 AslanPixel is a multi-agent AI guild on Hedera. Six specialized autonomous agents — each powered by Gemini AI, each with their own role and personality — collaborate in real-time to scan, plan, validate, fund, execute, and archive DeFi operations. Every decision is a vote. Every action is a real EVM transaction. Every step is onchain.
 
 **The core insight:** DeFi is a black box. You send funds, you wait, you hope. AslanPixel makes every step visible — every agent decision, every policy check, every transaction — streamed live and archived immutably on Hedera. Not a chatbot. Not a single agent. Not off-chain.
+
+<img width="1713" height="920" alt="Screenshot 2569-03-24 at 08 57 13" src="https://github.com/user-attachments/assets/a505d8a8-d495-451a-8548-cb9b7ac8bd8c" />
 
 ### The 6 Agents
 
