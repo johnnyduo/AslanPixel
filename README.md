@@ -104,6 +104,8 @@ Agents are registered as **ERC-8004 Trustless Agents** via the canonical [ERC-80
 | `ERC-8004 IdentityRegistry` | `0x8004A818BFB912233c491871b3d84c89A494BD9e` | [View ↗](https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e) |
 | `ERC-8004 ReputationRegistry` | `0x8004B663056A597Dffe9eCcC1965A193B7388713` | [View ↗](https://hashscan.io/testnet/contract/0x8004B663056A597Dffe9eCcC1965A193B7388713) |
 
+**Agent Card (A2A Discovery):** [`/.well-known/agent-card.json`](https://aslanpixel.vercel.app/.well-known/agent-card.json) — live endpoint returning full guild metadata: all 6 agents, HCS topic, contract addresses, quest/stream API endpoints. Compatible with HOL Registry Broker and any A2A-standard client.
+
 ---
 
 ## Running Locally
