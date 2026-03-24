@@ -165,8 +165,13 @@ async function erc8004RegisterAgents(wallet, customAgentId, customName, customTr
       // Build ERC-8004 registration URI
       const agentURI = buildAgentRegistrationURI(agent);
 
-      // Use register(string) — minimal gas, no metadata array overhead
-      const tx = await identityRegistry["register(string)"](agentURI);
+      // Use register(string) — minimal gas, hard-cap gasLimit to avoid fee spike
+      // 400k gas @ 570 gwei (Hedera testnet) ≈ 0.025 HBAR max per call
+      const tx = await identityRegistry["register(string)"](agentURI, {
+        gasLimit: 500_000,
+        maxFeePerGas: 570_000_000_000n, // 570 gwei — Hedera testnet standard
+        maxPriorityFeePerGas: 0n,
+      });
       const receipt = await tx.wait();
 
       // Extract agentId (tokenId) from Registered event

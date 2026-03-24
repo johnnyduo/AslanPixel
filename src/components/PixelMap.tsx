@@ -5,6 +5,7 @@ import { AGENTS } from "@/data/agents";
 import type { Agent } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useAgentStats } from "@/hooks/useContracts";
+import { useWallet } from "@/hooks/useWallet";
 import type { TimelineMessage } from "@/lib/agentConversation";
 
 // ── MAP THEMES ───────────────────────────────────────────────────────────────
@@ -454,6 +455,7 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
   const [themeIdx, setThemeIdx] = useState(0);
   const { open: walletModalOpen } = useAppKitState();
+  const { openModal } = useWallet();
   const { agents: onchainAgents } = useAgentStats();
   const theme = THEMES[themeIdx];
 
@@ -647,6 +649,90 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
         0 0 60px -20px ${theme.ambientGlow}
       `,
     }}>
+
+      {/* ── Disconnected placeholder overlay ── */}
+      {hideAgents && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 pointer-events-none"
+          style={{ background: "hsl(225 30% 4% / 0.72)", backdropFilter: "blur(2px)" }}>
+
+          {/* Ghost room grid — silhouette of the map */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+            {BASE_ROOMS.map(r => (
+              <div key={r.name} className="absolute rounded-sm"
+                style={{
+                  left: `${r.x}%`, top: `${r.y}%`,
+                  width: `${r.w}%`, height: `${r.h}%`,
+                  background: "hsl(225 20% 18%)",
+                  border: "1px solid hsl(225 20% 25%)",
+                }} />
+            ))}
+            {/* Ghost NPC silhouettes */}
+            {AGENTS.map((a, i) => (
+              <div key={a.id} className="absolute w-4 h-4 rounded-full opacity-40"
+                style={{
+                  background: "hsl(225 20% 22%)",
+                  border: "1px solid hsl(225 20% 30%)",
+                  left: `${20 + i * 13}%`,
+                  top: `${35 + (i % 2) * 20}%`,
+                }} />
+            ))}
+          </div>
+
+          {/* Lock message — pointer-events enabled */}
+          <div className="relative flex flex-col items-center gap-3 pointer-events-auto">
+            {/* Pixel lock icon */}
+            <div className="relative">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center"
+                style={{
+                  background: "hsl(43 90% 55% / 0.08)",
+                  border: "1px solid hsl(43 90% 55% / 0.25)",
+                  boxShadow: "0 0 30px hsl(43 90% 55% / 0.1)",
+                }}>
+                <span className="font-pixel text-2xl text-gold" style={{ textShadow: "0 0 12px hsl(43 90% 55% / 0.6)" }}>⬡</span>
+              </div>
+              {/* Animated scan line */}
+              <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+                <div style={{
+                  position: "absolute", left: 0, right: 0, height: 2,
+                  background: "linear-gradient(90deg, transparent, hsl(43 90% 55% / 0.4), transparent)",
+                  animation: "room-scan 2s linear infinite",
+                }} />
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-pixel text-[10px] text-gold tracking-widest">ASLAN PIXEL GUILD</span>
+              <span className="font-pixel text-[8px] text-muted-foreground tracking-wider">CONNECT WALLET TO ENTER</span>
+            </div>
+
+            {/* 6 ghost agent slots */}
+            <div className="flex gap-2 mt-1">
+              {AGENTS.map(a => (
+                <div key={a.id} className="flex flex-col items-center gap-0.5">
+                  <div className="w-7 h-7 rounded-md flex items-center justify-center"
+                    style={{ background: "hsl(225 20% 12%)", border: "1px solid hsl(225 20% 18%)" }}>
+                    <span className="font-pixel text-xs opacity-25" style={{ color: a.color }}>{a.icon}</span>
+                  </div>
+                  <div className="w-5 h-0.5 rounded-full opacity-20" style={{ background: a.color }} />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={openModal}
+              className="mt-1 flex items-center gap-2 px-5 h-9 rounded-lg font-pixel text-[9px] tracking-wider transition-all hover:opacity-90 active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
+                border: "1px solid hsl(43 90% 55% / 0.6)",
+                color: "hsl(225 30% 6%)",
+                boxShadow: "0 0 24px hsl(43 90% 50% / 0.25)",
+              }}
+            >
+              ⬡ CONNECT WALLET
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── PIXEL ART MAP BACKGROUND ── */}
       <div className="absolute inset-0" style={{
