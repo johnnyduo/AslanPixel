@@ -32,7 +32,7 @@ const Index = () => {
         {/* Center + Bottom */}
         <div className="flex-1 flex flex-col overflow-hidden p-1 gap-1">
           {/* Pixel map: hide agent NPCs when wallet not connected */}
-          <PixelMap hideAgents={dashOpen || !isConnected} />
+          <PixelMap hideAgents={dashOpen || !isConnected} walletConnected={isConnected} />
           <BottomPanel />
         </div>
 

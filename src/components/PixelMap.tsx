@@ -449,7 +449,7 @@ const CUSTOM_AGENT_COLORS = [
   "hsl(310 70% 60%)", "hsl(170 80% 50%)", "hsl(55 90% 55%)", "hsl(230 80% 65%)",
 ];
 
-const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
+const PixelMap = ({ hideAgents = false, walletConnected = true }: { hideAgents?: boolean; walletConnected?: boolean }) => {
   const [rooms, setRooms] = useState<Room[]>(BASE_ROOMS);
   const [hoveredRoom,  setHoveredRoom]  = useState<string|null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string|null>(null);
@@ -650,8 +650,8 @@ const PixelMap = ({ hideAgents = false }: { hideAgents?: boolean }) => {
       `,
     }}>
 
-      {/* ── Disconnected placeholder overlay ── */}
-      {hideAgents && (
+      {/* ── Disconnected placeholder overlay — only when wallet not connected ── */}
+      {!walletConnected && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 pointer-events-none"
           style={{ background: "hsl(225 30% 4% / 0.72)", backdropFilter: "blur(2px)" }}>
 
