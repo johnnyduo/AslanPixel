@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send, Bot } from "lucide-react";
+import { MessageSquare, Terminal, ArrowRightLeft, Cpu, AlertTriangle, Shield, BookOpen, Zap, Send, Bot, Wallet } from "lucide-react";
 import { AGENTS } from "@/data/agents";
 import { useLiveTimeline } from "@/hooks/useLiveTimeline";
 import { useQuestInput } from "@/hooks/useQuestInput";
 import { useAutoQuest } from "@/hooks/useAutoQuest";
+import { useWallet } from "@/hooks/useWallet";
 import VotePanel from "@/components/VotePanel";
 import PaymentGate from "@/components/PaymentGate";
 import type { TimelineMessage } from "@/lib/agentConversation";
@@ -62,6 +63,7 @@ type TabId = typeof TABS[number]["id"];
 
 const BottomPanel = () => {
   const { messages: liveMessages, isLive, error: _error } = useLiveTimeline();
+  const { isConnected, openModal } = useWallet();
   const [questInput, setQuestInput] = useState("");
   const [questStatus, setQuestStatus] = useState<QuestStatus>("idle");
   const [activeTab, setActiveTab] = useState<TabId>("all");
@@ -190,6 +192,7 @@ const BottomPanel = () => {
   const runQuest = () => {
     const trimmed = questInput.trim();
     if (!trimmed || questStatus === "running" || questStatus === "voting" || questStatus === "paying") return;
+    if (!isConnected) { openModal(); return; }
     setIsAutoQuest(false);
     setPendingVoteIntent(trimmed);
     setQuestStatus("paying");
@@ -201,6 +204,34 @@ const BottomPanel = () => {
 
   return (
     <div className="h-64 xl:h-72 glass-panel flex flex-col overflow-hidden relative">
+
+      {/* Wallet connect gate — shown when not connected */}
+      {!isConnected && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3"
+          style={{ background: "hsl(225 28% 5% / 0.92)", backdropFilter: "blur(4px)" }}>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+            <span className="font-pixel text-[9px] text-gold tracking-widest">GUILD TERMINAL LOCKED</span>
+          </div>
+          <p className="text-[10px] font-mono text-muted-foreground text-center max-w-[260px] leading-relaxed">
+            Connect your wallet to submit quests and view the live agent timeline.
+          </p>
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-4 h-8 rounded-lg font-pixel text-[9px] transition-all"
+            style={{
+              background: "linear-gradient(135deg, hsl(43 90% 45%), hsl(38 85% 35%))",
+              border: "1px solid hsl(43 90% 55% / 0.6)",
+              color: "hsl(225 30% 6%)",
+              boxShadow: "0 0 20px hsl(43 90% 50% / 0.2)",
+            }}
+          >
+            <Wallet className="w-3 h-3" />
+            CONNECT WALLET
+          </button>
+        </div>
+      )}
+
       {/* Payment Gate — x402 agent wage */}
       {questStatus === "paying" && pendingVoteIntent && (
         <PaymentGate

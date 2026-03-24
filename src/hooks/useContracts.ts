@@ -16,6 +16,9 @@ const ADDRESSES = {
   MockUSDC:      "0x152Bf42A48677b678c658E452788ea2687525BF7",
   USDCFaucet:    "0xCA0558Fa81166C5939335282973Aa2F3A00B3953",
   PolicyManager: "0xdBc14F4c53c071cd925fa4a730D06ddc1b4911E4",
+  // ERC-8004 Trustless Agents — Hedera Testnet (chainId 296)
+  ERC8004Identity:    "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+  ERC8004Reputation:  "0x8004B663056A597Dffe9eCcC1965A193B7388713",
 } as const;
 
 const RPC_URL = "https://testnet.hashio.io/api";
@@ -42,6 +45,33 @@ const AGENT_REGISTRY_ABI = [
   "event AgentRegistered(bytes32 indexed key, string agentId, string name)",
   "event QuestCompleted(bytes32 indexed key, uint256 questId, bool success)",
   "event ReputationUpdated(bytes32 indexed key, uint256 newRep)",
+];
+
+// ERC-8004 IdentityRegistry ABI (UUPS proxy, extends ERC-721)
+const ERC8004_IDENTITY_ABI = [
+  "function register() external returns (uint256 agentId)",
+  "function register(string agentURI) external returns (uint256 agentId)",
+  "function register(string agentURI, tuple(string metadataKey, bytes metadataValue)[] metadata) external returns (uint256 agentId)",
+  "function setAgentURI(uint256 agentId, string newURI) external",
+  "function getMetadata(uint256 agentId, string metadataKey) external view returns (bytes)",
+  "function setMetadata(uint256 agentId, string metadataKey, bytes metadataValue) external",
+  "function getAgentWallet(uint256 agentId) external view returns (address)",
+  "function ownerOf(uint256 tokenId) external view returns (address)",
+  "function tokenURI(uint256 tokenId) external view returns (string)",
+  "function isAuthorizedOrOwner(address spender, uint256 agentId) external view returns (bool)",
+  "function balanceOf(address owner) external view returns (uint256)",
+  "event Registered(uint256 indexed agentId, string agentURI, address indexed owner)",
+  "event MetadataSet(uint256 indexed agentId, string indexed indexedMetadataKey, string metadataKey, bytes metadataValue)",
+];
+
+// ERC-8004 ReputationRegistry ABI
+const ERC8004_REPUTATION_ABI = [
+  "function giveFeedback(uint256 agentId, int128 value, uint8 valueDecimals, string tag1, string tag2, string endpoint, string feedbackURI, bytes32 feedbackHash) external",
+  "function getSummary(uint256 agentId, address[] clientAddresses, string tag1, string tag2) external view returns (uint64 count, int128 summaryValue, uint8 summaryValueDecimals)",
+  "function readFeedback(uint256 agentId, address clientAddress, uint64 feedbackIndex) external view returns (int128 value, uint8 valueDecimals, string tag1, string tag2, bool isRevoked)",
+  "function getClients(uint256 agentId) external view returns (address[])",
+  "function getLastIndex(uint256 agentId, address clientAddress) external view returns (uint64)",
+  "event NewFeedback(uint256 indexed agentId, address indexed clientAddress, uint64 feedbackIndex, int128 value, uint8 valueDecimals, string indexed indexedTag1, string tag1, string tag2, string endpoint, string feedbackURI, bytes32 feedbackHash)",
 ];
 
 const MOCK_USDC_ABI = [
@@ -244,6 +274,104 @@ export async function deactivateAgentOnchain(agentId: string): Promise<string> {
   const tx = await contract.deactivateAgent(agentId);
   await tx.wait();
   return tx.hash as string;
+}
+
+// ---------------------------------------------------------------------------
+// Function: registerAgentERC8004 — registers a new agent via ERC-8004 IdentityRegistry
+// The user signs a tx via MetaMask; returns { txHash, erc8004AgentId }
+// ---------------------------------------------------------------------------
+export async function registerAgentERC8004(
+  agentId: string,
+  agentName: string,
+  role: string
+): Promise<{ txHash: string; erc8004AgentId: number | null }> {
+  const provider = await getWriteProvider();
+  const signer = await provider.getSigner();
+  const contract = new Contract(ADDRESSES.ERC8004Identity, ERC8004_IDENTITY_ABI, signer);
+
+  // Build minimal registration URI
+  const registrationFile = {
+    type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+    name: agentName,
+    description: `${agentName} — ${role}. AslanPixel guild agent on Hedera.`,
+    image: `https://aslanpixel.vercel.app/assets/npcs/npc-${agentId}-s.png`,
+    services: [{ name: "A2A", endpoint: "https://aslanpixel.vercel.app/.well-known/agent-card.json", version: "0.3.0" }],
+    x402Support: true,
+    active: true,
+    supportedTrust: ["reputation"],
+  };
+  const agentURI = "data:application/json;base64," + btoa(JSON.stringify(registrationFile));
+
+  const encoder = new TextEncoder();
+  const toHex = (s: string) => "0x" + Array.from(encoder.encode(s)).map(b => b.toString(16).padStart(2,"0")).join("");
+
+  const metadata = [
+    { metadataKey: "agentId",   metadataValue: toHex(agentId) },
+    { metadataKey: "agentName", metadataValue: toHex(agentName) },
+    { metadataKey: "agentRole", metadataValue: toHex(role) },
+  ];
+
+  const tx = await contract["register(string,(string,bytes)[])"](agentURI, metadata);
+  const receipt = await tx.wait();
+
+  // Parse Registered event to get agentId (tokenId)
+  let erc8004AgentId: number | null = null;
+  try {
+    const iface = contract.interface;
+    for (const log of (receipt.logs ?? [])) {
+      try {
+        const parsed = iface.parseLog(log);
+        if (parsed?.name === "Registered") {
+          erc8004AgentId = Number(parsed.args[0]);
+          break;
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* best-effort */ }
+
+  return { txHash: tx.hash as string, erc8004AgentId };
+}
+
+// ---------------------------------------------------------------------------
+// Hook: useERC8004AgentOwner — looks up owner of an ERC-8004 agent NFT by tokenId
+// ---------------------------------------------------------------------------
+export function useERC8004AgentOwner(tokenId: number | null): {
+  owner: string | null;
+  loading: boolean;
+} {
+  const [owner, setOwner] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!tokenId || tokenId <= 0) { setOwner(null); return; }
+    setLoading(true);
+    const provider = getReadProvider();
+    const contract = new Contract(ADDRESSES.ERC8004Identity, ERC8004_IDENTITY_ABI, provider);
+    contract.ownerOf(tokenId)
+      .then((o: string) => setOwner(o))
+      .catch(() => setOwner(null))
+      .finally(() => setLoading(false));
+  }, [tokenId]);
+
+  return { owner, loading };
+}
+
+// ---------------------------------------------------------------------------
+// Hook: useERC8004Balance — how many agent NFTs does an address own
+// ---------------------------------------------------------------------------
+export function useERC8004Balance(address: string | null | undefined): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!address) { setCount(0); return; }
+    const provider = getReadProvider();
+    const contract = new Contract(ADDRESSES.ERC8004Identity, ERC8004_IDENTITY_ABI, provider);
+    contract.balanceOf(address)
+      .then((n: bigint) => setCount(Number(n)))
+      .catch(() => setCount(0));
+  }, [address]);
+
+  return count;
 }
 
 // ---------------------------------------------------------------------------

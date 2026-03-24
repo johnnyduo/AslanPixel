@@ -95,6 +95,15 @@ AslanPixel is a multi-agent AI guild on Hedera. Six specialized autonomous agent
 | `MockUSDC` | `0x152Bf42A48677b678c658E452788ea2687525BF7` | [HashScan ↗](https://hashscan.io/testnet/contract/0x152Bf42A48677b678c658E452788ea2687525BF7) |
 | `USDCFaucet` | `0xCA0558Fa81166C5939335282973Aa2F3A00B3953` | [HashScan ↗](https://hashscan.io/testnet/contract/0xCA0558Fa81166C5939335282973Aa2F3A00B3953) |
 
+### ERC-8004 Trustless Agents (Hedera Testnet, chainId 296)
+
+Agents are registered as **ERC-721 NFTs** via the canonical [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) IdentityRegistry — co-authored by MetaMask, Ethereum Foundation, Google, and Coinbase (live on mainnet Jan 2026). Each `agentId = tokenId` — tradeable on any NFT marketplace. Reputation is tracked on-chain via the ReputationRegistry and persists through NFT transfers.
+
+| Contract | Address |
+|----------|---------|
+| `ERC-8004 IdentityRegistry` | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
+| `ERC-8004 ReputationRegistry` | `0x8004B663056A597Dffe9eCcC1965A193B7388713` |
+
 ---
 
 ## Running Locally
@@ -163,8 +172,8 @@ User Intent (or Auto-Quest every 9min)
 
 ## What's Next
 
-- **x402 payment gating** — pay 1 HBAR per advanced quest (HTTP 402 protocol)
+- **x402 API enforcement** — full HTTP 402 server-side gating per advanced quest
 - **EIP-4337 account abstraction** — session keys for agent-native TX signing
-- **HCS-10 full compliance** — Hashgraph Online agent messaging standard
-- **Agent marketplace** — users publish custom workflows as NFTs
+- **ERC-6551 Token Bound Accounts** — each agent NFT gets its own EVM wallet identity
+- **Agent marketplace** — users publish and trade custom agent NFTs
 - **Cross-chain quests** — Hedera + EVM chains via Wormhole bridge

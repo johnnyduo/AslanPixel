@@ -6,9 +6,11 @@ import BottomPanel from "@/components/BottomPanel";
 import PixelMap from "@/components/PixelMap";
 import DashboardPanel from "@/components/DashboardPanel";
 import { useAgentInit } from "@/hooks/useAgentInit";
+import { useWallet } from "@/hooks/useWallet";
 
 const Index = () => {
   const [dashOpen, setDashOpen] = useState(false);
+  const { isConnected } = useWallet();
 
   // Register agents onchain on first load
   useAgentInit();
@@ -22,21 +24,26 @@ const Index = () => {
           <DashboardPanel onClose={() => setDashOpen(false)} />
         )}
 
-        {/* Left Panel - hidden on small screens */}
-        <div className="hidden lg:flex">
-          <LeftPanel />
-        </div>
+        {/* Left Panel — quest input + agent list. Hidden when wallet not connected */}
+        {isConnected && (
+          <div className="hidden lg:flex">
+            <LeftPanel />
+          </div>
+        )}
 
         {/* Center + Bottom */}
         <div className="flex-1 flex flex-col overflow-hidden p-1 gap-1">
-          <PixelMap hideAgents={dashOpen} />
+          {/* Pixel map: hide agent NPCs when wallet not connected */}
+          <PixelMap hideAgents={dashOpen || !isConnected} />
           <BottomPanel />
         </div>
 
-        {/* Right Panel - hidden on small screens */}
-        <div className="hidden lg:flex">
-          <RightPanel />
-        </div>
+        {/* Right Panel — agent stats. Hidden when wallet not connected */}
+        {isConnected && (
+          <div className="hidden lg:flex">
+            <RightPanel />
+          </div>
+        )}
       </div>
     </div>
   );
