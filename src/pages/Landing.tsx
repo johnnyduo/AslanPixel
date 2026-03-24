@@ -28,7 +28,7 @@ const BASE_STATS = [
   { key: "agents",    value: "6",     label: "AI Agents" },
   { key: "quests",    value: "238+",  label: "Quests Onchain" },
   { key: "hcs",       value: "1,428", label: "HCS Messages" },
-  { key: "contracts", value: "3",     label: "Smart Contracts" },
+  { key: "contracts", value: "7",     label: "Smart Contracts" },
 ];
 
 const HEDERA_BADGES = [
@@ -38,6 +38,7 @@ const HEDERA_BADGES = [
   "Mirror Node",
   "SaucerSwap DEX",
   "HashScan Verified",
+  "ERC-8004 Trustless Agents",
 ];
 
 // Animated pixel grid background
@@ -366,7 +367,7 @@ export default function Landing() {
           <div>
             <h2 className="text-2xl font-bold mb-2 text-amber-400 tracking-widest uppercase">Live Agent Activity</h2>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              Agents never sleep. Every 3 minutes, Aslan Pixel fires an autonomous quest — yield optimization, risk scans, treasury reconciliation — streamed live with no human trigger.
+              Agents never sleep. Every 9 minutes, Aslan Pixel fires an autonomous quest — yield optimization, risk scans, treasury reconciliation — streamed live with no human trigger.
             </p>
             <div className="space-y-3">
               {["Every action posted to HCS consensus", "Every quest receipt stored onchain", "Agent reputation updated per mission", "Full audit trail — no black boxes"].map(f => (
@@ -401,7 +402,7 @@ export default function Landing() {
           </div>
 
           {/* Contracts */}
-          <div className="grid md:grid-cols-3 gap-px bg-slate-800 border border-slate-800">
+          <div className="grid md:grid-cols-3 gap-px bg-slate-800 border border-slate-800 mb-px">
             {[
               { name: "QuestReceipt.sol", addr: "0x444f...541C7D", desc: "Immutable quest receipts" },
               { name: "AgentRegistry.sol", addr: "0x8B90...336CC4", desc: "Agent reputation (0-1000)" },
@@ -414,6 +415,18 @@ export default function Landing() {
               </div>
             ))}
           </div>
+          <div className="grid md:grid-cols-2 gap-px bg-slate-800 border border-slate-800">
+            {[
+              { name: "ERC-8004 IdentityRegistry", addr: "0x8004A818...BD9e", desc: "Agents as tradeable NFTs · 43+ registered" },
+              { name: "ERC-8004 ReputationRegistry", addr: "0x8004B663...8713", desc: "On-chain reputation · persists on transfer" },
+            ].map(c => (
+              <div key={c.name} className="bg-[#080810] p-5 text-left">
+                <div className="text-purple-400 font-bold text-sm mb-1">{c.name}</div>
+                <div className="text-cyan-400/60 font-mono text-xs mb-2">{c.addr}</div>
+                <div className="text-slate-500 text-xs">{c.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -421,7 +434,7 @@ export default function Landing() {
       <section className="py-24 px-4 text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse at center, rgba(43,131,255,0.04) 0%, transparent 70%)" }} />
-        <p className="text-slate-500 text-xs uppercase tracking-widest mb-4">Apex Hackathon 2025 — AI & Agents Track</p>
+        <p className="text-slate-500 text-xs uppercase tracking-widest mb-4">Apex Hackathon 2026 — AI & Agents Track</p>
         <h2 className="text-3xl md:text-5xl font-bold mb-4">
           <span className="text-amber-400">Watch agents</span>{" "}
           <span className="text-white">think, vote, and act.</span>
@@ -439,8 +452,8 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 py-8 px-4 text-center text-slate-700 text-xs">
-        <p>Aslan Pixel — Hedera Testnet — Account 0.0.5769159</p>
-        <p className="mt-1">QuestReceipt.sol · AgentRegistry.sol · PolicyManager.sol · MockUSDC · USDCFaucet</p>
+        <p>Aslan Pixel — Hedera Testnet — Account 0.0.8342565</p>
+        <p className="mt-1">QuestReceipt.sol · AgentRegistry.sol · PolicyManager.sol · MockUSDC · USDCFaucet · ERC-8004 IdentityRegistry · ReputationRegistry</p>
         <p className="mt-2 text-purple-800">⚡ Powered by Hedera AgentKit</p>
       </footer>
     </div>
