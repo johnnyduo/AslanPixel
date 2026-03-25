@@ -88,7 +88,6 @@ dependencies:
   fluttertoast: ^9.0.0
   app_version_update: ^6.2.0
   audioplayers: ^6.1.0
-  model_viewer_plus: ^1.10.0
 
 dev_dependencies:
   flutter_test:
