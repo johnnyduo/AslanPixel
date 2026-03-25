@@ -1,8 +1,22 @@
 import { GoogleGenAI } from "@google/genai";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execSync } from "node:child_process";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "" });
+// Resolve API key: env var → Secret Manager → error
+function resolveApiKey() {
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  try {
+    const key = execSync(
+      "gcloud secrets versions access latest --secret=GEMINI_API_KEY --project=aslan-pixel",
+      { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }
+    ).trim();
+    if (key) return key;
+  } catch (_) {}
+  throw new Error("GEMINI_API_KEY not set and Secret Manager unavailable. Set the env var or run: gcloud auth login");
+}
+
+const ai = new GoogleGenAI({ apiKey: resolveApiKey() });
 
 const outputDir = "/Library/WebServer/Documents/AslanPixel/assets/sprites/room_backgrounds";
 
