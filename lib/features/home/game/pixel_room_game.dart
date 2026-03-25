@@ -60,15 +60,17 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     super.onGameResize(size);
     if (size.x <= 0 || size.y <= 0) return;
 
+    // Scale world to fill screen width exactly.
+    // Anchor = topLeft so (0,0) world = top-left of screen.
     final zoom = size.x / _canvasWidth;
     camera.viewfinder.zoom = zoom;
-    camera.viewfinder.position = Vector2(_canvasWidth / 2, size.y / zoom / 2);
+    camera.viewfinder.position = Vector2.zero();
   }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    camera.viewfinder.anchor = Anchor.center;
+    camera.viewfinder.anchor = Anchor.topLeft;
 
     // Layer 1: background
     await add(RoomBackgroundComponent(
@@ -79,13 +81,11 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     final rng = Random();
     final collisionMap = RoomCollisionMap();
 
-    // Spread NPCs across walkable zone in a grid pattern
-    final positions = _spreadPositions(rng, collisionMap, _kNpcNames.length);
-
     for (var i = 0; i < _kNpcNames.length; i++) {
+      final pos = _spawnPosition(i, _kNpcNames.length, rng, collisionMap);
       final npc = NpcSpriteComponent(
         npcName: _kNpcNames[i],
-        position: positions[i],
+        position: pos,
         initialDirection: NpcDirection.values[rng.nextInt(4)],
       );
       await add(npc);
@@ -93,32 +93,28 @@ class PixelRoomGame extends FlameGame with TapCallbacks {
     }
   }
 
-  /// Generates [count] starting positions spread across the walkable area,
-  /// falling back to any walkable cell if a preferred slot is blocked.
-  List<Vector2> _spreadPositions(
-      Random rng, RoomCollisionMap map, int count) {
-    final result = <Vector2>[];
-    // Divide walkable zone into a loose grid to avoid all spawning in one spot
-    final cols = 4;
-    final rows = (count / cols).ceil();
-    final xStep = (_canvasWidth - 80) / cols;
-    final yStart = 300.0;
-    final yEnd = 700.0;
+  /// Spreads NPCs across the visible walkable floor (y: 250–650, x: 40–360).
+  /// Uses a 4-column grid with random jitter per slot.
+  Vector2 _spawnPosition(
+      int index, int total, Random rng, RoomCollisionMap map) {
+    const cols = 4;
+    const xPad = 40.0;
+    const yStart = 260.0; // below furniture zone
+    const yEnd = 640.0;   // above bottom wall
+
+    final col = index % cols;
+    final row = index ~/ cols;
+    final rows = (total / cols).ceil();
+    final xStep = (_canvasWidth - xPad * 2) / cols;
     final yStep = (yEnd - yStart) / rows;
 
-    for (var i = 0; i < count; i++) {
-      final col = i % cols;
-      final row = i ~/ cols;
-      final base = Vector2(
-        40 + col * xStep + rng.nextDouble() * (xStep * 0.6),
-        yStart + row * yStep + rng.nextDouble() * (yStep * 0.6),
-      );
-      final pos = map.isPositionWalkable(base)
-          ? base
-          : map.randomWalkablePosition(rng);
-      result.add(pos);
-    }
-    return result;
+    final x = xPad + col * xStep + rng.nextDouble() * (xStep * 0.7);
+    final y = yStart + row * yStep + rng.nextDouble() * (yStep * 0.7);
+    final candidate = Vector2(x, y);
+
+    return map.isPositionWalkable(candidate)
+        ? candidate
+        : map.randomWalkablePosition(rng);
   }
 
   void updateAgentStatuses(Map<AgentType, AgentStatus> statuses) {
