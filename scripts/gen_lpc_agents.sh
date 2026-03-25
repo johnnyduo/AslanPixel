@@ -2,18 +2,25 @@
 # ============================================================================
 # gen_lpc_agents.sh — AslanPixel LPC Agent Spritesheet Generator
 #
-# Composites real LPC layers from the Universal LPC Spritesheet Generator
-# into 576×256 walk spritesheets (9 frames × 4 rows × 64×64 px).
+# Composites real LPC layers in CORRECT z-order (from sheet_definitions):
+#   z=10  body
+#   z=20  legs/pants
+#   z=35  torso/shirt
+#   z=60  armour plate
+#   z=105 eyes          ← MUST come after body/clothes
+#   z=106 eyebrows
+#   z=110 beard
+#   z=115 glasses
+#   z=130 hair          ← on top of everything except hat
+#   z=130 hat
 #
-# 13 characters: 4 core agents + 10 NPC personalities
-# Aslan Wealth theme: navy, neon-green, gold, cyber-purple, cyan
+# Output: 576×256 walk spritesheets (9 frames × 4 rows × 64×64 px)
 # ============================================================================
 
 SRC=/tmp/lpc-generator/spritesheets
 OUT=/Library/WebServer/Documents/AslanPixel/assets/sprites/lpc_npcs
 mkdir -p "$OUT"
 
-# ── Silently skips any layer file that doesn't exist ────────────────────────
 gen_agent() {
   local name="$1"; shift
   local existing=()
@@ -36,166 +43,153 @@ gen_agent() {
   echo "  OK $name → $dims (${#existing[@]} layers)"
 }
 
-# Shorthand prefixes
+# Path shortcuts
 B="$SRC/body/bodies"
-EY="$SRC/eyes/human/adult/neutral/walk"
-EB="$SRC/eyes/eyebrows/thick/adult/walk"
-H="$SRC/hair"
-TL="$SRC/torso/clothes/longsleeve/longsleeve"  # body-fitted longsleeve
-TFS="$SRC/torso/clothes/longsleeve/formal_striped"
-TA="$SRC/torso/armour/plate"
-LP="$SRC/legs/pants"
-LF="$SRC/legs/formal/thin"   # formal thin pants
-LA="$SRC/legs/armour/plate"
-HAT="$SRC/hat"
-SH="$SRC/shoulders"
-BE="$SRC/beards"
-FA="$SRC/facial"
+EY="$SRC/eyes/human/adult/neutral/walk"   # z=105 eyes
+EB="$SRC/eyes/eyebrows/thick/adult/walk"  # z=106 eyebrows
+BE="$SRC/beards"                           # z=110 beard
+FA="$SRC/facial/glasses"                   # z=115 glasses
+H="$SRC/hair"                              # z=130 hair
+LP="$SRC/legs/pants"                       # z=20 pants
+LF="$SRC/legs/formal/thin/walk"           # z=20 formal pants
+LA="$SRC/legs/armour/plate"               # z=60 armour legs
+TL="$SRC/torso/clothes/longsleeve/longsleeve"    # z=35 shirt
+TFS="$SRC/torso/clothes/longsleeve/formal_striped" # z=35 formal shirt
+TA="$SRC/torso/armour/plate"              # z=60 armour chest
+SH="$SRC/shoulders/plate"                 # z=60 shoulders
+HAT="$SRC/hat"                            # z=130 hat
 
 echo "=== Generating AslanPixel LPC Agent Spritesheets ==="
+echo "(z-order: body→legs→torso→armor→eyes→eyebrows→beard→glasses→hair→hat)"
 echo ""
 
 # ============================================================================
-# CORE AGENTS (4) — Aslan Wealth color palette
+# CORE AGENTS (4)
 # ============================================================================
 
-# 1. ANALYST — Female, neon-green suit, black bangs, professional glasses
-echo "1. npc_analyst_senior (Analyst — Neon Green)"
+echo "1. npc_analyst_senior (Analyst — Teal)"
 gen_agent "npc_analyst_senior" \
   "$B/female/walk/light.png" \
+  "$LF/black.png" \
+  "$TL/female/walk/teal.png" \
   "$EY/brown.png" \
   "$EB/black.png" \
-  "$H/bangslong/adult/walk/black.png" \
-  "$LF/walk/teal.png" \
-  "$TL/female/walk/teal.png" \
-  "$FA/glasses/sunglasses/adult/walk/teal.png"
+  "$FA/sunglasses/adult/walk/teal.png" \
+  "$H/bangslong/adult/walk/black.png"
 
-# 2. SCOUT — Young male, gold/yellow outfit, blonde bedhead, explorer
-echo "2. npc_scout (Scout — Gold)"
+echo "2. npc_scout (Scout — Gold/Yellow)"
 gen_agent "npc_scout" \
   "$B/male/walk/light.png" \
+  "$LP/male/walk/black.png" \
+  "$TL/male/walk/yellow.png" \
   "$EY/blue.png" \
   "$EB/blonde.png" \
-  "$H/bedhead/adult/walk/blonde.png" \
-  "$LP/male/walk/black.png" \
-  "$TL/male/walk/yellow.png"
+  "$H/bedhead/adult/walk/blonde.png"
 
-# 3. RISK — Male, dark skin, cyber-purple, silver mohawk, intense
-echo "3. npc_risk (Risk Guardian — Cyber Purple)"
+echo "3. npc_risk (Risk — Cyber Purple)"
 gen_agent "npc_risk" \
   "$B/male/walk/dark.png" \
+  "$LP/male/walk/black.png" \
+  "$TL/male/walk/lavender.png" \
   "$EY/purple.png" \
   "$EB/ash.png" \
-  "$H/shorthawk/adult/walk/ash.png" \
-  "$LP/male/walk/black.png" \
-  "$TL/male/walk/lavender.png"
+  "$H/shorthawk/adult/walk/ash.png"
 
-# 4. SOCIAL — Female, light skin, cyan top, pink bob, energetic
-echo "4. npc_social (Social Agent — Cyan)"
+echo "4. npc_social (Social — Cyan/Pink)"
 gen_agent "npc_social" \
   "$B/female/walk/light.png" \
+  "$LF/sky.png" \
+  "$TL/female/walk/sky.png" \
   "$EY/blue.png" \
   "$EB/rose.png" \
-  "$H/bob/adult/walk/rose.png" \
-  "$LF/walk/sky.png" \
-  "$TL/female/walk/sky.png"
+  "$H/bob/adult/walk/rose.png"
 
 echo ""
 # ============================================================================
-# NPC PERSONALITIES (10)
+# NPC PERSONALITIES (9)
 # ============================================================================
 
-# 5. BANKER — Elderly, navy formal suit, white balding, tophat
-echo "5. npc_banker (Banker — Navy/Black Formal)"
+echo "5. npc_banker (Banker — Navy Formal + Tophat)"
 gen_agent "npc_banker" \
   "$B/male/walk/light.png" \
+  "$LF/black.png" \
+  "$TFS/male/walk/white.png" \
   "$EY/gray.png" \
   "$EB/gray.png" \
   "$H/balding/adult/walk/white.png" \
-  "$LF/walk/black.png" \
-  "$TFS/male/walk/white.png" \
   "$HAT/formal/tophat/adult/walk/black.png"
 
-# 6. TRADER — Young male, white shirt, teal pants, dark bedhead
 echo "6. npc_trader (Trader — White/Teal)"
 gen_agent "npc_trader" \
   "$B/male/walk/light.png" \
+  "$LP/male/walk/teal.png" \
+  "$TL/male/walk/white.png" \
   "$EY/brown.png" \
   "$EB/dark_brown.png" \
-  "$H/bedhead/adult/walk/dark_brown.png" \
-  "$LP/male/walk/teal.png" \
-  "$TL/male/walk/white.png"
+  "$H/bedhead/adult/walk/dark_brown.png"
 
-# 7. CHAMPION — Female warrior, gold plate armor, white pixie cut
 echo "7. npc_champion (Champion — Gold Armor)"
 gen_agent "npc_champion" \
   "$B/female/walk/light.png" \
-  "$EY/gray.png" \
-  "$EB/gray.png" \
-  "$H/pixie/adult/walk/white.png" \
   "$LA/female/walk/gold.png" \
   "$TA/female/walk/gold.png" \
-  "$SH/plate/female/walk/gold.png"
-
-# 8. ORACLE — Old male, purple robe, wizard hat buckle lavender, white beard
-echo "8. npc_oracle (Oracle — Purple/Mystical)"
-gen_agent "npc_oracle" \
-  "$B/male/walk/light.png" \
+  "$SH/female/walk/gold.png" \
   "$EY/gray.png" \
   "$EB/gray.png" \
-  "$H/balding/adult/walk/white.png" \
-  "$BE/beard/walk/basic.png" \
+  "$H/pixie/adult/walk/white.png"
+
+echo "8. npc_oracle (Oracle — Purple Wizard)"
+gen_agent "npc_oracle" \
+  "$B/male/walk/light.png" \
   "$LP/male/walk/lavender.png" \
   "$TL/male/walk/lavender.png" \
+  "$EY/gray.png" \
+  "$EB/gray.png" \
+  "$BE/beard/walk/basic.png" \
+  "$H/balding/adult/walk/white.png" \
   "$HAT/magic/wizard/buckle/adult/walk/silver.png"
 
-# 9. HACKER — Dark skin, dark clothing, green mohawk, cyberpunk
-echo "9. npc_hacker (Hacker — Dark/Green)"
+echo "9. npc_hacker (Hacker — Dark + Green)"
 gen_agent "npc_hacker" \
   "$B/male/walk/dark.png" \
+  "$LP/male/walk/black.png" \
+  "$TL/male/walk/black.png" \
   "$EY/green.png" \
   "$EB/ginger.png" \
-  "$H/shorthawk/adult/walk/green.png" \
-  "$LP/male/walk/black.png" \
-  "$TL/male/walk/black.png"
+  "$H/shorthawk/adult/walk/green.png"
 
-# 10. MERCHANT — Muscular, olive skin, forest green robe, chestnut mustache
 echo "10. npc_merchant (Merchant — Forest/Earthy)"
 gen_agent "npc_merchant" \
   "$B/muscular/walk/olive.png" \
+  "$LP/male/walk/maroon.png" \
+  "$TL/male/walk/forest.png" \
   "$EY/brown.png" \
   "$EB/chestnut.png" \
-  "$H/balding/adult/walk/brunette.png" \
   "$BE/mustache/walk/5oclock_shadow.png" \
-  "$LP/male/walk/maroon.png" \
-  "$TL/male/walk/forest.png"
+  "$H/balding/adult/walk/brunette.png"
 
-# 11. PIXELCAT — Child, light, blue outfit, chestnut bangs
 echo "11. npc_pixelcat (PixelCat)"
 gen_agent "npc_pixelcat" \
   "$B/child/walk/light.png" \
-  "$SRC/eyes/human/child/neutral/walk/blue.png" \
-  "$H/bangs/child/walk/chestnut.png" \
   "$LP/teen/walk/blue.png" \
-  "$TL/teen/walk/blue.png"
+  "$TL/teen/walk/blue.png" \
+  "$SRC/eyes/human/child/neutral/walk/blue.png" \
+  "$H/bangs/child/walk/chestnut.png"
 
-# 12. SYSBOT — Skeleton (robot-like)
 echo "12. npc_sysbot (SysBot — Skeleton)"
 gen_agent "npc_sysbot" \
   "$B/skeleton/walk/skeleton.png"
 
-# 13. INTERN — Teen, maroon shirt, brown pants, brunette messy hair
 echo "13. npc_intern (Intern)"
 gen_agent "npc_intern" \
   "$B/teen/walk/light.png" \
+  "$LP/teen/walk/brown.png" \
+  "$TL/teen/walk/maroon.png" \
   "$EY/brown.png" \
   "$EB/chestnut.png" \
-  "$H/messy1/teen/walk/brunette.png" \
-  "$LP/teen/walk/brown.png" \
-  "$TL/teen/walk/maroon.png"
+  "$H/messy1/teen/walk/brunette.png"
 
 echo ""
 echo "=== Generated files ==="
-ls -lh "$OUT"/*.png 2>/dev/null
-echo ""
-echo "Total: $(ls "$OUT"/*.png 2>/dev/null | wc -l) sprites"
+ls -lh "$OUT"/*_walk.png 2>/dev/null
+echo "Total: $(ls "$OUT"/*_walk.png 2>/dev/null | wc -l) sprites"
