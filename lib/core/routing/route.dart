@@ -2,13 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../config/constant.dart';
 import '../enums/auth_status.dart';
-import '../../features/auth/bloc/auth_bloc.dart';
-import '../../features/auth/data/datasources/firebase_auth_datasource.dart';
-import '../../features/auth/view/sign_in_page.dart';
 import '../../features/home/view/main_tabs_page.dart';
 import '../../features/onboarding/view/onboarding_page.dart';
 

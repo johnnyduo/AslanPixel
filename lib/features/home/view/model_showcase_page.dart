@@ -12,7 +12,6 @@ const _kNeonGreen = Color(0xFF00F5A0);
 const _kGold = Color(0xFFF5C518);
 const _kCyberPurple = Color(0xFF7B2FFF);
 const _kCyan = Color(0xFF00D9FF);
-const _kOrange = Color(0xFFFF6B35);
 
 // ---------------------------------------------------------------------------
 // Model definition
