@@ -258,7 +258,7 @@ class _AgentShopView extends StatelessWidget {
         ],
       ),
     ).then((confirmed) {
-      if (confirmed == true) {
+      if (confirmed == true && context.mounted) {
         context.read<AgentBloc>().add(
               AgentPurchaseRequested(
                 agentType: item.type,

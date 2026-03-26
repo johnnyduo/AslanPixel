@@ -136,7 +136,7 @@ Future<void> _checkAppVersion() async {
   try {
     if (await AppVersionService.isUpdateRequired()) {
       final ctx = Globals.navigatorKey.currentContext;
-      if (ctx != null) {
+      if (ctx != null && ctx.mounted) {
         AppVersionService.showUpdateDialog(ctx);
       }
     }

@@ -464,13 +464,13 @@ TextStyle styleWithColor({
 );
 
 Divider dividerX({
-  thickness = 5,
-  height = 5,
-  color = const Color(0xFF1e3050),
+  double thickness = 5,
+  double height = 5,
+  Color color = const Color(0xFF1e3050),
 }) {
   return Divider(
-    height: height.toDouble(),
-    thickness: thickness.toDouble(),
+    height: height,
+    thickness: thickness,
     color: color,
   );
 }

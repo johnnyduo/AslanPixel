@@ -21,13 +21,6 @@ class FakeRoomItem extends Fake implements RoomItem {}
 
 const _kUid = 'test_uid';
 
-RoomModel _starterRoom() => RoomModel(
-      uid: _kUid,
-      layoutVersion: 1,
-      items: const [],
-      updatedAt: DateTime(2026, 3, 18),
-    );
-
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeRoomModel());

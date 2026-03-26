@@ -17,7 +17,6 @@ const int _red = 0xFFFF4D6A;
 const int _gray = 0xFFAAAAAA;
 const int _darkGray = 0xFF777777;
 const int _white = 0xFFFFFFFF;
-const int _transparent = 0x00000000;
 
 /// Convert ARGB int to image library Color.
 img.Color _c(int argb) {

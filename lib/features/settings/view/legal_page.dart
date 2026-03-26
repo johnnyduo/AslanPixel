@@ -21,7 +21,7 @@ class LegalPage extends StatelessWidget {
   static const termsOfServiceRouteName = '/terms-of-service';
 
   final String title;
-  final List<_LegalSection> sections;
+  final List<LegalSection> sections;
 
   /// Factory for the Privacy Policy page.
   factory LegalPage.privacyPolicy() {
@@ -112,16 +112,16 @@ class LegalPage extends StatelessWidget {
   }
 }
 
-class _LegalSection {
-  const _LegalSection({required this.heading, required this.body});
+class LegalSection {
+  const LegalSection({required this.heading, required this.body});
   final String heading;
   final String body;
 }
 
 // ── Privacy Policy Content ──────────────────────────────────────────────────
 
-const _privacyPolicySections = <_LegalSection>[
-  _LegalSection(
+const _privacyPolicySections = <LegalSection>[
+  LegalSection(
     heading: '1. ข้อมูลที่เราเก็บรวบรวม',
     body:
         'เราเก็บรวบรวมข้อมูลดังต่อไปนี้:\n'
@@ -130,7 +130,7 @@ const _privacyPolicySections = <_LegalSection>[
         '- ข้อมูลการใช้งาน: พฤติกรรมการใช้แอป, เวลาที่ใช้, ฟีเจอร์ที่เข้าถึง\n'
         '- ข้อมูลอุปกรณ์: รุ่นอุปกรณ์, ระบบปฏิบัติการ, สำหรับการแก้ไขปัญหา',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '2. วิธีที่เราใช้ข้อมูล',
     body:
         '- จัดการบัญชีผู้ใช้และการเข้าสู่ระบบ\n'
@@ -139,20 +139,20 @@ const _privacyPolicySections = <_LegalSection>[
         '- ส่งการแจ้งเตือนที่เกี่ยวข้อง (ถ้าผู้ใช้อนุญาต)\n'
         '- วิเคราะห์ข้อผิดพลาดและปรับปรุงแอป',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '3. การแบ่งปันข้อมูล',
     body:
         'เราไม่ขายหรือแบ่งปันข้อมูลส่วนบุคคลของคุณให้กับบุคคลที่สาม ยกเว้น:\n'
         '- Firebase (Google): สำหรับการยืนยันตัวตน, การจัดเก็บข้อมูล, การวิเคราะห์\n'
         '- เมื่อกฎหมายกำหนด',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '4. ความปลอดภัยของข้อมูล',
     body:
         'เราใช้มาตรการรักษาความปลอดภัยที่เหมาะสม รวมถึงการเข้ารหัส SSL/TLS '
         'สำหรับการรับส่งข้อมูลทั้งหมด และการรักษาความปลอดภัยของ Firebase',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '5. สิทธิ์ของผู้ใช้',
     body:
         'คุณมีสิทธิ์:\n'
@@ -161,21 +161,21 @@ const _privacyPolicySections = <_LegalSection>[
         '- ลบบัญชีและข้อมูลทั้งหมดอย่างถาวรผ่านเมนูตั้งค่า\n'
         '- ปิดการแจ้งเตือนได้ตลอดเวลา',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '6. เหรียญเสมือน (Virtual Currency)',
     body:
         'เหรียญและ XP ในแอปเป็นสกุลเงินเสมือนที่ใช้ในเกมเท่านั้น '
         'ไม่มีมูลค่าเป็นเงินจริง ไม่สามารถแลกเป็นเงินสด '
         'และไม่ใช่สินทรัพย์ดิจิทัลหรือสกุลเงินดิจิทัล',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '7. ข้อมูลทางการเงิน',
     body:
         'ข้อมูลราคาคริปโตและตลาดหุ้นที่แสดงในแอปมีไว้เพื่อการศึกษาเท่านั้น '
         'ไม่ถือเป็นคำแนะนำในการลงทุน การตัดสินใจลงทุนเป็นความรับผิดชอบ'
         'ของผู้ใช้เอง',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '8. การเปลี่ยนแปลงนโยบาย',
     body:
         'เราอาจปรับปรุงนโยบายนี้เป็นครั้งคราว '
@@ -185,21 +185,21 @@ const _privacyPolicySections = <_LegalSection>[
 
 // ── Terms of Service Content ────────────────────────────────────────────────
 
-const _termsOfServiceSections = <_LegalSection>[
-  _LegalSection(
+const _termsOfServiceSections = <LegalSection>[
+  LegalSection(
     heading: '1. การยอมรับข้อกำหนด',
     body:
         'การใช้งาน Aslan Pixel หมายความว่าคุณยอมรับข้อกำหนดการใช้งานเหล่านี้ '
         'หากคุณไม่ยอมรับ กรุณาหยุดใช้งานแอป',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '2. คำอธิบายบริการ',
     body:
         'Aslan Pixel เป็นแอปพลิเคชันเกมการเงินสังคม (Social Financial Game) '
         'ที่รวมระบบ Idle Game, โลกพิกเซล, และฟีเจอร์สังคม '
         'แอปไม่ใช่แพลตฟอร์มซื้อขายหลักทรัพย์หรือสกุลเงินดิจิทัล',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '3. ข้อจำกัดความรับผิดชอบด้านการเงิน',
     body:
         'ข้อมูลตลาด ราคาคริปโต การพยากรณ์ และข้อมูลเชิงลึก (AI Insights) '
@@ -207,7 +207,7 @@ const _termsOfServiceSections = <_LegalSection>[
         'ข้อมูลเหล่านี้ไม่ถือเป็นคำแนะนำในการลงทุน ไม่ว่าในรูปแบบใด '
         'ผู้ใช้ไม่ควรตัดสินใจลงทุนโดยอาศัยข้อมูลจากแอปนี้เพียงอย่างเดียว',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '4. สกุลเงินเสมือน',
     body:
         'เหรียญ (Coins) และ XP ในแอปเป็นสกุลเงินเสมือนที่ใช้ในเกมเท่านั้น:\n'
@@ -216,14 +216,14 @@ const _termsOfServiceSections = <_LegalSection>[
         '- ไม่สามารถแลกเป็นเงินสดหรือสินค้าจริง\n'
         '- ไม่ใช่สินทรัพย์ดิจิทัลหรือสกุลเงินดิจิทัล',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '5. บัญชีผู้ใช้',
     body:
         'คุณรับผิดชอบในการรักษาความปลอดภัยของบัญชีของคุณ '
         'ห้ามแบ่งปันรหัสผ่านกับผู้อื่น\n\n'
         'เราขอสงวนสิทธิ์ในการระงับหรือลบบัญชีที่ละเมิดข้อกำหนดเหล่านี้',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '6. พฤติกรรมผู้ใช้',
     body:
         'ผู้ใช้ต้องไม่:\n'
@@ -232,20 +232,20 @@ const _termsOfServiceSections = <_LegalSection>[
         '- ใช้บอทหรือเครื่องมืออัตโนมัติเพื่อเล่นเกม\n'
         '- แอบอ้างเป็นผู้ใช้คนอื่น',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '7. ทรัพย์สินทางปัญญา',
     body:
         'เนื้อหา กราฟิก พิกเซลอาร์ต และซอฟต์แวร์ทั้งหมดใน Aslan Pixel '
         'เป็นทรัพย์สินของ Aslan Pixel หรือผู้อนุญาตให้ใช้สิทธิ์ '
         'ห้ามคัดลอก ดัดแปลง หรือแจกจ่ายโดยไม่ได้รับอนุญาต',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '8. การยกเลิกบริการ',
     body:
         'คุณสามารถลบบัญชีได้ตลอดเวลาผ่านเมนูตั้งค่า > ลบบัญชี '
         'การลบบัญชีจะลบข้อมูลทั้งหมดอย่างถาวร',
   ),
-  _LegalSection(
+  LegalSection(
     heading: '9. การเปลี่ยนแปลงข้อกำหนด',
     body:
         'เราขอสงวนสิทธิ์ในการเปลี่ยนแปลงข้อกำหนดเหล่านี้ได้ตลอดเวลา '

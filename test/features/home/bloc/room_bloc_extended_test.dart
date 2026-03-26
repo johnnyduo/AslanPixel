@@ -18,22 +18,6 @@ class FakeRoomItem extends Fake implements RoomItem {}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-RoomModel _starterRoom({String uid = 'uid_01'}) => RoomModel(
-      uid: uid,
-      layoutVersion: 1,
-      items: const [
-        RoomItem(
-          itemId: 'desk_01',
-          type: RoomItemType.furniture,
-          assetKey: 'desk_01',
-          slotX: 3,
-          slotY: 2,
-          isUnlocked: true,
-        ),
-      ],
-      updatedAt: DateTime(2026, 3, 18),
-    );
-
 const _kUid = 'uid_01';
 
 void main() {
